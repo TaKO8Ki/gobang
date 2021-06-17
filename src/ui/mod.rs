@@ -87,14 +87,17 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
 
     let databases = app.databases.clone();
-    let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
-        .tables
-        .iter()
-        .map(|i| {
-            ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-                .style(Style::default().fg(Color::White))
-        })
-        .collect();
+    let tables: Vec<ListItem> = databases[match app.selected_database.selected() {
+        Some(index) => index,
+        None => 0,
+    }]
+    .tables
+    .iter()
+    .map(|i| {
+        ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+            .style(Style::default().fg(Color::White))
+    })
+    .collect();
     let tasks = List::new(tables)
         .block(Block::default().borders(Borders::ALL).title("Tables"))
         .highlight_style(Style::default().fg(Color::Green))
