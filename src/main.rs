@@ -1,13 +1,16 @@
 mod app;
+mod handlers;
 mod ui;
 
-use crate::app::App;
-use crate::app::InputMode;
+use crate::app::{Database, FocusType, InputMode, Table};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use futures::TryStreamExt;
+use sqlx::mysql::MySqlPool;
+use sqlx::{Column, Executor, Row, TypeInfo};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -26,19 +29,18 @@ enum Event<I> {
     Tick,
 }
 
-pub struct StatefulTable<'a> {
+pub struct StatefulTable {
     state: TableState,
-    items: Vec<Vec<&'a str>>,
+    headers: Vec<String>,
+    items: Vec<Vec<String>>,
 }
 
-impl<'a> StatefulTable<'a> {
-    fn new() -> StatefulTable<'a> {
+impl StatefulTable {
+    fn new() -> StatefulTable {
         StatefulTable {
             state: TableState::default(),
-            items: vec![
-                vec!["Row11", "Row12", "Row13", "Row14", "Row15", "Row16"],
-                vec!["Row11", "Row12", "Row13", "Row13", "Row13", "Row13"],
-            ],
+            headers: vec![],
+            items: vec![],
         }
     }
     pub fn next(&mut self) {
@@ -70,22 +72,8 @@ impl<'a> StatefulTable<'a> {
     }
 }
 
-/// Crossterm demo
-#[derive(Debug)]
-struct Cli {
-    /// time in ms between two ticks.
-    tick_rate: u64,
-    /// whether unicode symbols are used to improve the overall look of the app
-    enhanced_graphics: bool,
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cli: Cli = Cli {
-        tick_rate: 250,
-        enhanced_graphics: true,
-    };
-
     enable_raw_mode()?;
 
     let mut stdout = stdout();
@@ -98,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
     // Setup input handling
     let (tx, rx) = mpsc::channel();
 
-    let tick_rate = Duration::from_millis(cli.tick_rate);
+    let tick_rate = Duration::from_millis(250);
     thread::spawn(move || {
         let mut last_tick = Instant::now();
         loop {
@@ -118,23 +106,54 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    use sqlx::mysql::{MySqlPool, MySqlRow};
-    use sqlx::Row as _;
-
-    let mut app = App::new("Crossterm Demo", cli.enhanced_graphics);
-
-    let pool = MySqlPool::connect("mysql://root:@localhost:3306/hoge").await?;
-    let mut rows = sqlx::query("SELECT * FROM user").fetch(&pool);
-    let mut tables = sqlx::query("show tables")
+    let mut app = &mut app::App::default();
+    let pool = MySqlPool::connect("mysql://root:@localhost:3306").await?;
+    let databases = sqlx::query("show databases")
         .fetch_all(&pool)
         .await?
         .iter()
         .map(|table| table.get(0))
         .collect::<Vec<String>>();
-    app.tables = tables;
+    for db in databases {
+        app.databases.push(Database::new(db, &pool).await?)
+    }
+
+    &pool.execute("use dev_payer").await?;
+    let mut rows = sqlx::query("SELECT * FROM incoming_invoices").fetch(&pool);
+    let mut headers: Vec<String> = vec![];
+    let mut records = vec![];
+
+    while let Some(row) = rows.try_next().await? {
+        if headers.is_empty() {
+            headers.extend(
+                row.columns()
+                    .iter()
+                    .map(|col| col.name().to_string())
+                    .collect::<Vec<String>>(),
+            );
+        }
+        let mut row_vec = vec![];
+        for col in row.columns() {
+            let col_name = col.name();
+            match col.type_info().clone().name() {
+                "INT" => {
+                    let value: i32 = row.try_get(col_name).unwrap_or(0);
+                    row_vec.push(value.to_string());
+                }
+                "VARCHAR" => {
+                    let value: String = row.try_get(col_name).unwrap_or("".to_string());
+                    row_vec.push(value);
+                }
+                _ => (),
+            }
+        }
+        records.push(row_vec)
+    }
 
     terminal.clear()?;
     let mut table = StatefulTable::new();
+    table.items = records;
+    table.headers = headers;
 
     loop {
         terminal.draw(|f| ui::draw(f, &mut app, &mut table).unwrap())?;
@@ -154,8 +173,86 @@ async fn main() -> anyhow::Result<()> {
                         terminal.show_cursor()?;
                         break;
                     }
-                    KeyCode::Up => table.previous(),
-                    KeyCode::Down => table.next(),
+                    KeyCode::Char('l') => app.focus_type = FocusType::Records(false),
+                    KeyCode::Char('h') => app.focus_type = FocusType::Dabatases(false),
+                    KeyCode::Char('j') => {
+                        if let FocusType::Dabatases(_) = app.focus_type {
+                            app.focus_type = FocusType::Tables(false)
+                        }
+                    }
+                    KeyCode::Char('k') => {
+                        if let FocusType::Tables(_) = app.focus_type {
+                            app.focus_type = FocusType::Dabatases(false)
+                        }
+                    }
+                    KeyCode::Up => match app.focus_type {
+                        FocusType::Records(true) => table.previous(),
+                        FocusType::Dabatases(true) => app.previous(),
+                        FocusType::Tables(true) => match app.selected_database.selected() {
+                            Some(index) => app.databases[index].previous(),
+                            None => (),
+                        },
+                        _ => (),
+                    },
+                    KeyCode::Down => match app.focus_type {
+                        FocusType::Records(true) => table.next(),
+                        FocusType::Dabatases(true) => app.next(),
+                        FocusType::Tables(true) => match app.selected_database.selected() {
+                            Some(index) => {
+                                &app.databases[index].next();
+                                let db =
+                                    &app.databases[app.selected_database.selected().unwrap_or(0)];
+                                &pool.execute(format!("use {}", db.name).as_str()).await?;
+                                let table_name = format!(
+                                    "SELECT * FROM {}",
+                                    &db.tables[db.selected_table.selected().unwrap_or(0)].name
+                                );
+                                let mut rows = sqlx::query(table_name.as_str()).fetch(&pool);
+                                let mut headers: Vec<String> = vec![];
+                                let mut records = vec![];
+
+                                while let Some(row) = rows.try_next().await? {
+                                    if headers.is_empty() {
+                                        headers.extend(
+                                            row.columns()
+                                                .iter()
+                                                .map(|col| col.name().to_string())
+                                                .collect::<Vec<String>>(),
+                                        );
+                                    }
+                                    let mut row_vec = vec![];
+                                    for col in row.columns() {
+                                        let col_name = col.name();
+                                        // println!("{}", col.type_info().name());
+                                        match col.type_info().clone().name() {
+                                            "INT" => {
+                                                let value: i32 = row.try_get(col_name).unwrap_or(0);
+                                                row_vec.push(value.to_string());
+                                            }
+                                            "VARCHAR" => {
+                                                let value: String =
+                                                    row.try_get(col_name).unwrap_or("".to_string());
+                                                row_vec.push(value);
+                                            }
+                                            _ => (),
+                                        }
+                                    }
+                                    records.push(row_vec)
+                                }
+
+                                table.items = records;
+                                table.headers = headers;
+                            }
+                            None => (),
+                        },
+                        _ => (),
+                    },
+                    KeyCode::Enter => match &app.focus_type {
+                        FocusType::Records(false) => app.focus_type = FocusType::Records(true),
+                        FocusType::Dabatases(false) => app.focus_type = FocusType::Dabatases(true),
+                        FocusType::Tables(false) => app.focus_type = FocusType::Tables(true),
+                        _ => (),
+                    },
                     _ => {}
                 },
                 InputMode::Editing => match event.code {
