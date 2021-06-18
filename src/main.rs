@@ -35,43 +35,6 @@ pub struct StatefulTable {
     items: Vec<Vec<String>>,
 }
 
-impl StatefulTable {
-    fn new() -> StatefulTable {
-        StatefulTable {
-            state: TableState::default(),
-            headers: vec![],
-            items: vec![],
-        }
-    }
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -149,14 +112,13 @@ async fn main() -> anyhow::Result<()> {
         }
         records.push(row_vec)
     }
+    app.record_table.rows = records;
+    app.record_table.headers = headers;
 
     terminal.clear()?;
-    let mut table = StatefulTable::new();
-    table.items = records;
-    table.headers = headers;
 
     loop {
-        terminal.draw(|f| ui::draw(f, &mut app, &mut table).unwrap())?;
+        terminal.draw(|f| ui::draw(f, &mut app).unwrap())?;
         match rx.recv()? {
             Event::Input(event) => match app.input_mode {
                 InputMode::Normal => match event.code {
@@ -185,8 +147,16 @@ async fn main() -> anyhow::Result<()> {
                             app.focus_type = FocusType::Dabatases(false)
                         }
                     }
+                    KeyCode::Right => match app.focus_type {
+                        FocusType::Records(true) => app.record_table.next_column(),
+                        _ => (),
+                    },
+                    KeyCode::Left => match app.focus_type {
+                        FocusType::Records(true) => app.record_table.previous_column(),
+                        _ => (),
+                    },
                     KeyCode::Up => match app.focus_type {
-                        FocusType::Records(true) => table.previous(),
+                        FocusType::Records(true) => app.record_table.previous(),
                         FocusType::Dabatases(true) => app.previous(),
                         FocusType::Tables(true) => match app.selected_database.selected() {
                             Some(index) => app.databases[index].previous(),
@@ -195,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
                         _ => (),
                     },
                     KeyCode::Down => match app.focus_type {
-                        FocusType::Records(true) => table.next(),
+                        FocusType::Records(true) => app.record_table.next(),
                         FocusType::Dabatases(true) => app.next(),
                         FocusType::Tables(true) => match app.selected_database.selected() {
                             Some(index) => {
@@ -223,7 +193,6 @@ async fn main() -> anyhow::Result<()> {
                                     let mut row_vec = vec![];
                                     for col in row.columns() {
                                         let col_name = col.name();
-                                        // println!("{}", col.type_info().name());
                                         match col.type_info().clone().name() {
                                             "INT" => {
                                                 let value: i32 = row.try_get(col_name).unwrap_or(0);
@@ -240,8 +209,8 @@ async fn main() -> anyhow::Result<()> {
                                     records.push(row_vec)
                                 }
 
-                                table.items = records;
-                                table.headers = headers;
+                                app.record_table.rows = records;
+                                app.record_table.headers = headers;
                             }
                             None => (),
                         },
