@@ -92,34 +92,24 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         ),
     }
 
-    let header_cells = app
-        .record_table
-        .headers
+    let header_cells = app.record_table.headers[app.record_table.column_index..]
         .iter()
         .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
     let header = Row::new(header_cells).height(1).bottom_margin(1);
     let rows = app.record_table.rows.iter().map(|item| {
-        let height = item
+        let height = item[app.record_table.column_index..]
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
             .max()
             .unwrap_or(0)
             + 1;
-        let cells = item
+        let cells = item[app.record_table.column_index..]
             .iter()
             .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
         Row::new(cells).height(height as u16).bottom_margin(1)
     });
-    let widths = (0..app.record_table.headers.len() + 1)
-        .map(|idx| {
-            if idx >= app.record_table.column_index as usize
-                && idx <= app.record_table.column_index as usize + 9
-            {
-                Constraint::Percentage(10)
-            } else {
-                Constraint::Percentage(0)
-            }
-        })
+    let widths = (0..10)
+        .map(|_| Constraint::Percentage(10))
         .collect::<Vec<Constraint>>();
     let t = Table::new(rows)
         .header(header)

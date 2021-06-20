@@ -29,7 +29,7 @@ pub struct RecordTable {
     pub state: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
-    pub column_index: u64,
+    pub column_index: usize,
 }
 
 impl Default for RecordTable {
@@ -73,13 +73,15 @@ impl RecordTable {
     }
 
     pub fn next_column(&mut self) {
-        if (self.column_index as usize) < self.headers.len() - 9 {
-            self.column_index += 1
+        if self.headers.len() > 9 {
+            if self.column_index < self.headers.len() - 9 {
+                self.column_index += 1
+            }
         }
     }
 
     pub fn previous_column(&mut self) {
-        if self.column_index != 0 {
+        if self.column_index > 0 {
             self.column_index -= 1
         }
     }

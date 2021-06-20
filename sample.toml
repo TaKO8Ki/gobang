@@ -1,0 +1,7 @@
+[conn.sample]
+name = "sample"
+user = "root"
+
+[conn.hoge]
+name = "hoge"
+user = "root"

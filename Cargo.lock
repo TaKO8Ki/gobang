@@ -469,10 +469,14 @@ name = "gobang"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "crossterm 0.19.0",
  "futures",
+ "serde",
+ "serde_json",
  "sqlx",
  "tokio",
+ "toml",
  "tui",
  "unicode-width",
 ]
@@ -1255,6 +1259,7 @@ dependencies = [
  "bitflags",
  "byteorder",
  "bytes",
+ "chrono",
  "crc",
  "crossbeam-channel",
  "crossbeam-queue",
@@ -1464,6 +1469,15 @@ dependencies = [
  "rustls",
  "tokio",
  "webpki",
+]
+
+[[package]]
+name = "toml"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "758664fc71a3a69038656bee8b6be6477d2a6c315a6b81f7081f591bffa4111f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
