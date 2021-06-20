@@ -1,43 +1,57 @@
-use tui::widgets::TableState;
+use crate::app::App;
+use crate::event::Key;
+use futures::TryStreamExt;
+use sqlx::mysql::MySqlPool;
+use sqlx::{Column, Executor, Row, TypeInfo};
 
-pub struct TableList {
-    state: TableState,
-    tables: Vec<Vec<String>>,
-}
+pub async fn handler(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Result<()> {
+    match app.selected_database.selected() {
+        Some(index) => {
+            &app.databases[index].next();
+            let db = &app.databases[app.selected_database.selected().unwrap_or(0)];
+            &pool.execute(format!("use {}", db.name).as_str()).await?;
+            let table_name = format!(
+                "SELECT * FROM {}",
+                &db.tables[db.selected_table.selected().unwrap_or(0)].name
+            );
+            let mut rows = sqlx::query(table_name.as_str()).fetch(pool);
+            let headers = sqlx::query(
+                format!(
+                    "desc {}",
+                    &db.tables[db.selected_table.selected().unwrap_or(0)].name
+                )
+                .as_str(),
+            )
+            .fetch_all(pool)
+            .await?
+            .iter()
+            .map(|table| table.get(0))
+            .collect::<Vec<String>>();
+            let mut records = vec![];
 
-impl TableList {
-    fn new() -> Self {
-        Self {
-            state: TableState::default(),
-            tables: vec![],
+            while let Some(row) = rows.try_next().await? {
+                let mut row_vec = vec![];
+                for col in row.columns() {
+                    let col_name = col.name();
+                    match col.type_info().clone().name() {
+                        "INT" => {
+                            let value: i32 = row.try_get(col_name).unwrap_or(0);
+                            row_vec.push(value.to_string());
+                        }
+                        "VARCHAR" => {
+                            let value: String = row.try_get(col_name).unwrap_or("".to_string());
+                            row_vec.push(value);
+                        }
+                        _ => (),
+                    }
+                }
+                records.push(row_vec)
+            }
+
+            app.record_table.rows = records;
+            app.record_table.headers = headers;
         }
+        None => (),
     }
-
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.tables.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.tables.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
+    Ok(())
 }
