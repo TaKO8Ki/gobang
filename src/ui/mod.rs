@@ -1,6 +1,5 @@
 use crate::app::InputMode;
 use crate::app::{App, FocusType};
-use crate::StatefulTable;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},

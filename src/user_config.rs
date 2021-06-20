@@ -12,6 +12,8 @@ pub struct UserConfig {
 pub struct Connection {
     pub name: Option<String>,
     pub user: String,
+    pub host: String,
+    pub port: u64,
 }
 
 impl UserConfig {

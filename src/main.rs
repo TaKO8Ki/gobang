@@ -30,12 +30,6 @@ use std::{
 use tui::{backend::CrosstermBackend, widgets::TableState, Terminal};
 use user_config::UserConfig;
 
-pub struct StatefulTable {
-    state: TableState,
-    headers: Vec<String>,
-    items: Vec<Vec<String>>,
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -50,39 +44,28 @@ async fn main() -> anyhow::Result<()> {
     let events = event::Events::new(250);
 
     let mut app = &mut app::App::default();
-    let pool = MySqlPool::connect("mysql://root:@localhost:3306").await?;
+    let hoge = &config.conn.unwrap()["sample"];
+    let pool = MySqlPool::connect(
+        format!(
+            "mysql://{user}:@{host}:{port}",
+            user = hoge.user,
+            host = hoge.host,
+            port = hoge.port
+        )
+        .as_str(),
+    )
+    .await?;
 
     app.databases = utils::get_databases(&pool).await?;
-    &pool.execute("use dev_payer").await?;
-    let mut rows = sqlx::query("SELECT * FROM incoming_invoices").fetch(&pool);
-    let headers = sqlx::query("desc incoming_invoices")
-        .fetch_all(&pool)
-        .await?
-        .iter()
-        .map(|table| table.get(0))
-        .collect::<Vec<String>>();
-    let mut records = vec![];
-
-    while let Some(row) = rows.try_next().await? {
-        let mut row_vec = vec![];
-        for col in row.columns() {
-            let col_name = col.name();
-            match col.type_info().clone().name() {
-                "INT" => {
-                    let value: i32 = row.try_get(col_name).unwrap_or(0);
-                    row_vec.push(value.to_string());
-                }
-                "VARCHAR" => {
-                    let value: String = row.try_get(col_name).unwrap_or("".to_string());
-                    row_vec.push(value);
-                }
-                _ => (),
-            }
-        }
-        records.push(row_vec)
-    }
+    let (headers, records) = utils::get_records(
+        app.databases.first().unwrap(),
+        app.databases.first().unwrap().tables.first().unwrap(),
+        &pool,
+    )
+    .await?;
     app.record_table.rows = records;
     app.record_table.headers = headers;
+    app.selected_database.select(Some(0));
 
     terminal.clear()?;
 
