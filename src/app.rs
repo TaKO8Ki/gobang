@@ -158,34 +158,6 @@ impl Default for App {
 }
 
 impl App {
-    pub fn next(&mut self) {
-        let i = match self.selected_database.selected() {
-            Some(i) => {
-                if i >= self.databases.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_database.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.selected_database.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.databases.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_database.select(Some(i));
-    }
-
     pub fn next_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
