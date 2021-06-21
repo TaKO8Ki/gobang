@@ -5,30 +5,17 @@ mod ui;
 mod user_config;
 mod utils;
 
-use crate::app::{FocusType, InputMode, Table};
+use crate::app::FocusType;
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
-use sqlx::{Column, Executor, Row, TypeInfo};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
-use std::{
-    error::Error,
-    io::stdout,
-    sync::mpsc,
-    thread,
-    time::{Duration, Instant},
-};
-use tui::{backend::CrosstermBackend, widgets::TableState, Terminal};
-use user_config::UserConfig;
+use std::io::stdout;
+use tui::{backend::CrosstermBackend, Terminal};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

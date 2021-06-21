@@ -2,14 +2,12 @@ use crate::app::InputMode;
 use crate::app::{App, FocusType};
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
-    symbols,
-    text::{Span, Spans, Text},
-    widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle},
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    text::{Span, Spans},
     widgets::{
-        Axis, BarChart, Block, Borders, Cell, Chart, Clear, Dataset, Gauge, LineGauge, List,
-        ListItem, Paragraph, Row, Sparkline, Table, Tabs, Wrap,
+        Block, Borders, Cell, Clear, List,
+        ListItem, Paragraph, Row, Table,
     },
     Frame,
 };
@@ -23,7 +21,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         let connections: Vec<ListItem> = conns
             .iter()
             .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(i.database_url().to_string()))])
+                ListItem::new(vec![Spans::from(Span::raw(i.database_url()))])
                     .style(Style::default().fg(Color::White))
             })
             .collect();
@@ -92,10 +90,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
 
     let databases = app.databases.clone();
-    let tables: Vec<ListItem> = databases[match app.selected_database.selected() {
-        Some(index) => index,
-        None => 0,
-    }]
+    let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
     .tables
     .iter()
     .map(|i| {

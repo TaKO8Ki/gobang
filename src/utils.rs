@@ -1,5 +1,5 @@
 use crate::app::{Database, Table};
-use chrono::{DateTime, NaiveDate, NaiveDateTime};
+use chrono::{NaiveDate};
 use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
 use sqlx::{Column, Executor, Row, TypeInfo};
@@ -33,7 +33,7 @@ pub async fn get_records(
     table: &Table,
     pool: &MySqlPool,
 ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-    &pool
+    pool
         .execute(format!("use `{}`", database.name).as_str())
         .await?;
     let table_name = format!("SELECT * FROM `{}`", table.name);

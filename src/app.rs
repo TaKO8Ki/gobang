@@ -74,10 +74,8 @@ impl RecordTable {
     }
 
     pub fn next_column(&mut self) {
-        if self.headers.len() > 9 {
-            if self.column_index < self.headers.len() - 9 {
-                self.column_index += 1
-            }
+        if self.headers.len() > 9 && self.column_index < self.headers.len() - 9 {
+            self.column_index += 1
         }
     }
 

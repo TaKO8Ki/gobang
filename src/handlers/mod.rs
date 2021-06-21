@@ -54,7 +54,7 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
                 FocusType::Tables(true) => match app.selected_database.selected() {
                     Some(index) => {
                         app.record_table.column_index = 0;
-                        &app.databases[index].next();
+                        app.databases[index].next();
                         record_table::handler(key, app, pool).await?
                     }
                     None => (),
