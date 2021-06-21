@@ -217,10 +217,10 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn selected_database(&self) -> Option<&mut Database> {
+    pub fn selected_database(&self) -> Option<&Database> {
         match self.selected_database.selected() {
             Some(i) => match self.databases.get(i) {
-                Some(db) => Some(&mut db),
+                Some(db) => Some(db),
                 None => None,
             },
             None => None,
