@@ -11,7 +11,7 @@ anyhow = "1.0.38"
 unicode-width = "0.1"
 sqlx = { version = "0.4.1", features = ["mysql", "chrono", "runtime-tokio-rustls"] }
 chrono = "0.4"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.2.22", features = ["full"] }
 futures = "0.3.5"
 serde_json = "1.0"
 serde = "1.0"

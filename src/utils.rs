@@ -19,7 +19,7 @@ pub async fn get_databases(pool: &MySqlPool) -> anyhow::Result<Vec<Database>> {
 }
 
 pub async fn get_tables(database: String, pool: &MySqlPool) -> anyhow::Result<Vec<Table>> {
-    let tables = sqlx::query(format!("show tables from {}", database).as_str())
+    let tables = sqlx::query(format!("show tables from `{}`", database).as_str())
         .fetch_all(pool)
         .await?
         .iter()
@@ -34,11 +34,11 @@ pub async fn get_records(
     pool: &MySqlPool,
 ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
     &pool
-        .execute(format!("use {}", database.name).as_str())
+        .execute(format!("use `{}`", database.name).as_str())
         .await?;
-    let table_name = format!("SELECT * FROM {}", table.name);
+    let table_name = format!("SELECT * FROM `{}`", table.name);
     let mut rows = sqlx::query(table_name.as_str()).fetch(pool);
-    let headers = sqlx::query(format!("desc {}", table.name).as_str())
+    let headers = sqlx::query(format!("desc `{}`", table.name).as_str())
         .fetch_all(pool)
         .await?
         .iter()
@@ -93,14 +93,6 @@ pub async fn get_records(
                     let value: String = row.try_get(col_name).unwrap_or("".to_string());
                     row_vec.push(value);
                 }
-                // DATE
-                // VARCHAR
-                // INT UNSIGNED
-                // VARCHAR
-                // ENUM
-                // ENUM
-                // VARCHAR
-                // BOOLEAN
                 _ => (),
             }
         }

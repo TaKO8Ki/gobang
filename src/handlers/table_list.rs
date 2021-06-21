@@ -4,7 +4,7 @@ use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
 use sqlx::{Column, Executor, Row, TypeInfo};
 
-pub async fn handler(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Result<()> {
+pub async fn handler<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
     match app.selected_database.selected() {
         Some(index) => {
             &app.databases[index].next();

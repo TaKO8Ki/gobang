@@ -1,5 +1,5 @@
+use crate::{user_config::UserConfig, utils::get_tables};
 use sqlx::mysql::MySqlPool;
-use sqlx::Row;
 use tui::widgets::{ListState, TableState};
 
 pub enum InputMode {
@@ -11,6 +11,7 @@ pub enum FocusType {
     Dabatases(bool),
     Tables(bool),
     Records(bool),
+    Connections,
 }
 
 #[derive(Clone)]
@@ -89,16 +90,10 @@ impl RecordTable {
 
 impl Database {
     pub async fn new(name: String, pool: &MySqlPool) -> anyhow::Result<Self> {
-        let tables = sqlx::query(format!("show tables from {}", name).as_str())
-            .fetch_all(pool)
-            .await?
-            .iter()
-            .map(|table| Table { name: table.get(0) })
-            .collect::<Vec<Table>>();
         Ok(Self {
             selected_table: ListState::default(),
-            name,
-            tables,
+            name: name.clone(),
+            tables: get_tables(name, pool).await?,
         })
     }
 
@@ -131,7 +126,7 @@ impl Database {
     }
 }
 
-pub struct App {
+pub struct App<'a> {
     pub input: String,
     pub input_mode: InputMode,
     pub messages: Vec<Vec<String>>,
@@ -139,10 +134,13 @@ pub struct App {
     pub databases: Vec<Database>,
     pub record_table: RecordTable,
     pub focus_type: FocusType,
+    pub user_config: Option<UserConfig>,
+    pub selected_connection: ListState,
+    pub pool: Option<&'a MySqlPool>,
 }
 
-impl Default for App {
-    fn default() -> App {
+impl<'a> Default for App<'a> {
+    fn default() -> App<'a> {
         App {
             input: String::new(),
             input_mode: InputMode::Normal,
@@ -151,12 +149,15 @@ impl Default for App {
             databases: Vec::new(),
             record_table: RecordTable::default(),
             focus_type: FocusType::Dabatases(false),
+            user_config: None,
+            selected_connection: ListState::default(),
+            pool: None,
         }
     }
 }
 
-impl App {
-    pub fn next(&mut self) {
+impl<'a> App<'a> {
+    pub fn next_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
                 if i >= self.databases.len() - 1 {
@@ -170,7 +171,7 @@ impl App {
         self.selected_database.select(Some(i));
     }
 
-    pub fn previous(&mut self) {
+    pub fn previous_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
                 if i == 0 {
@@ -182,5 +183,37 @@ impl App {
             None => 0,
         };
         self.selected_database.select(Some(i));
+    }
+
+    pub fn next_connection(&mut self) {
+        if let Some(config) = &self.user_config {
+            let i = match self.selected_connection.selected() {
+                Some(i) => {
+                    if i >= config.connections.len() - 1 {
+                        0
+                    } else {
+                        i + 1
+                    }
+                }
+                None => 0,
+            };
+            self.selected_connection.select(Some(i));
+        }
+    }
+
+    pub fn previous_connection(&mut self) {
+        if let Some(config) = &self.user_config {
+            let i = match self.selected_database.selected() {
+                Some(i) => {
+                    if i == 0 {
+                        config.connections.len() - 1
+                    } else {
+                        i - 1
+                    }
+                }
+                None => 0,
+            };
+            self.selected_connection.select(Some(i));
+        }
     }
 }

@@ -44,13 +44,20 @@ async fn main() -> anyhow::Result<()> {
     let events = event::Events::new(250);
 
     let mut app = &mut app::App::default();
-    let hoge = &config.conn.unwrap()["sample"];
+    app.user_config = Some(config);
+    let conn = &app
+        .user_config
+        .as_ref()
+        .unwrap()
+        .connections
+        .get(0)
+        .unwrap();
     let pool = MySqlPool::connect(
         format!(
             "mysql://{user}:@{host}:{port}",
-            user = hoge.user,
-            host = hoge.host,
-            port = hoge.port
+            user = conn.user,
+            host = conn.host,
+            port = conn.port
         )
         .as_str(),
     )
@@ -66,6 +73,7 @@ async fn main() -> anyhow::Result<()> {
     app.record_table.rows = records;
     app.record_table.headers = headers;
     app.selected_database.select(Some(0));
+    app.focus_type = FocusType::Connections;
 
     terminal.clear()?;
 

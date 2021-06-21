@@ -8,7 +8,7 @@ use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
 use sqlx::{Column, Executor, Row, TypeInfo};
 
-pub async fn handle_app(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Result<()> {
+pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
     match app.input_mode {
         InputMode::Normal => match key {
             Key::Char('e') => {
@@ -35,8 +35,9 @@ pub async fn handle_app(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Re
                 _ => (),
             },
             Key::Up => match app.focus_type {
+                FocusType::Connections => app.previous_connection(),
                 FocusType::Records(true) => app.record_table.previous(),
-                FocusType::Dabatases(true) => app.previous(),
+                FocusType::Dabatases(true) => app.previous_database(),
                 FocusType::Tables(true) => match app.selected_database.selected() {
                     Some(index) => {
                         app.record_table.column_index = 0;
@@ -56,8 +57,9 @@ pub async fn handle_app(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Re
                 _ => (),
             },
             Key::Down => match app.focus_type {
+                FocusType::Connections => app.next_connection(),
                 FocusType::Records(true) => app.record_table.next(),
-                FocusType::Dabatases(true) => app.next(),
+                FocusType::Dabatases(true) => app.next_database(),
                 FocusType::Tables(true) => match app.selected_database.selected() {
                     Some(index) => {
                         app.record_table.column_index = 0;
@@ -77,6 +79,7 @@ pub async fn handle_app(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Re
                 _ => (),
             },
             Key::Enter => match &app.focus_type {
+                FocusType::Connections => app.focus_type = FocusType::Dabatases(true),
                 FocusType::Records(false) => app.focus_type = FocusType::Records(true),
                 FocusType::Dabatases(false) => app.focus_type = FocusType::Dabatases(true),
                 FocusType::Tables(false) => app.focus_type = FocusType::Tables(true),

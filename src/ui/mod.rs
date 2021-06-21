@@ -8,14 +8,60 @@ use tui::{
     text::{Span, Spans, Text},
     widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle},
     widgets::{
-        Axis, BarChart, Block, Borders, Cell, Chart, Dataset, Gauge, LineGauge, List, ListItem,
-        Paragraph, Row, Sparkline, Table, Tabs, Wrap,
+        Axis, BarChart, Block, Borders, Cell, Chart, Clear, Dataset, Gauge, LineGauge, List,
+        ListItem, Paragraph, Row, Sparkline, Table, Tabs, Wrap,
     },
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
 pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<()> {
+    if let FocusType::Connections = app.focus_type {
+        let percent_x = 60;
+        let percent_y = 50;
+        let conns = &app.user_config.as_ref().unwrap().connections;
+        let connections: Vec<ListItem> = conns
+            .iter()
+            .map(|i| {
+                ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+                    .style(Style::default().fg(Color::White))
+            })
+            .collect();
+        let tasks = List::new(connections)
+            .block(Block::default().borders(Borders::ALL).title("Connections"))
+            .highlight_style(Style::default().fg(Color::Green))
+            .style(match app.focus_type {
+                FocusType::Connections => Style::default().fg(Color::Green),
+                _ => Style::default(),
+            });
+        let popup_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Percentage((100 - percent_y) / 2),
+                    Constraint::Percentage(percent_y),
+                    Constraint::Percentage((100 - percent_y) / 2),
+                ]
+                .as_ref(),
+            )
+            .split(f.size());
+
+        let area = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Percentage((100 - percent_x) / 2),
+                    Constraint::Percentage(percent_x),
+                    Constraint::Percentage((100 - percent_x) / 2),
+                ]
+                .as_ref(),
+            )
+            .split(popup_layout[1])[1];
+        f.render_widget(Clear, area);
+        f.render_stateful_widget(tasks, area, &mut app.selected_connection);
+        return Ok(());
+    }
+
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)

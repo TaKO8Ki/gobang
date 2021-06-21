@@ -3,7 +3,7 @@ use crate::event::Key;
 use sqlx::mysql::MySqlPool;
 use sqlx::Row;
 
-pub async fn handler(key: Key, app: &mut App, pool: &MySqlPool) -> anyhow::Result<()> {
+pub async fn handler<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
     let databases = sqlx::query("show databases")
         .fetch_all(pool)
         .await?
