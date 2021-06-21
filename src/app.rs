@@ -216,4 +216,24 @@ impl<'a> App<'a> {
             self.selected_connection.select(Some(i));
         }
     }
+
+    pub fn selected_database(&self) -> Option<&mut Database> {
+        match self.selected_database.selected() {
+            Some(i) => match self.databases.get(i) {
+                Some(db) => Some(&mut db),
+                None => None,
+            },
+            None => None,
+        }
+    }
+
+    pub fn selected_table(&self) -> Option<&Table> {
+        match self.selected_database() {
+            Some(db) => match db.selected_table.selected() {
+                Some(i) => db.tables.get(i),
+                None => None,
+            },
+            None => None,
+        }
+    }
 }

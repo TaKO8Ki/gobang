@@ -5,7 +5,7 @@ mod ui;
 mod user_config;
 mod utils;
 
-use crate::app::{Database, FocusType, InputMode, Table};
+use crate::app::{FocusType, InputMode, Table};
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
