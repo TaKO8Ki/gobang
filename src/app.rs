@@ -189,7 +189,7 @@ impl<'a> App<'a> {
         if let Some(config) = &self.user_config {
             let i = match self.selected_connection.selected() {
                 Some(i) => {
-                    if i >= config.connections.len() - 1 {
+                    if i >= config.conn.len() - 1 {
                         0
                     } else {
                         i + 1
@@ -203,10 +203,10 @@ impl<'a> App<'a> {
 
     pub fn previous_connection(&mut self) {
         if let Some(config) = &self.user_config {
-            let i = match self.selected_database.selected() {
+            let i = match self.selected_connection.selected() {
                 Some(i) => {
                     if i == 0 {
-                        config.connections.len() - 1
+                        config.conn.len() - 1
                     } else {
                         i - 1
                     }

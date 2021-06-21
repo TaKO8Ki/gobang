@@ -19,11 +19,11 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     if let FocusType::Connections = app.focus_type {
         let percent_x = 60;
         let percent_y = 50;
-        let conns = &app.user_config.as_ref().unwrap().connections;
+        let conns = &app.user_config.as_ref().unwrap().conn;
         let connections: Vec<ListItem> = conns
             .iter()
             .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+                ListItem::new(vec![Spans::from(Span::raw(i.database_url().to_string()))])
                     .style(Style::default().fg(Color::White))
             })
             .collect();

@@ -1,12 +1,9 @@
 pub mod database_list;
 pub mod record_table;
-pub mod table_list;
 
 use crate::app::{App, FocusType, InputMode};
 use crate::event::Key;
-use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
-use sqlx::{Column, Executor, Row, TypeInfo};
 
 pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
     match app.input_mode {
@@ -45,15 +42,6 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
                     Some(index) => {
                         app.record_table.column_index = 0;
                         app.databases[index].previous();
-                        let db = &app.databases[app.selected_database.selected().unwrap_or(0)];
-                        let (headers, records) = crate::utils::get_records(
-                            db,
-                            &db.tables[db.selected_table.selected().unwrap()],
-                            &pool,
-                        )
-                        .await?;
-                        app.record_table.rows = records;
-                        app.record_table.headers = headers;
                     }
                     None => (),
                 },
@@ -67,15 +55,7 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
                     Some(index) => {
                         app.record_table.column_index = 0;
                         &app.databases[index].next();
-                        let db = &app.databases[app.selected_database.selected().unwrap_or(0)];
-                        let (headers, records) = crate::utils::get_records(
-                            db,
-                            &db.tables[db.selected_table.selected().unwrap()],
-                            &pool,
-                        )
-                        .await?;
-                        app.record_table.rows = records;
-                        app.record_table.headers = headers;
+                        record_table::handler(key, app, pool).await?
                     }
                     None => (),
                 },

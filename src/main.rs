@@ -45,13 +45,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut app = &mut app::App::default();
     app.user_config = Some(config);
-    let conn = &app
-        .user_config
-        .as_ref()
-        .unwrap()
-        .connections
-        .get(0)
-        .unwrap();
+    let conn = &app.user_config.as_ref().unwrap().conn.get(0).unwrap();
     let pool = MySqlPool::connect(
         format!(
             "mysql://{user}:@{host}:{port}",
