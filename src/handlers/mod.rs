@@ -14,6 +14,9 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
             Key::Char('e') => {
                 app.input_mode = InputMode::Editing;
             }
+            Key::Char('c') => {
+                app.focus_type = FocusType::Connections;
+            }
             Key::Char('l') => app.focus_type = FocusType::Records(false),
             Key::Char('h') => app.focus_type = FocusType::Tables(false),
             Key::Char('j') => {
