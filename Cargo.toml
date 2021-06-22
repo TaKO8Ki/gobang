@@ -1,6 +1,6 @@
 [package]
 name = "gobang"
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 
