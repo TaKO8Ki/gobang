@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed00c67cb5d0a7d64a44f6ad2668db7e7530311dd53ea79bcd4fb022c64911c8"
+checksum = "66c99696f6c9dd7f35d486b9d04d7e6e202aa3e8c40d553f2fdf5e7e0c6a71ef"
 dependencies = [
  "libc",
 ]
@@ -239,7 +239,7 @@ dependencies = [
  "crossterm_winapi 0.6.2",
  "lazy_static",
  "libc",
- "mio 0.7.11",
+ "mio 0.7.13",
  "parking_lot",
  "signal-hook",
  "winapi 0.3.9",
@@ -255,7 +255,7 @@ dependencies = [
  "crossterm_winapi 0.7.0",
  "lazy_static",
  "libc",
- "mio 0.7.11",
+ "mio 0.7.13",
  "parking_lot",
  "signal-hook",
  "winapi 0.3.9",
@@ -466,7 +466,7 @@ dependencies = [
 
 [[package]]
 name = "gobang"
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -668,9 +668,9 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.7.11"
+version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf80d3e903b34e0bd7282b218398aec54e082c840d9baf8339e0080a0c542956"
+checksum = "8c2bdb6314ec10835cd3293dd268473a835c02b7b352e788be788b3c6ca6bb16"
 dependencies = [
  "libc",
  "log",
@@ -1003,9 +1003,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "742739e41cd49414de871ea5e549afb7e2a3ac77b589bcbebe8c82fab37147fc"
+checksum = "5ab49abadf3f9e1c4bc499e8845e152ad87d2ad2d30371841171169e9d75feee"
 dependencies = [
  "bitflags",
 ]
@@ -1182,7 +1182,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e31d442c16f047a671b5a71e2161d6e68814012b7f5379d269ebd915fac2729"
 dependencies = [
  "libc",
- "mio 0.7.11",
+ "mio 0.7.13",
  "signal-hook-registry",
 ]
 
