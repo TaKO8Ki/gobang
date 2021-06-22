@@ -64,6 +64,7 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
             },
             Key::Enter => match app.focus_type {
                 FocusType::Connections => {
+                    app.selected_database.select(Some(0));
                     create_connection::handler(key, app).await?;
                     database_list::handler(key, app).await?;
                 }
