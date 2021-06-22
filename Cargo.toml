@@ -9,6 +9,10 @@ tui = { version = "0.14.0", features = ["crossterm"], default-features = false }
 crossterm = "0.19"
 anyhow = "1.0.38"
 unicode-width = "0.1"
-sqlx = { version = "0.4.1", features = ["mysql", "runtime-tokio-rustls"] }
-tokio = { version = "0.2", features = ["full"] }
+sqlx = { version = "0.4.1", features = ["mysql", "chrono", "runtime-tokio-rustls"] }
+chrono = "0.4"
+tokio = { version = "0.2.22", features = ["full"] }
 futures = "0.3.5"
+serde_json = "1.0"
+serde = "1.0"
+toml = "0.4"

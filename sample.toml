@@ -1,0 +1,11 @@
+[[conn]]
+name = "sample"
+user = "root"
+host = "localhost"
+port = 3306
+
+[[conn]]
+user = "root"
+host = "localhost"
+port = 3306
+database = "world"
