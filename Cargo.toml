@@ -3,6 +3,10 @@ name = "gobang"
 version = "0.1.0-alpha.0"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
+homepage = "https://github.com/TaKO8Ki/gobang"
+repository = "https://github.com/TaKO8Ki/gobang"
+readme = "README.md"
+description = "A cross-platform terminal database tool written in Rust"
 
 [dependencies]
 tui = { version = "0.14.0", features = ["crossterm"], default-features = false }
