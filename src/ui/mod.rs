@@ -5,10 +5,7 @@ use tui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{
-        Block, Borders, Cell, Clear, List,
-        ListItem, Paragraph, Row, Table,
-    },
+    widgets::{Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -91,13 +88,13 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
 
     let databases = app.databases.clone();
     let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
-    .tables
-    .iter()
-    .map(|i| {
-        ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-            .style(Style::default().fg(Color::White))
-    })
-    .collect();
+        .tables
+        .iter()
+        .map(|i| {
+            ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+                .style(Style::default().fg(Color::White))
+        })
+        .collect();
     let tasks = List::new(tables)
         .block(Block::default().borders(Borders::ALL).title("Tables"))
         .highlight_style(Style::default().fg(Color::Green))
