@@ -1,11 +1,11 @@
+pub mod create_connection;
 pub mod database_list;
 pub mod record_table;
 
 use crate::app::{App, FocusType, InputMode};
 use crate::event::Key;
-use sqlx::mysql::MySqlPool;
 
-pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
+pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
     match app.input_mode {
         InputMode::Normal => match key {
             Key::Char('e') => {
@@ -42,6 +42,7 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
                     Some(index) => {
                         app.record_table.column_index = 0;
                         app.databases[index].previous();
+                        record_table::handler(key, app).await?;
                     }
                     None => (),
                 },
@@ -55,14 +56,17 @@ pub async fn handle_app<'a>(key: Key, app: &mut App<'a>, pool: &MySqlPool) -> an
                     Some(index) => {
                         app.record_table.column_index = 0;
                         app.databases[index].next();
-                        record_table::handler(key, app, pool).await?
+                        record_table::handler(key, app).await?
                     }
                     None => (),
                 },
                 _ => (),
             },
-            Key::Enter => match &app.focus_type {
-                FocusType::Connections => app.focus_type = FocusType::Dabatases(true),
+            Key::Enter => match app.focus_type {
+                FocusType::Connections => {
+                    create_connection::handler(key, app).await?;
+                    database_list::handler(key, app).await?;
+                }
                 FocusType::Records(false) => app.focus_type = FocusType::Records(true),
                 FocusType::Dabatases(false) => app.focus_type = FocusType::Dabatases(true),
                 FocusType::Tables(false) => app.focus_type = FocusType::Tables(true),

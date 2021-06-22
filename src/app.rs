@@ -1,4 +1,7 @@
-use crate::{user_config::UserConfig, utils::get_tables};
+use crate::{
+    user_config::{Connection, UserConfig},
+    utils::get_tables,
+};
 use sqlx::mysql::MySqlPool;
 use tui::widgets::{ListState, TableState};
 
@@ -124,7 +127,7 @@ impl Database {
     }
 }
 
-pub struct App<'a> {
+pub struct App {
     pub input: String,
     pub input_mode: InputMode,
     pub messages: Vec<Vec<String>>,
@@ -134,11 +137,11 @@ pub struct App<'a> {
     pub focus_type: FocusType,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
-    pub pool: Option<&'a MySqlPool>,
+    pub pool: Option<MySqlPool>,
 }
 
-impl<'a> Default for App<'a> {
-    fn default() -> App<'a> {
+impl Default for App {
+    fn default() -> App {
         App {
             input: String::new(),
             input_mode: InputMode::Normal,
@@ -154,7 +157,7 @@ impl<'a> Default for App<'a> {
     }
 }
 
-impl<'a> App<'a> {
+impl App {
     pub fn next_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
@@ -229,6 +232,16 @@ impl<'a> App<'a> {
         match self.selected_database() {
             Some(db) => match db.selected_table.selected() {
                 Some(i) => db.tables.get(i),
+                None => None,
+            },
+            None => None,
+        }
+    }
+
+    pub fn selected_connection(&self) -> Option<&Connection> {
+        match &self.user_config {
+            Some(config) => match self.selected_connection.selected() {
+                Some(i) => config.conn.get(i),
                 None => None,
             },
             None => None,

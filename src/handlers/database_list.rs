@@ -1,11 +1,16 @@
-use crate::app::App;
+use crate::app::{App, Database};
 use crate::event::Key;
 use crate::utils::get_databases;
-use sqlx::mysql::MySqlPool;
 
-pub async fn handler<'a>(_key: Key, app: &mut App<'a>, pool: &MySqlPool) -> anyhow::Result<()> {
-    for db in get_databases(pool).await? {
-        app.databases.push(db)
-    }
+pub async fn handler(_key: Key, app: &mut App) -> anyhow::Result<()> {
+    app.databases = match app.selected_connection() {
+        Some(conn) => match &conn.database {
+            Some(database) => {
+                vec![Database::new(database.clone(), app.pool.as_ref().unwrap()).await?]
+            }
+            None => get_databases(app.pool.as_ref().unwrap()).await?,
+        },
+        None => vec![],
+    };
     Ok(())
 }

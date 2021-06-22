@@ -49,7 +49,7 @@ pub async fn get_records(
         for col in row.columns() {
             let col_name = col.name();
             match col.type_info().clone().name() {
-                "INT" => match row.try_get(col_name) {
+                "INT" | "DECIMAL" | "SMALLINT" => match row.try_get(col_name) {
                     Ok(value) => {
                         let value: i64 = value;
                         row_vec.push(value.to_string())
@@ -63,7 +63,7 @@ pub async fn get_records(
                     }
                     Err(_) => row_vec.push("".to_string()),
                 },
-                "VARCHAR" => {
+                "VARCHAR" | "CHAR" => {
                     let value: String = row.try_get(col_name).unwrap_or("".to_string());
                     row_vec.push(value);
                 }

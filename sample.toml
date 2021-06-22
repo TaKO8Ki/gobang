@@ -8,3 +8,4 @@ port = 3306
 user = "root"
 host = "localhost"
 port = 3306
+database = "world"

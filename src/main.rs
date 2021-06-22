@@ -43,12 +43,13 @@ async fn main() -> anyhow::Result<()> {
         .as_str(),
     )
     .await?;
+    app.pool = Some(pool);
 
-    app.databases = utils::get_databases(&pool).await?;
+    app.databases = utils::get_databases(app.pool.as_ref().unwrap()).await?;
     let (headers, records) = utils::get_records(
         app.databases.first().unwrap(),
         app.databases.first().unwrap().tables.first().unwrap(),
-        &pool,
+        app.pool.as_ref().unwrap(),
     )
     .await?;
     app.record_table.rows = records;
@@ -65,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
                 if key == Key::Char('q') {
                     break;
                 };
-                handle_app(key, app, &pool).await?
+                handle_app(key, app).await?
             }
             Event::Tick => (),
         }

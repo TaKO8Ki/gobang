@@ -14,6 +14,7 @@ pub struct Connection {
     pub user: String,
     pub host: String,
     pub port: u64,
+    pub database: Option<String>,
 }
 
 impl UserConfig {
@@ -33,11 +34,20 @@ impl UserConfig {
 
 impl Connection {
     pub fn database_url(&self) -> String {
-        format!(
-            "mysql://{user}:@{host}:{port}",
-            user = self.user,
-            host = self.host,
-            port = self.port
-        )
+        match &self.database {
+            Some(database) => format!(
+                "mysql://{user}:@{host}:{port}/{database}",
+                user = self.user,
+                host = self.host,
+                port = self.port,
+                database = database
+            ),
+            None => format!(
+                "mysql://{user}:@{host}:{port}",
+                user = self.user,
+                host = self.host,
+                port = self.port,
+            ),
+        }
     }
 }
