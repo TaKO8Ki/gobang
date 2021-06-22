@@ -3,6 +3,7 @@ name = "gobang"
 version = "0.1.0-alpha.0"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
+license = "MIT"
 homepage = "https://github.com/TaKO8Ki/gobang"
 repository = "https://github.com/TaKO8Ki/gobang"
 readme = "README.md"
