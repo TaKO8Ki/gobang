@@ -7,6 +7,7 @@ pub async fn handler(_key: Key, app: &mut App) -> anyhow::Result<()> {
         if let Some(table) = app.selected_table() {
             let (headers, records) =
                 get_records(database, table, app.pool.as_ref().unwrap()).await?;
+            app.record_table.state.select(Some(0));
             app.record_table.headers = headers;
             app.record_table.rows = records;
         }
