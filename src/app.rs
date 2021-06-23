@@ -158,10 +158,6 @@ impl Default for App {
 }
 
 impl App {
-    pub fn new(title: &str, enhanced_graphics: bool) -> App {
-        Self::default()
-    }
-
     pub fn next_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
