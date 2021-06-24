@@ -19,14 +19,20 @@ pub enum FocusType {
 
 #[derive(Clone)]
 pub struct Database {
-    pub selected_table: ListState,
     pub name: String,
     pub tables: Vec<Table>,
 }
 
-#[derive(Clone)]
+#[derive(sqlx::FromRow, Debug, Clone)]
 pub struct Table {
+    #[sqlx(rename = "Name")]
     pub name: String,
+    #[sqlx(rename = "Create_time")]
+    pub create_time: chrono::DateTime<chrono::Utc>,
+    #[sqlx(rename = "Update_time")]
+    pub update_time: Option<chrono::DateTime<chrono::Utc>>,
+    #[sqlx(rename = "Engine")]
+    pub engine: String,
 }
 
 pub struct RecordTable {
@@ -92,16 +98,49 @@ impl RecordTable {
 impl Database {
     pub async fn new(name: String, pool: &MySqlPool) -> anyhow::Result<Self> {
         Ok(Self {
-            selected_table: ListState::default(),
             name: name.clone(),
             tables: get_tables(name, pool).await?,
         })
     }
+}
 
-    pub fn next(&mut self) {
+pub struct App {
+    pub input: String,
+    pub input_mode: InputMode,
+    pub messages: Vec<Vec<String>>,
+    pub databases: Vec<Database>,
+    pub record_table: RecordTable,
+    pub focus_type: FocusType,
+    pub user_config: Option<UserConfig>,
+    pub selected_connection: ListState,
+    pub selected_database: ListState,
+    pub selected_table: ListState,
+    pub pool: Option<MySqlPool>,
+}
+
+impl Default for App {
+    fn default() -> App {
+        App {
+            input: String::new(),
+            input_mode: InputMode::Normal,
+            messages: Vec::new(),
+            databases: Vec::new(),
+            record_table: RecordTable::default(),
+            focus_type: FocusType::Dabatases(false),
+            user_config: None,
+            selected_connection: ListState::default(),
+            selected_database: ListState::default(),
+            selected_table: ListState::default(),
+            pool: None,
+        }
+    }
+}
+
+impl App {
+    pub fn next_table(&mut self) {
         let i = match self.selected_table.selected() {
             Some(i) => {
-                if i >= self.tables.len() - 1 {
+                if i >= self.selected_database().unwrap().tables.len() - 1 {
                     0
                 } else {
                     i + 1
@@ -112,11 +151,11 @@ impl Database {
         self.selected_table.select(Some(i));
     }
 
-    pub fn previous(&mut self) {
+    pub fn previous_table(&mut self) {
         let i = match self.selected_table.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.tables.len() - 1
+                    self.selected_database().unwrap().tables.len() - 1
                 } else {
                     i - 1
                 }
@@ -125,39 +164,7 @@ impl Database {
         };
         self.selected_table.select(Some(i));
     }
-}
 
-pub struct App {
-    pub input: String,
-    pub input_mode: InputMode,
-    pub messages: Vec<Vec<String>>,
-    pub selected_database: ListState,
-    pub databases: Vec<Database>,
-    pub record_table: RecordTable,
-    pub focus_type: FocusType,
-    pub user_config: Option<UserConfig>,
-    pub selected_connection: ListState,
-    pub pool: Option<MySqlPool>,
-}
-
-impl Default for App {
-    fn default() -> App {
-        App {
-            input: String::new(),
-            input_mode: InputMode::Normal,
-            messages: Vec::new(),
-            selected_database: ListState::default(),
-            databases: Vec::new(),
-            record_table: RecordTable::default(),
-            focus_type: FocusType::Dabatases(false),
-            user_config: None,
-            selected_connection: ListState::default(),
-            pool: None,
-        }
-    }
-}
-
-impl App {
     pub fn next_database(&mut self) {
         let i = match self.selected_database.selected() {
             Some(i) => {
@@ -169,6 +176,7 @@ impl App {
             }
             None => 0,
         };
+        self.selected_table.select(Some(0));
         self.selected_database.select(Some(i));
     }
 
@@ -183,6 +191,7 @@ impl App {
             }
             None => 0,
         };
+        self.selected_table.select(Some(0));
         self.selected_database.select(Some(i));
     }
 
@@ -229,9 +238,9 @@ impl App {
     }
 
     pub fn selected_table(&self) -> Option<&Table> {
-        match self.selected_database() {
-            Some(db) => match db.selected_table.selected() {
-                Some(i) => db.tables.get(i),
+        match self.selected_table.selected() {
+            Some(i) => match self.selected_database() {
+                Some(db) => db.tables.get(i),
                 None => None,
             },
             None => None,

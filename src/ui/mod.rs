@@ -58,15 +58,20 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     }
 
     let main_chunks = Layout::default()
-        .direction(Direction::Vertical)
         .margin(2)
-        .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
         .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
         .split(f.size());
 
     let left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(9),
+                Constraint::Min(8),
+                Constraint::Length(7),
+            ]
+            .as_ref(),
+        )
         .split(main_chunks[0]);
     let databases: Vec<ListItem> = app
         .databases
@@ -103,15 +108,33 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             FocusType::Tables(true) => Style::default().fg(Color::Green),
             _ => Style::default(),
         });
-    f.render_stateful_widget(
-        tasks,
-        left_chunks[1],
-        &mut app.databases[app.selected_database.selected().unwrap_or(0)].selected_table,
-    );
+    f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
+
+    let info: Vec<ListItem> = vec![
+        format!(
+            "created: {}",
+            app.selected_table().unwrap().create_time.to_string()
+        ),
+        // format!(
+        //     "updated: {}",
+        //     app.selected_table().unwrap().update_time.to_string()
+        // ),
+        format!("rows: {}", app.record_table.rows.len()),
+    ]
+    .iter()
+    .map(|i| {
+        ListItem::new(vec![Spans::from(Span::raw(i.to_string()))])
+            .style(Style::default().fg(Color::White))
+    })
+    .collect();
+    let tasks = List::new(info)
+        .block(Block::default().borders(Borders::ALL))
+        .highlight_style(Style::default().fg(Color::Green));
+    f.render_widget(tasks, left_chunks[2]);
 
     let right_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
+        .constraints([Constraint::Length(3), Constraint::Length(5)].as_ref())
         .split(main_chunks[1]);
 
     let input = Paragraph::new(app.input.as_ref())

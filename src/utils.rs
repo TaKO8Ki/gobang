@@ -5,7 +5,7 @@ use sqlx::mysql::MySqlPool;
 use sqlx::{Column, Executor, Row, TypeInfo};
 
 pub async fn get_databases(pool: &MySqlPool) -> anyhow::Result<Vec<Database>> {
-    let databases = sqlx::query("show databases")
+    let databases = sqlx::query("SHOW DATABASES")
         .fetch_all(pool)
         .await?
         .iter()
@@ -19,12 +19,10 @@ pub async fn get_databases(pool: &MySqlPool) -> anyhow::Result<Vec<Database>> {
 }
 
 pub async fn get_tables(database: String, pool: &MySqlPool) -> anyhow::Result<Vec<Table>> {
-    let tables = sqlx::query(format!("show tables from `{}`", database).as_str())
-        .fetch_all(pool)
-        .await?
-        .iter()
-        .map(|table| Table { name: table.get(0) })
-        .collect::<Vec<Table>>();
+    let tables =
+        sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
+            .fetch_all(pool)
+            .await?;
     Ok(tables)
 }
 
@@ -33,9 +31,7 @@ pub async fn get_records(
     table: &Table,
     pool: &MySqlPool,
 ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-    pool.execute(format!("use `{}`", database.name).as_str())
-        .await?;
-    let table_name = format!("SELECT * FROM `{}`", table.name);
+    let table_name = format!("SELECT * FROM `{}`.`{}`", database.name, table.name);
     let mut rows = sqlx::query(table_name.as_str()).fetch(pool);
     let headers = sqlx::query(format!("desc `{}`", table.name).as_str())
         .fetch_all(pool)
