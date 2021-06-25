@@ -5,7 +5,7 @@ mod ui;
 mod user_config;
 mod utils;
 
-use crate::app::FocusType;
+use crate::app::{App, FocusBlock};
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
@@ -13,7 +13,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use sqlx::mysql::MySqlPool;
 use std::io::stdout;
 use tui::{backend::CrosstermBackend, Terminal};
 
@@ -21,7 +20,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
 
-    let config = user_config::UserConfig::new("sample.toml").unwrap();
+    let user_config = user_config::UserConfig::new("sample.toml").ok();
 
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -30,32 +29,11 @@ async fn main() -> anyhow::Result<()> {
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
 
-    let mut app = &mut app::App::default();
-    app.user_config = Some(config);
-    let conn = &app.user_config.as_ref().unwrap().conn.get(0).unwrap();
-    let pool = MySqlPool::connect(
-        format!(
-            "mysql://{user}:@{host}:{port}",
-            user = conn.user,
-            host = conn.host,
-            port = conn.port
-        )
-        .as_str(),
-    )
-    .await?;
-    app.pool = Some(pool);
-
-    app.databases = utils::get_databases(app.pool.as_ref().unwrap()).await?;
-    let (headers, records) = utils::get_records(
-        app.databases.first().unwrap(),
-        app.databases.first().unwrap().tables.first().unwrap(),
-        app.pool.as_ref().unwrap(),
-    )
-    .await?;
-    app.record_table.rows = records;
-    app.record_table.headers = headers;
-    app.selected_database.select(Some(0));
-    app.focus_type = FocusType::Connections;
+    let mut app = App {
+        user_config,
+        focus_type: FocusBlock::ConnectionList,
+        ..App::default()
+    };
 
     terminal.clear()?;
 
@@ -66,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
                 if key == Key::Char('q') {
                     break;
                 };
-                handle_app(key, app).await?
+                handle_app(key, &mut app).await?
             }
             Event::Tick => (),
         }

@@ -472,6 +472,7 @@ dependencies = [
  "chrono",
  "crossterm 0.19.0",
  "futures",
+ "regex",
  "serde",
  "serde_json",
  "sqlx",
