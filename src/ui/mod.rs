@@ -1,5 +1,5 @@
 use crate::app::InputMode;
-use crate::app::{App, FocusType};
+use crate::app::{App, FocusBlock};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
@@ -11,7 +11,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<()> {
-    if let FocusType::Connections = app.focus_type {
+    if let FocusBlock::ConnectionList = app.focus_type {
         let percent_x = 60;
         let percent_y = 50;
         let conns = &app.user_config.as_ref().unwrap().conn;
@@ -26,7 +26,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             .block(Block::default().borders(Borders::ALL).title("Connections"))
             .highlight_style(Style::default().fg(Color::Green))
             .style(match app.focus_type {
-                FocusType::Connections => Style::default().fg(Color::Green),
+                FocusBlock::ConnectionList => Style::default().fg(Color::Green),
                 _ => Style::default(),
             });
         let popup_layout = Layout::default()
@@ -85,8 +85,8 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .block(Block::default().borders(Borders::ALL).title("Databases"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_type {
-            FocusType::Dabatases(false) => Style::default().fg(Color::Magenta),
-            FocusType::Dabatases(true) => Style::default().fg(Color::Green),
+            FocusBlock::DabataseList(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::DabataseList(true) => Style::default().fg(Color::Green),
             _ => Style::default(),
         });
     f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
@@ -104,8 +104,8 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .block(Block::default().borders(Borders::ALL).title("Tables"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_type {
-            FocusType::Tables(false) => Style::default().fg(Color::Magenta),
-            FocusType::Tables(true) => Style::default().fg(Color::Green),
+            FocusBlock::TableList(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::TableList(true) => Style::default().fg(Color::Green),
             _ => Style::default(),
         });
     f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
@@ -176,8 +176,8 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .block(Block::default().borders(Borders::ALL).title("Records"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_type {
-            FocusType::Records(false) => Style::default().fg(Color::Magenta),
-            FocusType::Records(true) => Style::default().fg(Color::Green),
+            FocusBlock::RecordTable(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
             _ => Style::default(),
         })
         .widths(&widths);

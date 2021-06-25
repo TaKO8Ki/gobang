@@ -10,11 +10,11 @@ pub enum InputMode {
     Editing,
 }
 
-pub enum FocusType {
-    Dabatases(bool),
-    Tables(bool),
-    Records(bool),
-    Connections,
+pub enum FocusBlock {
+    DabataseList(bool),
+    TableList(bool),
+    RecordTable(bool),
+    ConnectionList,
 }
 
 #[derive(Clone)]
@@ -110,7 +110,7 @@ pub struct App {
     pub query: String,
     pub databases: Vec<Database>,
     pub record_table: RecordTable,
-    pub focus_type: FocusType,
+    pub focus_type: FocusBlock,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
     pub selected_database: ListState,
@@ -126,7 +126,7 @@ impl Default for App {
             query: String::new(),
             databases: Vec::new(),
             record_table: RecordTable::default(),
-            focus_type: FocusType::Dabatases(false),
+            focus_type: FocusBlock::DabataseList(false),
             user_config: None,
             selected_connection: ListState::default(),
             selected_database: ListState::default(),

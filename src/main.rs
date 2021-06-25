@@ -5,7 +5,7 @@ mod ui;
 mod user_config;
 mod utils;
 
-use crate::app::{App, FocusType};
+use crate::app::{App, FocusBlock};
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut app = App {
         user_config,
-        focus_type: FocusType::Connections,
+        focus_type: FocusBlock::ConnectionList,
         ..App::default()
     };
 

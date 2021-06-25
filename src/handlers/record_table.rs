@@ -1,15 +1,22 @@
-use crate::app::App;
+use crate::app::{App, FocusBlock};
 use crate::event::Key;
-use crate::utils::get_records;
 
-pub async fn handler(_key: Key, app: &mut App) -> anyhow::Result<()> {
-    if let Some(database) = app.selected_database() {
-        if let Some(table) = app.selected_table() {
-            let (headers, records) =
-                get_records(database, table, app.pool.as_ref().unwrap()).await?;
-            app.record_table.state.select(Some(0));
-            app.record_table.headers = headers;
-            app.record_table.rows = records;
+pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<()> {
+    if focused {
+        match key {
+            Key::Char('h') => app.record_table.previous_column(),
+            Key::Char('j') => app.record_table.next(),
+            Key::Char('k') => app.record_table.previous(),
+            Key::Char('l') => app.record_table.next_column(),
+            Key::Esc => app.focus_type = FocusBlock::RecordTable(false),
+            _ => (),
+        }
+    } else {
+        match key {
+            Key::Char('h') => app.focus_type = FocusBlock::TableList(false),
+            Key::Char('c') => app.focus_type = FocusBlock::ConnectionList,
+            Key::Enter => app.focus_type = FocusBlock::RecordTable(true),
+            _ => (),
         }
     }
     Ok(())
