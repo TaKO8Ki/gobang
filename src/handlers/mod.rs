@@ -79,7 +79,8 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
         },
         InputMode::Editing => match key {
             Key::Enter => {
-                app.messages.push(vec![app.input.drain(..).collect()]);
+                app.query = app.input.drain(..).collect();
+                execute_query::handler(key, app).await?;
             }
             Key::Char(c) => {
                 app.input.push(c);

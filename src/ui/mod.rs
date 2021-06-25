@@ -137,13 +137,13 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .constraints([Constraint::Length(3), Constraint::Length(5)].as_ref())
         .split(main_chunks[1]);
 
-    let input = Paragraph::new(app.input.as_ref())
+    let query = Paragraph::new(app.input.as_ref())
         .style(match app.input_mode {
             InputMode::Normal => Style::default(),
             InputMode::Editing => Style::default().fg(Color::Yellow),
         })
         .block(Block::default().borders(Borders::ALL).title("Query"));
-    f.render_widget(input, right_chunks[0]);
+    f.render_widget(query, right_chunks[0]);
     match app.input_mode {
         InputMode::Normal => (),
         InputMode::Editing => f.set_cursor(

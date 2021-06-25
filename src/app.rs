@@ -107,7 +107,7 @@ impl Database {
 pub struct App {
     pub input: String,
     pub input_mode: InputMode,
-    pub messages: Vec<Vec<String>>,
+    pub query: String,
     pub databases: Vec<Database>,
     pub record_table: RecordTable,
     pub focus_type: FocusType,
@@ -123,7 +123,7 @@ impl Default for App {
         App {
             input: String::new(),
             input_mode: InputMode::Normal,
-            messages: Vec::new(),
+            query: String::new(),
             databases: Vec::new(),
             record_table: RecordTable::default(),
             focus_type: FocusType::Dabatases(false),
