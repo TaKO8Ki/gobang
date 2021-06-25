@@ -16,7 +16,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                 }
                 let pool = MySqlPool::connect(conn.database_url().as_str()).await?;
                 app.pool = Some(pool);
-                app.focus_type = FocusBlock::DabataseList(true);
+                app.focus_type = FocusBlock::DabataseList(false);
             }
             app.databases = match app.selected_connection() {
                 Some(conn) => match &conn.database {
