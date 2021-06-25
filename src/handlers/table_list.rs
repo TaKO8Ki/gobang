@@ -5,8 +5,8 @@ use crate::utils::get_records;
 pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<()> {
     if focused {
         match key {
-            Key::Char('j') => match app.selected_database.selected() {
-                Some(_) => {
+            Key::Char('j') => {
+                if app.selected_database.selected().is_some() {
                     app.record_table.column_index = 0;
                     app.next_table();
                     if let Some(database) = app.selected_database() {
@@ -19,10 +19,9 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
                         }
                     }
                 }
-                None => (),
-            },
-            Key::Char('k') => match app.selected_database.selected() {
-                Some(_) => {
+            }
+            Key::Char('k') => {
+                if app.selected_database.selected().is_some() {
                     app.record_table.column_index = 0;
                     app.previous_table();
                     if let Some(database) = app.selected_database() {
@@ -35,8 +34,7 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
                         }
                     }
                 }
-                None => (),
-            },
+            }
             Key::Esc => app.focus_type = FocusBlock::TableList(false),
             _ => (),
         }

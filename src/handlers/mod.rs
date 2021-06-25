@@ -20,9 +20,8 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
                     record_table::handler(key, app, focused).await?
                 }
             }
-            match key {
-                Key::Char('e') => app.input_mode = InputMode::Editing,
-                _ => (),
+            if let Key::Char('e') = key {
+                app.input_mode = InputMode::Editing
             }
         }
         InputMode::Editing => match key {

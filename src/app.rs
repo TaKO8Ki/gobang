@@ -229,10 +229,7 @@ impl App {
 
     pub fn selected_database(&self) -> Option<&Database> {
         match self.selected_database.selected() {
-            Some(i) => match self.databases.get(i) {
-                Some(db) => Some(db),
-                None => None,
-            },
+            Some(i) => self.databases.get(i),
             None => None,
         }
     }

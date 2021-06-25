@@ -68,7 +68,7 @@ pub fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> S
             }
             Err(_) => "".to_string(),
         },
-        "VARCHAR" | "CHAR" | "ENUM" => row.try_get(column_name).unwrap_or("".to_string()),
+        "VARCHAR" | "CHAR" | "ENUM" => row.try_get(column_name).unwrap_or_else(|_| "".to_string()),
         "DATE" => match row.try_get(column_name) {
             Ok(value) => {
                 let value: NaiveDate = value;
