@@ -8,14 +8,14 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
             Key::Char('j') => app.record_table.next(),
             Key::Char('k') => app.record_table.previous(),
             Key::Char('l') => app.record_table.next_column(),
-            Key::Esc => app.focus_type = FocusBlock::RecordTable(false),
+            Key::Esc => app.focus_block = FocusBlock::RecordTable(false),
             _ => (),
         }
     } else {
         match key {
-            Key::Char('h') => app.focus_type = FocusBlock::TableList(false),
-            Key::Char('c') => app.focus_type = FocusBlock::ConnectionList,
-            Key::Enter => app.focus_type = FocusBlock::RecordTable(true),
+            Key::Char('h') => app.focus_block = FocusBlock::TableList(false),
+            Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
+            Key::Enter => app.focus_block = FocusBlock::RecordTable(true),
             _ => (),
         }
     }

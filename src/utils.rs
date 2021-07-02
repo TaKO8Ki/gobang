@@ -33,12 +33,13 @@ pub async fn get_records(
 ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
     let query = format!("SELECT * FROM `{}`.`{}`", database.name, table.name);
     let mut rows = sqlx::query(query.as_str()).fetch(pool);
-    let headers = sqlx::query(format!("desc `{}`", table.name).as_str())
-        .fetch_all(pool)
-        .await?
-        .iter()
-        .map(|table| table.get(0))
-        .collect::<Vec<String>>();
+    let headers =
+        sqlx::query(format!("SHOW COLUMNS FROM `{}`.`{}`", database.name, table.name).as_str())
+            .fetch_all(pool)
+            .await?
+            .iter()
+            .map(|table| table.get(0))
+            .collect::<Vec<String>>();
     let mut records = vec![];
     while let Some(row) = rows.try_next().await? {
         records.push(

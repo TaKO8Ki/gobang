@@ -4,35 +4,33 @@ pub mod query;
 pub mod record_table;
 pub mod table_list;
 
-use crate::app::{App, FocusBlock, InputMode};
+use crate::app::{App, FocusBlock};
 use crate::event::Key;
 
 pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
-    match app.input_mode {
-        InputMode::Normal => {
-            match app.focus_type {
-                FocusBlock::ConnectionList => connection_list::handler(key, app).await?,
-                FocusBlock::DabataseList(focused) => {
-                    database_list::handler(key, app, focused).await?
-                }
-                FocusBlock::TableList(focused) => table_list::handler(key, app, focused).await?,
-                FocusBlock::RecordTable(focused) => {
-                    record_table::handler(key, app, focused).await?
-                }
-            }
-            if let Key::Char('e') = key {
-                app.input_mode = InputMode::Editing
-            }
-        }
-        InputMode::Editing => match key {
-            Key::Enter => query::handler(key, app).await?,
-            Key::Char(c) => app.input.push(c),
-            Key::Backspace => {
-                app.input.pop();
-            }
-            Key::Esc => app.input_mode = InputMode::Normal,
-            _ => {}
+    match app.focus_block {
+        FocusBlock::ConnectionList => connection_list::handler(key, app).await?,
+        FocusBlock::DabataseList(focused) => database_list::handler(key, app, focused).await?,
+        FocusBlock::TableList(focused) => table_list::handler(key, app, focused).await?,
+        FocusBlock::RecordTable(focused) => record_table::handler(key, app, focused).await?,
+        FocusBlock::Query(focused) => query::handler(key, app, focused).await?,
+    }
+    match key {
+        Key::Char('d') => match app.focus_block {
+            FocusBlock::Query(true) => (),
+            _ => app.focus_block = FocusBlock::DabataseList(true),
         },
+        Key::Char('t') => match app.focus_block {
+            FocusBlock::Query(true) => (),
+            _ => app.focus_block = FocusBlock::TableList(true),
+        },
+        Key::Char('r') => match app.focus_block {
+            FocusBlock::Query(true) => (),
+            _ => app.focus_block = FocusBlock::RecordTable(true),
+        },
+        Key::Char('e') => app.focus_block = FocusBlock::Query(true),
+        Key::Esc => app.error = None,
+        _ => (),
     }
     Ok(())
 }
