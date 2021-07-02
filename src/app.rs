@@ -4,17 +4,14 @@ use crate::{
 };
 use sqlx::mysql::MySqlPool;
 use tui::widgets::{ListState, TableState};
-
-pub enum InputMode {
-    Normal,
-    Editing,
-}
+use unicode_width::UnicodeWidthStr;
 
 pub enum FocusBlock {
     DabataseList(bool),
     TableList(bool),
     RecordTable(bool),
     ConnectionList,
+    Query(bool),
 }
 
 #[derive(Clone)]
@@ -32,7 +29,7 @@ pub struct Table {
     #[sqlx(rename = "Update_time")]
     pub update_time: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(rename = "Engine")]
-    pub engine: String,
+    pub engine: Option<String>,
 }
 
 pub struct RecordTable {
@@ -106,32 +103,34 @@ impl Database {
 
 pub struct App {
     pub input: String,
-    pub input_mode: InputMode,
+    pub input_cursor_x: u16,
     pub query: String,
     pub databases: Vec<Database>,
     pub record_table: RecordTable,
-    pub focus_type: FocusBlock,
+    pub focus_block: FocusBlock,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
     pub selected_database: ListState,
     pub selected_table: ListState,
     pub pool: Option<MySqlPool>,
+    pub error: Option<String>,
 }
 
 impl Default for App {
     fn default() -> App {
         App {
             input: String::new(),
-            input_mode: InputMode::Normal,
+            input_cursor_x: 0,
             query: String::new(),
             databases: Vec::new(),
             record_table: RecordTable::default(),
-            focus_type: FocusBlock::DabataseList(false),
+            focus_block: FocusBlock::DabataseList(false),
             user_config: None,
             selected_connection: ListState::default(),
             selected_database: ListState::default(),
             selected_table: ListState::default(),
             pool: None,
+            error: None,
         }
     }
 }
@@ -227,6 +226,18 @@ impl App {
         }
     }
 
+    pub fn increment_input_cursor_x(&mut self) {
+        if self.input_cursor_x > 0 {
+            self.input_cursor_x -= 1;
+        }
+    }
+
+    pub fn decrement_input_cursor_x(&mut self) {
+        if self.input_cursor_x < self.input.width() as u16 {
+            self.input_cursor_x += 1;
+        }
+    }
+
     pub fn selected_database(&self) -> Option<&Database> {
         match self.selected_database.selected() {
             Some(i) => self.databases.get(i),
@@ -252,5 +263,30 @@ impl App {
             },
             None => None,
         }
+    }
+
+    pub fn table_status(&self) -> Vec<String> {
+        if let Some(table) = self.selected_table() {
+            return vec![
+                format!("created: {}", table.create_time.to_string()),
+                format!(
+                    "updated: {}",
+                    table
+                        .update_time
+                        .map(|time| time.to_string())
+                        .unwrap_or_default()
+                ),
+                format!(
+                    "engine: {}",
+                    table
+                        .engine
+                        .as_ref()
+                        .map(|engine| engine.to_string())
+                        .unwrap_or_default()
+                ),
+                format!("rows: {}", self.record_table.rows.len()),
+            ];
+        }
+        Vec::new()
     }
 }

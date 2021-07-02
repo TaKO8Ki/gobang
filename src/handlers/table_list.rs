@@ -35,15 +35,15 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
                     }
                 }
             }
-            Key::Esc => app.focus_type = FocusBlock::TableList(false),
+            Key::Esc => app.focus_block = FocusBlock::TableList(false),
             _ => (),
         }
     } else {
         match key {
-            Key::Char('k') => app.focus_type = FocusBlock::DabataseList(false),
-            Key::Char('l') => app.focus_type = FocusBlock::RecordTable(false),
-            Key::Char('c') => app.focus_type = FocusBlock::ConnectionList,
-            Key::Enter => app.focus_type = FocusBlock::TableList(true),
+            Key::Char('k') => app.focus_block = FocusBlock::DabataseList(false),
+            Key::Char('l') => app.focus_block = FocusBlock::RecordTable(false),
+            Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
+            Key::Enter => app.focus_block = FocusBlock::TableList(true),
             _ => (),
         }
     }

@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut app = App {
         user_config,
-        focus_type: FocusBlock::ConnectionList,
+        focus_block: FocusBlock::ConnectionList,
         ..App::default()
     };
 
@@ -44,7 +44,10 @@ async fn main() -> anyhow::Result<()> {
                 if key == Key::Char('q') {
                     break;
                 };
-                handle_app(key, &mut app).await?
+                match handle_app(key, &mut app).await {
+                    Ok(_) => (),
+                    Err(err) => app.error = Some(err.to_string()),
+                }
             }
             Event::Tick => (),
         }
