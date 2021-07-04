@@ -26,7 +26,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             .highlight_style(Style::default().fg(Color::Green))
             .style(match app.focus_block {
                 FocusBlock::ConnectionList => Style::default().fg(Color::Green),
-                _ => Style::default(),
+                _ => Style::default().fg(Color::DarkGray),
             });
         let popup_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -57,7 +57,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     }
 
     let main_chunks = Layout::default()
-        .margin(2)
+        // .margin(2)
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
         .split(f.size());
@@ -84,9 +84,9 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .block(Block::default().borders(Borders::ALL).title("Databases"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_block {
-            FocusBlock::DabataseList(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::DabataseList(false) => Style::default(),
             FocusBlock::DabataseList(true) => Style::default().fg(Color::Green),
-            _ => Style::default(),
+            _ => Style::default().fg(Color::DarkGray),
         });
     f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
 
@@ -103,9 +103,9 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .block(Block::default().borders(Borders::ALL).title("Tables"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_block {
-            FocusBlock::TableList(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::TableList(false) => Style::default(),
             FocusBlock::TableList(true) => Style::default().fg(Color::Green),
-            _ => Style::default(),
+            _ => Style::default().fg(Color::DarkGray),
         });
     f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
 
@@ -148,8 +148,8 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     let query = Paragraph::new(app.input.as_ref())
         .style(match app.focus_block {
             FocusBlock::Query(true) => Style::default().fg(Color::Green),
-            FocusBlock::Query(false) => Style::default().fg(Color::Magenta),
-            _ => Style::default(),
+            FocusBlock::Query(false) => Style::default(),
+            _ => Style::default().fg(Color::DarkGray),
         })
         .block(Block::default().borders(Borders::ALL).title("Query"));
     f.render_widget(query, right_chunks[1]);
@@ -200,9 +200,9 @@ fn draw_structure_table<B: Backend>(
         .block(Block::default().borders(Borders::ALL).title("Structure"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_block {
-            FocusBlock::RecordTable(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::RecordTable(false) => Style::default(),
             FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
-            _ => Style::default(),
+            _ => Style::default().fg(Color::DarkGray),
         })
         .widths(&widths);
     f.render_stateful_widget(t, layout_chunk, &mut app.structure_table.state);
@@ -240,9 +240,9 @@ fn draw_records_table<B: Backend>(
         .block(Block::default().borders(Borders::ALL).title("Records"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_block {
-            FocusBlock::RecordTable(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::RecordTable(false) => Style::default(),
             FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
-            _ => Style::default(),
+            _ => Style::default().fg(Color::DarkGray),
         })
         .widths(&widths);
     f.render_stateful_widget(t, layout_chunk, &mut app.record_table.state);
