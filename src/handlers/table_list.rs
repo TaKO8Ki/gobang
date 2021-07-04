@@ -1,14 +1,14 @@
 use crate::app::{App, FocusBlock};
 use crate::event::Key;
-use crate::utils::get_records;
+use crate::utils::{get_columns, get_records};
 
 pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<()> {
     if focused {
         match key {
             Key::Char('j') => {
                 if app.selected_database.selected().is_some() {
-                    app.record_table.column_index = 0;
                     app.next_table();
+                    app.record_table.column_index = 0;
                     if let Some(database) = app.selected_database() {
                         if let Some(table) = app.selected_table() {
                             let (headers, records) =
@@ -18,12 +18,23 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
                             app.record_table.rows = records;
                         }
                     }
+
+                    app.structure_table.column_index = 0;
+                    if let Some(database) = app.selected_database() {
+                        if let Some(table) = app.selected_table() {
+                            let (headers, records) =
+                                get_columns(database, table, app.pool.as_ref().unwrap()).await?;
+                            app.structure_table.state.select(Some(0));
+                            app.structure_table.headers = headers;
+                            app.structure_table.rows = records;
+                        }
+                    }
                 }
             }
             Key::Char('k') => {
                 if app.selected_database.selected().is_some() {
-                    app.record_table.column_index = 0;
                     app.previous_table();
+                    app.record_table.column_index = 0;
                     if let Some(database) = app.selected_database() {
                         if let Some(table) = app.selected_table() {
                             let (headers, records) =
@@ -31,6 +42,17 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
                             app.record_table.state.select(Some(0));
                             app.record_table.headers = headers;
                             app.record_table.rows = records;
+                        }
+                    }
+
+                    app.structure_table.column_index = 0;
+                    if let Some(database) = app.selected_database() {
+                        if let Some(table) = app.selected_table() {
+                            let (headers, records) =
+                                get_columns(database, table, app.pool.as_ref().unwrap()).await?;
+                            app.structure_table.state.select(Some(0));
+                            app.structure_table.headers = headers;
+                            app.structure_table.rows = records;
                         }
                     }
                 }
