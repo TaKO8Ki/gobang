@@ -3,8 +3,28 @@ use crate::{
     utils::get_tables,
 };
 use sqlx::mysql::MySqlPool;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use tui::widgets::{ListState, TableState};
 use unicode_width::UnicodeWidthStr;
+
+#[derive(Debug, Clone, Copy, EnumIter)]
+pub enum Tab {
+    Records,
+    Structure,
+}
+
+impl std::fmt::Display for Tab {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Tab {
+    pub fn names() -> Vec<String> {
+        Self::iter().map(|tab| tab.to_string()).collect()
+    }
+}
 
 pub enum FocusBlock {
     DabataseList(bool),
@@ -30,6 +50,18 @@ pub struct Table {
     pub update_time: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(rename = "Engine")]
     pub engine: Option<String>,
+}
+
+#[derive(sqlx::FromRow, Debug, Clone)]
+pub struct Column {
+    #[sqlx(rename = "Field")]
+    pub field: String,
+    #[sqlx(rename = "Type")]
+    pub r#type: String,
+    #[sqlx(rename = "Collation")]
+    pub collation: String,
+    #[sqlx(rename = "Null")]
+    pub null: String,
 }
 
 pub struct RecordTable {
@@ -90,6 +122,24 @@ impl RecordTable {
             self.column_index -= 1
         }
     }
+
+    pub fn headers(&self) -> Vec<String> {
+        let mut headers = self.headers[self.column_index..].to_vec();
+        headers.insert(0, "".to_string());
+        headers
+    }
+
+    pub fn rows(&self) -> Vec<Vec<String>> {
+        let mut rows = self
+            .rows
+            .iter()
+            .map(|row| row[self.column_index..].to_vec())
+            .collect::<Vec<Vec<String>>>();
+        for (index, row) in rows.iter_mut().enumerate() {
+            row.insert(0, (index + 1).to_string())
+        }
+        rows
+    }
 }
 
 impl Database {
@@ -107,7 +157,9 @@ pub struct App {
     pub query: String,
     pub databases: Vec<Database>,
     pub record_table: RecordTable,
+    pub structure_table: RecordTable,
     pub focus_block: FocusBlock,
+    pub selected_tab: Tab,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
     pub selected_database: ListState,
@@ -124,7 +176,9 @@ impl Default for App {
             query: String::new(),
             databases: Vec::new(),
             record_table: RecordTable::default(),
+            structure_table: RecordTable::default(),
             focus_block: FocusBlock::DabataseList(false),
+            selected_tab: Tab::Records,
             user_config: None,
             selected_connection: ListState::default(),
             selected_database: ListState::default(),
@@ -136,6 +190,20 @@ impl Default for App {
 }
 
 impl App {
+    pub fn next_tab(&mut self) {
+        self.selected_tab = match self.selected_tab {
+            Tab::Records => Tab::Structure,
+            Tab::Structure => Tab::Records,
+        }
+    }
+
+    pub fn previous_tab(&mut self) {
+        self.selected_tab = match self.selected_tab {
+            Tab::Records => Tab::Structure,
+            Tab::Structure => Tab::Records,
+        }
+    }
+
     pub fn next_table(&mut self) {
         let i = match self.selected_table.selected() {
             Some(i) => {

@@ -1,10 +1,10 @@
-use crate::app::{App, FocusBlock};
+use crate::app::{App, FocusBlock, Tab};
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, Tabs},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -124,8 +124,26 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
 
     let right_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(5)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(5),
+            ]
+            .as_ref(),
+        )
         .split(main_chunks[1]);
+
+    let titles = Tab::names().iter().cloned().map(Spans::from).collect();
+    let tabs = Tabs::new(titles)
+        .block(Block::default().borders(Borders::ALL))
+        .select(app.selected_tab as usize)
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::Green),
+        );
+    f.render_widget(tabs, right_chunks[0]);
 
     let query = Paragraph::new(app.input.as_ref())
         .style(match app.focus_block {
@@ -134,26 +152,82 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             _ => Style::default(),
         })
         .block(Block::default().borders(Borders::ALL).title("Query"));
-    f.render_widget(query, right_chunks[0]);
+    f.render_widget(query, right_chunks[1]);
     if let FocusBlock::Query(true) = app.focus_block {
         f.set_cursor(
-            right_chunks[0].x + app.input.width() as u16 + 1 - app.input_cursor_x,
-            right_chunks[0].y + 1,
+            right_chunks[1].x + app.input.width() as u16 + 1 - app.input_cursor_x,
+            right_chunks[1].y + 1,
         )
     }
+    match app.selected_tab {
+        Tab::Records => draw_records_table(f, app, right_chunks[2])?,
+        Tab::Structure => draw_structure_table(f, app, right_chunks[2])?,
+    }
+    if let Some(err) = app.error.clone() {
+        draw_error_popup(f, err)?;
+    }
+    Ok(())
+}
 
-    let header_cells = app.record_table.headers[app.record_table.column_index..]
+fn draw_structure_table<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &mut App,
+    layout_chunk: Rect,
+) -> anyhow::Result<()> {
+    let headers = app.structure_table.headers();
+    let header_cells = headers
         .iter()
         .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
     let header = Row::new(header_cells).height(1).bottom_margin(1);
-    let rows = app.record_table.rows.iter().map(|item| {
-        let height = item[app.record_table.column_index..]
+    let rows = app.structure_table.rows();
+    let rows = rows.iter().map(|item| {
+        let height = item
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
             .max()
             .unwrap_or(0)
             + 1;
-        let cells = item[app.record_table.column_index..]
+        let cells = item
+            .iter()
+            .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
+        Row::new(cells).height(height as u16).bottom_margin(1)
+    });
+    let widths = (0..10)
+        .map(|_| Constraint::Percentage(10))
+        .collect::<Vec<Constraint>>();
+    let t = Table::new(rows)
+        .header(header)
+        .block(Block::default().borders(Borders::ALL).title("Structure"))
+        .highlight_style(Style::default().fg(Color::Green))
+        .style(match app.focus_block {
+            FocusBlock::RecordTable(false) => Style::default().fg(Color::Magenta),
+            FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
+            _ => Style::default(),
+        })
+        .widths(&widths);
+    f.render_stateful_widget(t, layout_chunk, &mut app.structure_table.state);
+    Ok(())
+}
+
+fn draw_records_table<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &mut App,
+    layout_chunk: Rect,
+) -> anyhow::Result<()> {
+    let headers = app.record_table.headers();
+    let header_cells = headers
+        .iter()
+        .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
+    let header = Row::new(header_cells).height(1).bottom_margin(1);
+    let rows = app.record_table.rows();
+    let rows = rows.iter().map(|item| {
+        let height = item
+            .iter()
+            .map(|content| content.chars().filter(|c| *c == '\n').count())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let cells = item
             .iter()
             .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
         Row::new(cells).height(height as u16).bottom_margin(1)
@@ -171,11 +245,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             _ => Style::default(),
         })
         .widths(&widths);
-    f.render_stateful_widget(t, right_chunks[1], &mut app.record_table.state);
-
-    if let Some(err) = app.error.clone() {
-        draw_error_popup(f, err)?;
-    }
+    f.render_stateful_widget(t, layout_chunk, &mut app.record_table.state);
     Ok(())
 }
 
