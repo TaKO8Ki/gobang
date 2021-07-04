@@ -57,7 +57,6 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     }
 
     let main_chunks = Layout::default()
-        // .margin(2)
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
         .split(f.size());
@@ -138,10 +137,11 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     let tabs = Tabs::new(titles)
         .block(Block::default().borders(Borders::ALL))
         .select(app.selected_tab as usize)
+        .style(Style::default().fg(Color::DarkGray))
         .highlight_style(
             Style::default()
-                .add_modifier(Modifier::BOLD)
-                .bg(Color::Green),
+                .fg(Color::Reset)
+                .add_modifier(Modifier::UNDERLINED),
         );
     f.render_widget(tabs, right_chunks[0]);
 
