@@ -59,21 +59,3 @@ where
     let list = ScrollableList::new(items).block(block);
     f.render_widget(list, r);
 }
-
-pub fn draw_list<'b, B: Backend, L>(
-    f: &mut Frame<B>,
-    r: Rect,
-    title: &'b str,
-    items: L,
-    selected: bool,
-) where
-    L: Iterator<Item = Span<'b>>,
-{
-    let list = ScrollableList::new(items).block(
-        Block::default()
-            .title(Span::styled(title, Style::default()))
-            .borders(Borders::ALL)
-            .border_style(Style::default()),
-    );
-    f.render_widget(list, r);
-}

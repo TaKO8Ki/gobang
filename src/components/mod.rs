@@ -1,86 +1,13 @@
 pub mod command;
-pub mod revision_files;
+pub mod databases;
 pub mod utils;
 
 pub use command::{CommandInfo, CommandText};
-pub use revision_files::RevisionFilesComponent;
+pub use databases::DatabasesComponent;
 
 use anyhow::Result;
-use crossterm::event::Event;
 use std::convert::From;
-use tui::{
-    backend::Backend,
-    layout::{Alignment, Rect},
-    style::Style,
-    text::{Span, Text},
-    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
-    Frame,
-};
-
-/// creates accessors for a list of components
-///
-/// allows generating code to make sure
-/// we always enumerate all components in both getter functions
-#[macro_export]
-macro_rules! accessors {
-    ($self:ident, [$($element:ident),+]) => {
-        fn components(& $self) -> Vec<&dyn Component> {
-            vec![
-                $(&$self.$element,)+
-            ]
-        }
-
-        fn components_mut(&mut $self) -> Vec<&mut dyn Component> {
-            vec![
-                $(&mut $self.$element,)+
-            ]
-        }
-    };
-}
-
-/// creates a function to determine if any popup is visible
-#[macro_export]
-macro_rules! any_popup_visible {
-    ($self:ident, [$($element:ident),+]) => {
-        fn any_popup_visible(& $self) -> bool{
-            ($($self.$element.is_visible()) || +)
-        }
-    };
-}
-
-/// creates the draw popup function
-#[macro_export]
-macro_rules! draw_popups {
-    ($self:ident, [$($element:ident),+]) => {
-        fn draw_popups<B: Backend>(& $self, mut f: &mut Frame<B>) -> Result<()>{
-            //TODO: move the layout part out and feed it into `draw_popups`
-            let size = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Min(1),
-                    Constraint::Length($self.cmdbar.borrow().height()),
-                ]
-                .as_ref(),
-            )
-            .split(f.size())[0];
-
-            ($($self.$element.draw(&mut f, size)?) , +);
-
-            return Ok(());
-        }
-    };
-}
-
-/// simply calls
-/// any_popup_visible!() and draw_popups!() macros
-#[macro_export]
-macro_rules! setup_popups {
-    ($self:ident, [$($element:ident),+]) => {
-        crate::any_popup_visible!($self, [$($element),+]);
-        crate::draw_popups!($self, [ $($element),+ ]);
-    };
-}
+use tui::{backend::Backend, layout::Rect, Frame};
 
 #[derive(Copy, Clone)]
 pub enum ScrollType {

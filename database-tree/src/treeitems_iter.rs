@@ -1,4 +1,4 @@
-use crate::{filetreeitems::DatabaseTreeItems, item::DatabaseTreeItem};
+use crate::{databasetreeitems::DatabaseTreeItems, item::DatabaseTreeItem};
 
 pub struct TreeItemsIterator<'a> {
     tree: &'a DatabaseTreeItems,

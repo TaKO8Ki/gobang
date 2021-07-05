@@ -1,9 +1,6 @@
 use crate::Database;
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
-use crate::{
-    item::{DatabaseCollapsed, DatabaseTreeItemKind},
-    DatabaseTreeItem,
-};
+use crate::{item::DatabaseTreeItemKind, DatabaseTreeItem};
 use std::{
     collections::{BTreeSet, HashMap},
     usize,
@@ -18,19 +15,17 @@ pub struct DatabaseTreeItems {
 
 impl DatabaseTreeItems {
     ///
-    pub fn new(list: &[&Database], collapsed: &BTreeSet<&String>) -> Result<Self> {
+    pub fn new(list: &[Database], collapsed: &BTreeSet<&String>) -> Result<Self> {
         Ok(Self {
             tree_items: Self::create_items(list, collapsed)?,
             files: list.len(),
         })
     }
 
-    fn create_items<'a>(
-        list: &'a [&Database],
+    fn create_items(
+        list: &[Database],
         collapsed: &BTreeSet<&String>,
     ) -> Result<Vec<DatabaseTreeItem>> {
-        // scopetime::scope_time!("create_items");
-
         let mut items = Vec::with_capacity(list.len());
         let mut paths_added: HashMap<String, usize> = HashMap::with_capacity(list.len());
 
@@ -39,7 +34,7 @@ impl DatabaseTreeItems {
                 Self::push_databases(e, &mut items, &mut paths_added, collapsed)?;
             }
             for table in e.tables.clone() {
-                items.push(DatabaseTreeItem::new_table(e.name.clone(), table)?);
+                items.push(DatabaseTreeItem::new_table(e, table)?);
             }
         }
 
@@ -80,7 +75,7 @@ impl DatabaseTreeItems {
             //TODO: make non alloc
             let path_string = c.clone();
             let is_collapsed = collapsed.contains(&path_string);
-            nodes.push(DatabaseTreeItem::new_database(c, is_collapsed)?);
+            nodes.push(DatabaseTreeItem::new_database(item_path, is_collapsed)?);
         }
 
         // increase child count in parent node (the above ancenstor ignores the leaf component)
@@ -124,7 +119,7 @@ impl DatabaseTreeItems {
                     let item = &mut self.tree_items[i];
 
                     if let Some(db) = item.info().database.as_ref() {
-                        if db.to_string() != full_path {
+                        if *db != full_path {
                             break;
                         }
                     }
@@ -146,7 +141,7 @@ impl DatabaseTreeItems {
         for i in start_idx..self.tree_items.len() {
             if let Some(ref collapsed_path) = inner_collapsed {
                 if let Some(db) = self.tree_items[i].info().database.clone() {
-                    if db == collapsed_path.to_string() {
+                    if db == *collapsed_path {
                         if set_defaults {
                             self.tree_items[i].info_mut().set_visible(false);
                         }
@@ -160,8 +155,7 @@ impl DatabaseTreeItems {
             let item_kind = self.tree_items[i].kind().clone();
             let item_info = self.tree_items[i].info();
 
-            if matches!(item_kind, DatabaseTreeItemKind::Database(DatabaseCollapsed(collapsed)) if collapsed)
-            {
+            if matches!(item_kind, DatabaseTreeItemKind::Database{ collapsed, .. } if collapsed) {
                 // we encountered an inner path that is still collapsed
                 inner_collapsed = item_info.database.clone();
             }
@@ -169,7 +163,7 @@ impl DatabaseTreeItems {
             if let Some(db) = item_info.database.as_ref() {
                 if prefix
                     .as_ref()
-                    .map_or(true, |prefix| prefix.to_string() == db.to_string())
+                    .map_or(true, |prefix| *prefix == db.to_string())
                 {
                     self.tree_items[i].info_mut().set_visible(true);
                 }

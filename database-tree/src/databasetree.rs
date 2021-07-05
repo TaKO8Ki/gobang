@@ -1,5 +1,5 @@
 use crate::{
-    error::Result, filetreeitems::DatabaseTreeItems, tree_iter::TreeIterator, TreeItemInfo,
+    databasetreeitems::DatabaseTreeItems, error::Result, tree_iter::TreeIterator, TreeItemInfo,
 };
 use std::{collections::BTreeSet, usize};
 
@@ -22,18 +22,16 @@ pub struct VisualSelection {
     pub index: usize,
 }
 
-/// wraps `FileTreeItems` as a datastore and adds selection functionality
+/// wraps `DatabaseTreeItems` as a datastore and adds selection functionality
 #[derive(Default)]
 pub struct DatabaseTree {
     items: DatabaseTreeItems,
     pub selection: Option<usize>,
-    // caches the absolute selection translated to visual index
     visual_selection: Option<VisualSelection>,
 }
 
 impl DatabaseTree {
-    ///
-    pub fn new(list: &[&crate::Database], collapsed: &BTreeSet<&String>) -> Result<Self> {
+    pub fn new(list: &[crate::Database], collapsed: &BTreeSet<&String>) -> Result<Self> {
         let mut new_self = Self {
             items: DatabaseTreeItems::new(list, collapsed)?,
             selection: if list.is_empty() { None } else { Some(0) },
@@ -44,7 +42,6 @@ impl DatabaseTree {
         Ok(new_self)
     }
 
-    ///
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
         self.items.expand(0, false);
@@ -58,12 +55,10 @@ impl DatabaseTree {
         TreeIterator::new(self.items.iterate(start, max_amount), self.selection)
     }
 
-    ///
     pub const fn visual_selection(&self) -> Option<&VisualSelection> {
         self.visual_selection.as_ref()
     }
 
-    ///
     pub fn selected_file(&self) -> Option<&TreeItemInfo> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
@@ -75,21 +70,18 @@ impl DatabaseTree {
         })
     }
 
-    ///
     pub fn collapse_recursive(&mut self) {
         if let Some(selection) = self.selection {
             self.items.collapse(selection, true);
         }
     }
 
-    ///
     pub fn expand_recursive(&mut self) {
         if let Some(selection) = self.selection {
             self.items.expand(selection, true);
         }
     }
 
-    ///
     pub fn move_selection(&mut self, dir: MoveSelection) -> bool {
         self.selection.map_or(false, |selection| {
             let new_index = match dir {
@@ -191,7 +183,6 @@ impl DatabaseTree {
                     index.saturating_add(1)
                 };
 
-                // when reaching usize bounds
                 if new_index == index {
                     break;
                 }

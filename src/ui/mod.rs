@@ -68,14 +68,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .split(f.size());
 
     let left_chunks = Layout::default()
-        .constraints(
-            [
-                Constraint::Length(9),
-                Constraint::Min(8),
-                Constraint::Length(7),
-            ]
-            .as_ref(),
-        )
+        .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
         .split(main_chunks[0]);
     // let databases: Vec<ListItem> = app
     //     .databases
@@ -97,24 +90,24 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     use crate::components::DrawableComponent as _;
     app.revision_files.draw(f, left_chunks[0]).unwrap();
 
-    let databases = app.databases.clone();
-    let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
-        .tables
-        .iter()
-        .map(|i| {
-            ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-                .style(Style::default().fg(Color::White))
-        })
-        .collect();
-    let tasks = List::new(tables)
-        .block(Block::default().borders(Borders::ALL).title("Tables"))
-        .highlight_style(Style::default().fg(Color::Green))
-        .style(match app.focus_block {
-            FocusBlock::TableList(false) => Style::default(),
-            FocusBlock::TableList(true) => Style::default().fg(Color::Green),
-            _ => Style::default().fg(Color::DarkGray),
-        });
-    f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
+    // let databases = app.databases.clone();
+    // let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
+    //     .tables
+    //     .iter()
+    //     .map(|i| {
+    //         ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+    //             .style(Style::default().fg(Color::White))
+    //     })
+    //     .collect();
+    // let tasks = List::new(tables)
+    //     .block(Block::default().borders(Borders::ALL).title("Tables"))
+    //     .highlight_style(Style::default().fg(Color::Green))
+    //     .style(match app.focus_block {
+    //         FocusBlock::TableList(false) => Style::default(),
+    //         FocusBlock::TableList(true) => Style::default().fg(Color::Green),
+    //         _ => Style::default().fg(Color::DarkGray),
+    //     });
+    // f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
 
     let table_status: Vec<ListItem> = app
         .table_status()
@@ -127,7 +120,7 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     let tasks = List::new(table_status)
         .block(Block::default().borders(Borders::ALL))
         .highlight_style(Style::default().fg(Color::Green));
-    f.render_widget(tasks, left_chunks[2]);
+    f.render_widget(tasks, left_chunks[1]);
 
     let right_chunks = Layout::default()
         .direction(Direction::Vertical)

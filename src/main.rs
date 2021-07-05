@@ -52,11 +52,11 @@ async fn main() -> anyhow::Result<()> {
     use std::collections::BTreeSet;
     let mut tree = DatabaseTree::new(
         &[
-            &Database {
+            Database {
                 name: "world".to_string(),
                 tables: vec!["country".to_string(), "city".to_string()],
             },
-            &Database {
+            Database {
                 name: "foo".to_string(),
                 tables: vec!["bar".to_string(), "baz".to_string(), "city".to_string()],
             },

@@ -166,7 +166,7 @@ pub struct App {
     pub selected_connection: ListState,
     pub selected_database: ListState,
     pub selected_table: ListState,
-    pub revision_files: crate::components::RevisionFilesComponent,
+    pub revision_files: crate::components::DatabasesComponent,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -186,7 +186,7 @@ impl Default for App {
             selected_connection: ListState::default(),
             selected_database: ListState::default(),
             selected_table: ListState::default(),
-            revision_files: crate::components::RevisionFilesComponent::new(),
+            revision_files: crate::components::DatabasesComponent::new(),
             pool: None,
             error: None,
         }
@@ -194,20 +194,6 @@ impl Default for App {
 }
 
 impl App {
-    pub fn next_tab(&mut self) {
-        self.selected_tab = match self.selected_tab {
-            Tab::Records => Tab::Structure,
-            Tab::Structure => Tab::Records,
-        }
-    }
-
-    pub fn previous_tab(&mut self) {
-        self.selected_tab = match self.selected_tab {
-            Tab::Records => Tab::Structure,
-            Tab::Structure => Tab::Records,
-        }
-    }
-
     pub fn next_table(&mut self) {
         let i = match self.selected_table.selected() {
             Some(i) => {

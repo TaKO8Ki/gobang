@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::Database;
 use std::{convert::TryFrom, path::PathBuf};
 
 /// holds the information shared among all `DatabaseTreeItem` in a `FileTree`
@@ -17,7 +18,6 @@ pub struct TreeItemInfo {
 }
 
 impl TreeItemInfo {
-    ///
     pub const fn new(indent: u8, database: Option<String>, full_path: String) -> Self {
         Self {
             indent,
@@ -28,23 +28,14 @@ impl TreeItemInfo {
         }
     }
 
-    ///
     pub const fn is_visible(&self) -> bool {
         self.visible
     }
 
-    ///
-    //TODO: remove
     pub fn full_path_str(&self) -> &str {
         self.full_path.as_str()
     }
 
-    // ///
-    // pub fn full_path(&self) -> &Path {
-    //     self.full_path.as_path()
-    // }
-
-    /// like `path` but as `&str`
     pub fn path_str(&self) -> &str {
         match self.full_path.split('/').collect::<Vec<_>>().get(1) {
             Some(path) => path,
@@ -52,29 +43,10 @@ impl TreeItemInfo {
         }
     }
 
-    /// returns the last component of `full_path`
-    /// or the last components plus folded up children paths
-    // pub fn path(&self) -> &Path {
-    //     self.folded.as_ref().map_or_else(
-    //         || {
-    //             Path::new(
-    //                 self.full_path
-    //                     .components()
-    //                     .last()
-    //                     .and_then(|c| c.as_os_str().to_str())
-    //                     .unwrap_or_default(),
-    //             )
-    //         },
-    //         |folding| folding.as_path(),
-    //     )
-    // }
-
-    ///
     pub const fn indent(&self) -> u8 {
         self.indent
     }
 
-    ///
     pub fn unindent(&mut self) {
         self.indent = self.indent.saturating_sub(1);
     }
@@ -84,26 +56,26 @@ impl TreeItemInfo {
     }
 }
 
-/// attribute used to indicate the collapse/expand state of a path item
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct DatabaseCollapsed(pub bool);
-
 /// `DatabaseTreeItem` can be of two kinds
 #[derive(PartialEq, Debug, Clone)]
 pub enum DatabaseTreeItemKind {
-    Database(DatabaseCollapsed),
-    File,
+    Database { name: String, collapsed: bool },
+    Table,
 }
 
 impl DatabaseTreeItemKind {
     pub const fn is_database(&self) -> bool {
-        matches!(self, Self::Database(_))
+        matches!(self, Self::Database { .. })
+    }
+
+    pub const fn is_table(&self) -> bool {
+        matches!(self, Self::Table)
     }
 
     pub const fn is_database_collapsed(&self) -> bool {
         match self {
-            Self::Database(collapsed) => collapsed.0,
-            Self::File => false,
+            Self::Database { collapsed, .. } => *collapsed,
+            Self::Table => false,
         }
     }
 }
@@ -116,59 +88,63 @@ pub struct DatabaseTreeItem {
 }
 
 impl DatabaseTreeItem {
-    pub fn new_table(database: String, path: String) -> Result<Self> {
-        let indent = u8::try_from((3 as usize).saturating_sub(2))?;
+    pub fn new_table(database: &Database, table: String) -> Result<Self> {
+        let indent = u8::try_from((3_usize).saturating_sub(2))?;
 
         Ok(Self {
-            info: TreeItemInfo::new(indent, Some(database), path),
-            kind: DatabaseTreeItemKind::File,
+            info: TreeItemInfo::new(indent, Some(database.name.to_string()), table),
+            kind: DatabaseTreeItemKind::Table,
         })
     }
 
-    pub fn new_database(path: String, collapsed: bool) -> Result<Self> {
+    pub fn new_database(database: &Database, collapsed: bool) -> Result<Self> {
         Ok(Self {
-            info: TreeItemInfo::new(0, None, path),
-            kind: DatabaseTreeItemKind::Database(DatabaseCollapsed(collapsed)),
+            info: TreeItemInfo::new(0, None, database.name.to_string()),
+            kind: DatabaseTreeItemKind::Database {
+                name: database.name.to_string(),
+                collapsed,
+            },
         })
     }
 
-    ///
     pub fn fold(&mut self, next: Self) {
         if let Some(folded) = self.info.folded.as_mut() {
             *folded = folded.join(&next.info.full_path);
-        } else {
-            // self.info.folded = Some(self.info.full_path.join(next.info.full_path));
         }
 
-        self.info.full_path = next.info.full_path.clone();
+        self.info.full_path = next.info.full_path
     }
 
-    ///
     pub const fn info(&self) -> &TreeItemInfo {
         &self.info
     }
 
-    ///
     pub fn info_mut(&mut self) -> &mut TreeItemInfo {
         &mut self.info
     }
 
-    ///
     pub const fn kind(&self) -> &DatabaseTreeItemKind {
         &self.kind
     }
 
-    ///
     pub fn collapse_database(&mut self) {
-        self.kind = DatabaseTreeItemKind::Database(DatabaseCollapsed(true));
+        if let DatabaseTreeItemKind::Database { name, .. } = &self.kind {
+            self.kind = DatabaseTreeItemKind::Database {
+                name: name.to_string(),
+                collapsed: true,
+            }
+        }
     }
 
-    ///
     pub fn expand_database(&mut self) {
-        self.kind = DatabaseTreeItemKind::Database(DatabaseCollapsed(false));
+        if let DatabaseTreeItemKind::Database { name, .. } = &self.kind {
+            self.kind = DatabaseTreeItemKind::Database {
+                name: name.to_string(),
+                collapsed: false,
+            };
+        }
     }
 
-    ///
     pub fn hide(&mut self) {
         self.info.visible = false;
     }
