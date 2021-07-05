@@ -21,6 +21,7 @@ impl Default for EventConfig {
 }
 
 /// An occurred event.
+#[derive(Copy, Clone)]
 pub enum Event<I> {
     /// An input event occurred.
     Input(I),

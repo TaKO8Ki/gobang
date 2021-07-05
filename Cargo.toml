@@ -24,3 +24,10 @@ toml = "0.4"
 regex = "1"
 strum = "0.21"
 strum_macros = "0.21"
+database-tree = { path = "./database-tree", version = "0.1" }
+easy-cast = "0.4"
+
+[workspace]
+members=[
+    "database-tree"
+]

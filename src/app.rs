@@ -22,7 +22,9 @@ impl std::fmt::Display for Tab {
 
 impl Tab {
     pub fn names() -> Vec<String> {
-        Self::iter().map(|tab| tab.to_string()).collect()
+        Self::iter()
+            .map(|tab| format!("{} [{}]", tab, tab as u8 + 1))
+            .collect()
     }
 }
 
@@ -164,6 +166,7 @@ pub struct App {
     pub selected_connection: ListState,
     pub selected_database: ListState,
     pub selected_table: ListState,
+    pub revision_files: crate::components::RevisionFilesComponent,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -183,6 +186,7 @@ impl Default for App {
             selected_connection: ListState::default(),
             selected_database: ListState::default(),
             selected_table: ListState::default(),
+            revision_files: crate::components::RevisionFilesComponent::new(),
             pool: None,
             error: None,
         }

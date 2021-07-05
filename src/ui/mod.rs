@@ -1,4 +1,6 @@
 use crate::app::{App, FocusBlock, Tab};
+use crate::event::Key;
+use database_tree::MoveSelection;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -8,6 +10,10 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+
+pub mod database_list;
+pub mod scrollbar;
+pub mod scrolllist;
 
 pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<()> {
     if let FocusBlock::ConnectionList = app.focus_block {
@@ -71,23 +77,25 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             .as_ref(),
         )
         .split(main_chunks[0]);
-    let databases: Vec<ListItem> = app
-        .databases
-        .iter()
-        .map(|i| {
-            ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-                .style(Style::default().fg(Color::White))
-        })
-        .collect();
-    let tasks = List::new(databases)
-        .block(Block::default().borders(Borders::ALL).title("Databases"))
-        .highlight_style(Style::default().fg(Color::Green))
-        .style(match app.focus_block {
-            FocusBlock::DabataseList(false) => Style::default(),
-            FocusBlock::DabataseList(true) => Style::default().fg(Color::Green),
-            _ => Style::default().fg(Color::DarkGray),
-        });
-    f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
+    // let databases: Vec<ListItem> = app
+    //     .databases
+    //     .iter()
+    //     .map(|i| {
+    //         ListItem::new(vec![Spans::from(Span::raw(&i.name))])
+    //             .style(Style::default().fg(Color::White))
+    //     })
+    //     .collect();
+    // let tasks = List::new(databases)
+    //     .block(Block::default().borders(Borders::ALL).title("Databases"))
+    //     .highlight_style(Style::default().fg(Color::Green))
+    //     .style(match app.focus_block {
+    //         FocusBlock::DabataseList(false) => Style::default(),
+    //         FocusBlock::DabataseList(true) => Style::default().fg(Color::Green),
+    //         _ => Style::default().fg(Color::DarkGray),
+    //     });
+    // f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
+    use crate::components::DrawableComponent as _;
+    app.revision_files.draw(f, left_chunks[0]).unwrap();
 
     let databases = app.databases.clone();
     let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
@@ -281,4 +289,22 @@ fn draw_error_popup<B: Backend>(f: &mut Frame<'_, B>, error: String) -> anyhow::
     f.render_widget(Clear, area);
     f.render_widget(error, area);
     Ok(())
+}
+
+pub fn common_nav(key: Key) -> Option<MoveSelection> {
+    if key == Key::Down {
+        Some(MoveSelection::Down)
+    } else if key == Key::Up {
+        Some(MoveSelection::Up)
+    } else if key == Key::PageUp {
+        Some(MoveSelection::PageUp)
+    } else if key == Key::PageDown {
+        Some(MoveSelection::PageDown)
+    } else if key == Key::Right {
+        Some(MoveSelection::Right)
+    } else if key == Key::Left {
+        Some(MoveSelection::Left)
+    } else {
+        None
+    }
 }

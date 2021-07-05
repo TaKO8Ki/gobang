@@ -4,7 +4,7 @@ pub mod query;
 pub mod record_table;
 pub mod table_list;
 
-use crate::app::{App, FocusBlock};
+use crate::app::{App, FocusBlock, Tab};
 use crate::event::Key;
 
 pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
@@ -29,8 +29,10 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
             _ => app.focus_block = FocusBlock::RecordTable(true),
         },
         Key::Char('e') => app.focus_block = FocusBlock::Query(true),
-        Key::Right => app.next_tab(),
-        Key::Left => app.previous_tab(),
+        Key::Char('1') => app.selected_tab = Tab::Records,
+        Key::Char('2') => app.selected_tab = Tab::Structure,
+        // Key::Right => app.next_tab(),
+        // Key::Left => app.previous_tab(),
         Key::Esc => app.error = None,
         _ => (),
     }
