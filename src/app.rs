@@ -155,7 +155,7 @@ impl RecordTable {
         let headers = self.headers();
         let header_cells = headers
             .iter()
-            .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
+            .map(|h| Cell::from(h.to_string()).style(Style::default()));
         let header = Row::new(header_cells).height(1).bottom_margin(1);
         let rows = self.rows();
         let rows = rows.iter().map(|item| {
@@ -167,7 +167,7 @@ impl RecordTable {
                 + 1;
             let cells = item
                 .iter()
-                .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
+                .map(|c| Cell::from(c.to_string()).style(Style::default()));
             Row::new(cells).height(height as u16).bottom_margin(1)
         });
         let widths = (0..10)
