@@ -39,7 +39,7 @@ impl DatabasesComponent {
     }
 
     fn tree_item_to_span(item: &DatabaseTreeItem, selected: bool, width: u16) -> Span<'_> {
-        let path = item.info().full_path.to_string();
+        let name = item.kind().name();
         let indent = item.info().indent();
 
         let indent_str = if indent == 0 {
@@ -59,15 +59,15 @@ impl DatabasesComponent {
             EMPTY_STR
         };
 
-        let path = format!(
+        let name = format!(
             "{}{}{:w$}",
             indent_str,
             path_arrow,
-            path,
+            name,
             w = width as usize
         );
         Span::styled(
-            path,
+            name,
             if selected {
                 Style::default().fg(Color::Magenta).bg(Color::Green)
             } else {

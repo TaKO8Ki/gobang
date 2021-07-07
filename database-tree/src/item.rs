@@ -1,44 +1,23 @@
 use crate::error::Result;
 use crate::{Database, Table};
-use std::{convert::TryFrom, path::PathBuf};
+use std::convert::TryFrom;
 
-/// holds the information shared among all `DatabaseTreeItem` in a `FileTree`
 #[derive(Debug, Clone)]
 pub struct TreeItemInfo {
-    /// indent level
     indent: u8,
-    /// currently visible depending on the folder collapse states
     visible: bool,
-    /// contains this paths last component and folded up paths added to it
-    /// if this is `None` nothing was folding into here
-    folded: Option<PathBuf>,
-    /// the full path
-    pub full_path: String,
 }
 
 impl TreeItemInfo {
-    pub const fn new(indent: u8, full_path: String) -> Self {
+    pub const fn new(indent: u8) -> Self {
         Self {
             indent,
             visible: true,
-            folded: None,
-            full_path,
         }
     }
 
     pub const fn is_visible(&self) -> bool {
         self.visible
-    }
-
-    pub fn full_path_str(&self) -> &str {
-        self.full_path.as_str()
-    }
-
-    pub fn path_str(&self) -> &str {
-        match self.full_path.split('/').collect::<Vec<_>>().get(1) {
-            Some(path) => path,
-            None => self.full_path.as_str(),
-        }
     }
 
     pub const fn indent(&self) -> u8 {
@@ -77,6 +56,13 @@ impl DatabaseTreeItemKind {
         }
     }
 
+    pub fn name(&self) -> String {
+        match self {
+            Self::Database { name, .. } => name.to_string(),
+            Self::Table { table, .. } => table.name.clone(),
+        }
+    }
+
     pub fn database_name(&self) -> Option<String> {
         match self {
             Self::Database { .. } => None,
@@ -97,7 +83,7 @@ impl DatabaseTreeItem {
         let indent = u8::try_from((3_usize).saturating_sub(2))?;
 
         Ok(Self {
-            info: TreeItemInfo::new(indent, table.name.clone()),
+            info: TreeItemInfo::new(indent),
             kind: DatabaseTreeItemKind::Table {
                 database: database.name.clone(),
                 table: table.clone(),
@@ -107,20 +93,12 @@ impl DatabaseTreeItem {
 
     pub fn new_database(database: &Database, collapsed: bool) -> Result<Self> {
         Ok(Self {
-            info: TreeItemInfo::new(0, database.name.to_string()),
+            info: TreeItemInfo::new(0),
             kind: DatabaseTreeItemKind::Database {
                 name: database.name.to_string(),
                 collapsed,
             },
         })
-    }
-
-    pub fn fold(&mut self, next: Self) {
-        if let Some(folded) = self.info.folded.as_mut() {
-            *folded = folded.join(&next.info.full_path);
-        }
-
-        self.info.full_path = next.info.full_path
     }
 
     pub const fn info(&self) -> &TreeItemInfo {
@@ -162,18 +140,24 @@ impl Eq for DatabaseTreeItem {}
 
 impl PartialEq for DatabaseTreeItem {
     fn eq(&self, other: &Self) -> bool {
-        self.info.full_path.eq(&other.info.full_path)
+        if self.kind.is_database() && other.kind().is_database() {
+            return self.kind.name().eq(&other.kind.name());
+        }
+        if !self.kind.is_database() && !other.kind.is_database() {
+            return self.kind.name().eq(&other.kind.name());
+        }
+        false
     }
 }
 
 impl PartialOrd for DatabaseTreeItem {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.info.full_path.partial_cmp(&other.info.full_path)
+        self.kind.name().partial_cmp(&other.kind.name())
     }
 }
 
 impl Ord for DatabaseTreeItem {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.info.full_path.cmp(&other.info.full_path)
+        self.kind.name().cmp(&other.kind.name())
     }
 }

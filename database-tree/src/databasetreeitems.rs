@@ -38,7 +38,7 @@ impl DatabaseTreeItems {
         Ok(items)
     }
 
-    /// how many individual items (files/paths) are in the list
+    /// how many individual items are in the list
     pub fn len(&self) -> usize {
         self.tree_items.len()
     }
@@ -49,29 +49,25 @@ impl DatabaseTreeItems {
     }
 
     fn push_databases<'a>(
-        item_path: &'a Database,
+        database: &'a Database,
         nodes: &mut Vec<DatabaseTreeItem>,
-        // helps to only add new nodes for paths that were not added before
-        // we also count the number of children a node has for later folding
         items_added: &mut HashMap<String, usize>,
         collapsed: &BTreeSet<&String>,
     ) -> Result<()> {
-        let c = item_path.name.clone();
+        let c = database.name.clone();
         if !items_added.contains_key(&c) {
             // add node and set count to have no children
             items_added.insert(c.clone(), 0);
 
             // increase the number of children in the parent node count
-            *items_added.entry(item_path.name.clone()).or_insert(0) += 1;
+            *items_added.entry(database.name.clone()).or_insert(0) += 1;
 
-            //TODO: make non alloc
-            let path_string = c;
-            let is_collapsed = collapsed.contains(&path_string);
-            nodes.push(DatabaseTreeItem::new_database(item_path, is_collapsed)?);
+            let is_collapsed = collapsed.contains(&c);
+            nodes.push(DatabaseTreeItem::new_database(database, is_collapsed)?);
         }
 
         // increase child count in parent node (the above ancenstor ignores the leaf component)
-        *items_added.entry(item_path.name.clone()).or_insert(0) += 1;
+        *items_added.entry(database.name.clone()).or_insert(0) += 1;
 
         Ok(())
     }
@@ -80,7 +76,7 @@ impl DatabaseTreeItems {
         if self.tree_items[index].kind().is_database() {
             self.tree_items[index].collapse_database();
 
-            let path = self.tree_items[index].info().full_path_str().to_string();
+            let name = self.tree_items[index].kind().name();
 
             for i in index + 1..self.tree_items.len() {
                 let item = &mut self.tree_items[i];
@@ -90,7 +86,7 @@ impl DatabaseTreeItems {
                 }
 
                 if let Some(db) = item.kind().database_name() {
-                    if db == path {
+                    if db == name {
                         item.hide();
                     }
                 } else {
@@ -104,14 +100,14 @@ impl DatabaseTreeItems {
         if self.tree_items[index].kind().is_database() {
             self.tree_items[index].expand_database();
 
-            let full_path = self.tree_items[index].info().full_path_str().to_string();
+            let name = self.tree_items[index].kind().name();
 
             if recursive {
                 for i in index + 1..self.tree_items.len() {
                     let item = &mut self.tree_items[i];
 
                     if let Some(db) = item.kind().database_name() {
-                        if *db != full_path {
+                        if *db != name {
                             break;
                         }
                     }
@@ -122,18 +118,17 @@ impl DatabaseTreeItems {
                 }
             }
 
-            self.update_visibility(&Some(full_path), index + 1, false);
+            self.update_visibility(&Some(name), index + 1, false);
         }
     }
 
     fn update_visibility(&mut self, prefix: &Option<String>, start_idx: usize, set_defaults: bool) {
-        // if we are in any subpath that is collapsed we keep skipping over it
         let mut inner_collapsed: Option<String> = None;
 
         for i in start_idx..self.tree_items.len() {
-            if let Some(ref collapsed_path) = inner_collapsed {
+            if let Some(ref collapsed_item) = inner_collapsed {
                 if let Some(db) = self.tree_items[i].kind().database_name().clone() {
-                    if db == *collapsed_path {
+                    if db == *collapsed_item {
                         if set_defaults {
                             self.tree_items[i].info_mut().set_visible(false);
                         }
@@ -146,7 +141,6 @@ impl DatabaseTreeItems {
             let item_kind = self.tree_items[i].kind().clone();
 
             if matches!(item_kind, DatabaseTreeItemKind::Database{ collapsed, .. } if collapsed) {
-                // we encountered an inner path that is still collapsed
                 inner_collapsed = item_kind.database_name().clone();
             }
 
