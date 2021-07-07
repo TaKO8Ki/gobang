@@ -6,6 +6,9 @@ mod ui;
 mod user_config;
 mod utils;
 
+#[macro_use]
+mod log;
+
 use crate::app::{App, FocusBlock};
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
@@ -20,6 +23,8 @@ use tui::{backend::CrosstermBackend, Terminal};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
+
+    outln!("gobang logger");
 
     let user_config = user_config::UserConfig::new("sample.toml").ok();
 

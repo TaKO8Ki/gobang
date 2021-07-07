@@ -24,14 +24,14 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
             .iter()
             .map(|i| {
                 ListItem::new(vec![Spans::from(Span::raw(i.database_url()))])
-                    .style(Style::default().fg(Color::White))
+                    .style(Style::default())
             })
             .collect();
         let tasks = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
-            .highlight_style(Style::default().fg(Color::Green))
+            .highlight_style(Style::default().bg(Color::Blue))
             .style(match app.focus_block {
-                FocusBlock::ConnectionList => Style::default().fg(Color::Green),
+                FocusBlock::ConnectionList => Style::default(),
                 _ => Style::default().fg(Color::DarkGray),
             });
         let popup_layout = Layout::default()
@@ -76,14 +76,13 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     let table_status: Vec<ListItem> = app
         .table_status()
         .iter()
-        .map(|i| {
-            ListItem::new(vec![Spans::from(Span::raw(i.to_string()))])
-                .style(Style::default().fg(Color::White))
-        })
+        .map(|i| ListItem::new(vec![Spans::from(Span::raw(i.to_string()))]).style(Style::default()))
         .collect();
-    let tasks = List::new(table_status)
-        .block(Block::default().borders(Borders::ALL))
-        .highlight_style(Style::default().fg(Color::Green));
+    let tasks = List::new(table_status).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().fg(Color::DarkGray)),
+    );
     f.render_widget(tasks, left_chunks[1]);
 
     let right_chunks = Layout::default()
@@ -145,7 +144,7 @@ fn draw_structure_table<B: Backend>(
     let headers = app.structure_table.headers();
     let header_cells = headers
         .iter()
-        .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
+        .map(|h| Cell::from(h.to_string()).style(Style::default()));
     let header = Row::new(header_cells).height(1).bottom_margin(1);
     let rows = app.structure_table.rows();
     let rows = rows.iter().map(|item| {
@@ -157,7 +156,7 @@ fn draw_structure_table<B: Backend>(
             + 1;
         let cells = item
             .iter()
-            .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
+            .map(|c| Cell::from(c.to_string()).style(Style::default()));
         Row::new(cells).height(height as u16).bottom_margin(1)
     });
     let widths = (0..10)
@@ -166,7 +165,7 @@ fn draw_structure_table<B: Backend>(
     let t = Table::new(rows)
         .header(header)
         .block(Block::default().borders(Borders::ALL).title("Structure"))
-        .highlight_style(Style::default().fg(Color::Green))
+        .highlight_style(Style::default().bg(Color::Blue))
         .style(match app.focus_block {
             FocusBlock::RecordTable => Style::default(),
             _ => Style::default().fg(Color::DarkGray),

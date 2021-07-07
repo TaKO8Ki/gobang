@@ -69,7 +69,7 @@ impl DatabasesComponent {
         Span::styled(
             name,
             if selected {
-                Style::default().fg(Color::Magenta).bg(Color::Green)
+                Style::default().bg(Color::Blue)
             } else {
                 Style::default()
             },
