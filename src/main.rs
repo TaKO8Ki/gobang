@@ -1,4 +1,5 @@
 mod app;
+mod components;
 mod event;
 mod handlers;
 mod ui;

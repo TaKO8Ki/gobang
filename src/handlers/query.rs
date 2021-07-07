@@ -6,8 +6,8 @@ use regex::Regex;
 use sqlx::Row;
 use unicode_width::UnicodeWidthStr;
 
-pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<()> {
-    if focused {
+pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
+    if true {
         match key {
             Key::Enter => {
                 app.query = app.input.drain(..).collect();
@@ -58,15 +58,15 @@ pub async fn handler(key: Key, app: &mut App, focused: bool) -> anyhow::Result<(
             }
             Key::Left => app.decrement_input_cursor_x(),
             Key::Right => app.increment_input_cursor_x(),
-            Key::Esc => app.focus_block = FocusBlock::Query(false),
+            Key::Esc => app.focus_block = FocusBlock::Query,
             _ => {}
         }
     } else {
         match key {
-            Key::Char('h') => app.focus_block = FocusBlock::DabataseList(false),
-            Key::Char('j') => app.focus_block = FocusBlock::RecordTable(false),
+            Key::Char('h') => app.focus_block = FocusBlock::DabataseList,
+            Key::Char('j') => app.focus_block = FocusBlock::RecordTable,
             Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
-            Key::Enter => app.focus_block = FocusBlock::Query(true),
+            Key::Enter => app.focus_block = FocusBlock::Query,
             _ => (),
         }
     }

@@ -1,5 +1,5 @@
-use crate::app::{Database, Table};
 use chrono::NaiveDate;
+use database_tree::{Database, Table};
 use futures::TryStreamExt;
 use sqlx::mysql::{MySqlColumn, MySqlPool, MySqlRow};
 use sqlx::{Column as _, Row, TypeInfo};
@@ -13,7 +13,10 @@ pub async fn get_databases(pool: &MySqlPool) -> anyhow::Result<Vec<Database>> {
         .collect::<Vec<String>>();
     let mut list = vec![];
     for db in databases {
-        list.push(Database::new(db, pool).await?)
+        list.push(Database::new(
+            db.clone(),
+            get_tables(db.clone(), pool).await?,
+        ))
     }
     Ok(list)
 }
