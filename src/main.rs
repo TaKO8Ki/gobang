@@ -38,39 +38,9 @@ async fn main() -> anyhow::Result<()> {
 
     terminal.clear()?;
 
-    // let mut tree = FileTree::new(
-    //     &[
-    //         std::path::Path::new("world/city"),
-    //         std::path::Path::new("world/country"),
-    //         std::path::Path::new("c/bar.rs"),
-    //     ],
-    //     &BTreeSet::new(),
-    // )
-    // .unwrap();
-    use crate::components::Component as _;
-    use database_tree::{Database, DatabaseTree};
-    use std::collections::BTreeSet;
-    let mut tree = DatabaseTree::new(
-        &[
-            Database {
-                name: "world".to_string(),
-                tables: vec!["country".to_string(), "city".to_string()],
-            },
-            Database {
-                name: "foo".to_string(),
-                tables: vec!["bar".to_string(), "baz".to_string(), "city".to_string()],
-            },
-        ],
-        &BTreeSet::new(),
-    )
-    .unwrap();
-    tree.selection = Some(0);
-    app.revision_files.tree = tree;
     loop {
         terminal.draw(|f| ui::draw(f, &mut app).unwrap())?;
-        let event = events.next()?;
-        app.revision_files.event(event)?;
-        match event {
+        match events.next()? {
             Event::Input(key) => {
                 if key == Key::Char('q') {
                     break;

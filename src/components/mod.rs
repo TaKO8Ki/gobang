@@ -25,20 +25,17 @@ pub enum Direction {
     Down,
 }
 
-///
 #[derive(PartialEq)]
 pub enum CommandBlocking {
     Blocking,
     PassingOn,
 }
 
-///
 pub trait DrawableComponent {
     ///
     fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect) -> Result<()>;
 }
 
-///
 #[derive(PartialEq)]
 pub enum EventState {
     Consumed,
@@ -57,30 +54,26 @@ impl From<bool> for EventState {
 
 /// base component trait
 pub trait Component {
-    ///
     fn commands(&self, out: &mut Vec<CommandInfo>, force_all: bool) -> CommandBlocking;
 
-    ///
-    fn event(&mut self, ev: crate::event::Event<crate::event::Key>) -> Result<EventState>;
+    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
 
-    ///
     fn focused(&self) -> bool {
         false
     }
-    /// focus/unfocus this component depending on param
+
     fn focus(&mut self, _focus: bool) {}
-    ///
+
     fn is_visible(&self) -> bool {
         true
     }
-    ///
+
     fn hide(&mut self) {}
-    ///
+
     fn show(&mut self) -> Result<()> {
         Ok(())
     }
 
-    ///
     fn toggle_visible(&mut self) -> Result<()> {
         if self.is_visible() {
             self.hide();

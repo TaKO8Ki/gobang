@@ -302,7 +302,10 @@ dependencies = [
 name = "database-tree"
 version = "0.1.2"
 dependencies = [
+ "anyhow",
+ "chrono",
  "pretty_assertions",
+ "sqlx",
  "thiserror",
 ]
 

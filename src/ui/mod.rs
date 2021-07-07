@@ -1,4 +1,5 @@
 use crate::app::{App, FocusBlock, Tab};
+use crate::components::DrawableComponent as _;
 use crate::event::Key;
 use database_tree::MoveSelection;
 use tui::{
@@ -11,7 +12,6 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-pub mod database_list;
 pub mod scrollbar;
 pub mod scrolllist;
 
@@ -70,44 +70,8 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
     let left_chunks = Layout::default()
         .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
         .split(main_chunks[0]);
-    // let databases: Vec<ListItem> = app
-    //     .databases
-    //     .iter()
-    //     .map(|i| {
-    //         ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-    //             .style(Style::default().fg(Color::White))
-    //     })
-    //     .collect();
-    // let tasks = List::new(databases)
-    //     .block(Block::default().borders(Borders::ALL).title("Databases"))
-    //     .highlight_style(Style::default().fg(Color::Green))
-    //     .style(match app.focus_block {
-    //         FocusBlock::DabataseList(false) => Style::default(),
-    //         FocusBlock::DabataseList(true) => Style::default().fg(Color::Green),
-    //         _ => Style::default().fg(Color::DarkGray),
-    //     });
-    // f.render_stateful_widget(tasks, left_chunks[0], &mut app.selected_database);
-    use crate::components::DrawableComponent as _;
-    app.revision_files.draw(f, left_chunks[0]).unwrap();
 
-    // let databases = app.databases.clone();
-    // let tables: Vec<ListItem> = databases[app.selected_database.selected().unwrap_or(0)]
-    //     .tables
-    //     .iter()
-    //     .map(|i| {
-    //         ListItem::new(vec![Spans::from(Span::raw(&i.name))])
-    //             .style(Style::default().fg(Color::White))
-    //     })
-    //     .collect();
-    // let tasks = List::new(tables)
-    //     .block(Block::default().borders(Borders::ALL).title("Tables"))
-    //     .highlight_style(Style::default().fg(Color::Green))
-    //     .style(match app.focus_block {
-    //         FocusBlock::TableList(false) => Style::default(),
-    //         FocusBlock::TableList(true) => Style::default().fg(Color::Green),
-    //         _ => Style::default().fg(Color::DarkGray),
-    //     });
-    // f.render_stateful_widget(tasks, left_chunks[1], &mut app.selected_table);
+    app.databases.draw(f, left_chunks[0]).unwrap();
 
     let table_status: Vec<ListItem> = app
         .table_status()
@@ -148,20 +112,23 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
 
     let query = Paragraph::new(app.input.as_ref())
         .style(match app.focus_block {
-            FocusBlock::Query(true) => Style::default().fg(Color::Green),
-            FocusBlock::Query(false) => Style::default(),
+            FocusBlock::Query => Style::default(),
             _ => Style::default().fg(Color::DarkGray),
         })
         .block(Block::default().borders(Borders::ALL).title("Query"));
     f.render_widget(query, right_chunks[1]);
-    if let FocusBlock::Query(true) = app.focus_block {
+    if let FocusBlock::Query = app.focus_block {
         f.set_cursor(
             right_chunks[1].x + app.input.width() as u16 + 1 - app.input_cursor_x,
             right_chunks[1].y + 1,
         )
     }
     match app.selected_tab {
-        Tab::Records => draw_records_table(f, app, right_chunks[2])?,
+        Tab::Records => app.record_table.draw(
+            f,
+            right_chunks[2],
+            matches!(app.focus_block, FocusBlock::RecordTable),
+        )?,
         Tab::Structure => draw_structure_table(f, app, right_chunks[2])?,
     }
     if let Some(err) = app.error.clone() {
@@ -201,52 +168,11 @@ fn draw_structure_table<B: Backend>(
         .block(Block::default().borders(Borders::ALL).title("Structure"))
         .highlight_style(Style::default().fg(Color::Green))
         .style(match app.focus_block {
-            FocusBlock::RecordTable(false) => Style::default(),
-            FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
+            FocusBlock::RecordTable => Style::default(),
             _ => Style::default().fg(Color::DarkGray),
         })
         .widths(&widths);
     f.render_stateful_widget(t, layout_chunk, &mut app.structure_table.state);
-    Ok(())
-}
-
-fn draw_records_table<B: Backend>(
-    f: &mut Frame<'_, B>,
-    app: &mut App,
-    layout_chunk: Rect,
-) -> anyhow::Result<()> {
-    let headers = app.record_table.headers();
-    let header_cells = headers
-        .iter()
-        .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
-    let header = Row::new(header_cells).height(1).bottom_margin(1);
-    let rows = app.record_table.rows();
-    let rows = rows.iter().map(|item| {
-        let height = item
-            .iter()
-            .map(|content| content.chars().filter(|c| *c == '\n').count())
-            .max()
-            .unwrap_or(0)
-            + 1;
-        let cells = item
-            .iter()
-            .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
-        Row::new(cells).height(height as u16).bottom_margin(1)
-    });
-    let widths = (0..10)
-        .map(|_| Constraint::Percentage(10))
-        .collect::<Vec<Constraint>>();
-    let t = Table::new(rows)
-        .header(header)
-        .block(Block::default().borders(Borders::ALL).title("Records"))
-        .highlight_style(Style::default().fg(Color::Green))
-        .style(match app.focus_block {
-            FocusBlock::RecordTable(false) => Style::default(),
-            FocusBlock::RecordTable(true) => Style::default().fg(Color::Green),
-            _ => Style::default().fg(Color::DarkGray),
-        })
-        .widths(&widths);
-    f.render_stateful_widget(t, layout_chunk, &mut app.record_table.state);
     Ok(())
 }
 
@@ -285,17 +211,17 @@ fn draw_error_popup<B: Backend>(f: &mut Frame<'_, B>, error: String) -> anyhow::
 }
 
 pub fn common_nav(key: Key) -> Option<MoveSelection> {
-    if key == Key::Down {
+    if key == Key::Char('j') {
         Some(MoveSelection::Down)
-    } else if key == Key::Up {
+    } else if key == Key::Char('k') {
         Some(MoveSelection::Up)
     } else if key == Key::PageUp {
         Some(MoveSelection::PageUp)
     } else if key == Key::PageDown {
         Some(MoveSelection::PageDown)
-    } else if key == Key::Right {
+    } else if key == Key::Char('l') {
         Some(MoveSelection::Right)
-    } else if key == Key::Left {
+    } else if key == Key::Char('h') {
         Some(MoveSelection::Left)
     } else {
         None

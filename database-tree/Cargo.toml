@@ -11,6 +11,9 @@ description = "A cross-platform terminal database tool written in Rust"
 
 [dependencies]
 thiserror = "1.0"
+sqlx = { version = "0.4.1", features = ["mysql", "chrono", "runtime-tokio-rustls"] }
+chrono = "0.4"
+anyhow = "1.0.38"
 
 [dev-dependencies]
 pretty_assertions = "0.7"

@@ -1,7 +1,9 @@
-use crate::app::{App, Database, FocusBlock};
+use crate::app::{App, FocusBlock};
 use crate::event::Key;
-use crate::utils::get_databases;
+use crate::utils::{get_databases, get_tables};
+use database_tree::{Database, DatabaseTree};
 use sqlx::mysql::MySqlPool;
+use std::collections::BTreeSet;
 
 pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
@@ -17,16 +19,28 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                 }
                 let pool = MySqlPool::connect(conn.database_url().as_str()).await?;
                 app.pool = Some(pool);
-                app.focus_block = FocusBlock::DabataseList(false);
+                app.focus_block = FocusBlock::DabataseList;
             }
-            app.databases = match app.selected_connection() {
-                Some(conn) => match &conn.database {
+            if let Some(conn) = app.selected_connection() {
+                match &conn.database {
                     Some(database) => {
-                        vec![Database::new(database.clone(), app.pool.as_ref().unwrap()).await?]
+                        app.databases.tree = DatabaseTree::new(
+                            &[Database::new(
+                                database.clone(),
+                                get_tables(database.clone(), app.pool.as_ref().unwrap()).await?,
+                            )],
+                            &BTreeSet::new(),
+                        )
+                        .unwrap()
                     }
-                    None => get_databases(app.pool.as_ref().unwrap()).await?,
-                },
-                None => vec![],
+                    None => {
+                        app.databases.tree = DatabaseTree::new(
+                            get_databases(app.pool.as_ref().unwrap()).await?.as_slice(),
+                            &BTreeSet::new(),
+                        )
+                        .unwrap()
+                    }
+                }
             };
         }
         _ => (),

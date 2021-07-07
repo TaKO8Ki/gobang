@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::Database;
+use crate::{Database, Table};
 use std::{convert::TryFrom, path::PathBuf};
 
 /// holds the information shared among all `DatabaseTreeItem` in a `FileTree`
@@ -14,17 +14,15 @@ pub struct TreeItemInfo {
     folded: Option<PathBuf>,
     /// the full path
     pub full_path: String,
-    pub database: Option<String>,
 }
 
 impl TreeItemInfo {
-    pub const fn new(indent: u8, database: Option<String>, full_path: String) -> Self {
+    pub const fn new(indent: u8, full_path: String) -> Self {
         Self {
             indent,
             visible: true,
             folded: None,
             full_path,
-            database,
         }
     }
 
@@ -60,7 +58,7 @@ impl TreeItemInfo {
 #[derive(PartialEq, Debug, Clone)]
 pub enum DatabaseTreeItemKind {
     Database { name: String, collapsed: bool },
-    Table,
+    Table { database: String, table: Table },
 }
 
 impl DatabaseTreeItemKind {
@@ -69,13 +67,20 @@ impl DatabaseTreeItemKind {
     }
 
     pub const fn is_table(&self) -> bool {
-        matches!(self, Self::Table)
+        matches!(self, Self::Table { .. })
     }
 
     pub const fn is_database_collapsed(&self) -> bool {
         match self {
             Self::Database { collapsed, .. } => *collapsed,
-            Self::Table => false,
+            Self::Table { .. } => false,
+        }
+    }
+
+    pub fn database_name(&self) -> Option<String> {
+        match self {
+            Self::Database { .. } => None,
+            Self::Table { database, .. } => Some(database.clone()),
         }
     }
 }
@@ -88,18 +93,21 @@ pub struct DatabaseTreeItem {
 }
 
 impl DatabaseTreeItem {
-    pub fn new_table(database: &Database, table: String) -> Result<Self> {
+    pub fn new_table(database: &Database, table: &Table) -> Result<Self> {
         let indent = u8::try_from((3_usize).saturating_sub(2))?;
 
         Ok(Self {
-            info: TreeItemInfo::new(indent, Some(database.name.to_string()), table),
-            kind: DatabaseTreeItemKind::Table,
+            info: TreeItemInfo::new(indent, table.name.clone()),
+            kind: DatabaseTreeItemKind::Table {
+                database: database.name.clone(),
+                table: table.clone(),
+            },
         })
     }
 
     pub fn new_database(database: &Database, collapsed: bool) -> Result<Self> {
         Ok(Self {
-            info: TreeItemInfo::new(0, None, database.name.to_string()),
+            info: TreeItemInfo::new(0, database.name.to_string()),
             kind: DatabaseTreeItemKind::Database {
                 name: database.name.to_string(),
                 collapsed,

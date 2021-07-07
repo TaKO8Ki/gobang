@@ -1,11 +1,18 @@
+use crate::components::utils::scroll_vertical::VerticalScroll;
 use crate::{
+    components::DatabasesComponent,
     user_config::{Connection, UserConfig},
-    utils::get_tables,
 };
 use sqlx::mysql::MySqlPool;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use tui::widgets::{ListState, TableState};
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Rect},
+    style::{Color, Style},
+    widgets::{Block, Borders, Cell, ListState, Row, Table as WTable, TableState},
+    Frame,
+};
 use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone, Copy, EnumIter)]
@@ -29,29 +36,10 @@ impl Tab {
 }
 
 pub enum FocusBlock {
-    DabataseList(bool),
-    TableList(bool),
-    RecordTable(bool),
+    DabataseList,
+    RecordTable,
     ConnectionList,
-    Query(bool),
-}
-
-#[derive(Clone)]
-pub struct Database {
-    pub name: String,
-    pub tables: Vec<Table>,
-}
-
-#[derive(sqlx::FromRow, Debug, Clone)]
-pub struct Table {
-    #[sqlx(rename = "Name")]
-    pub name: String,
-    #[sqlx(rename = "Create_time")]
-    pub create_time: chrono::DateTime<chrono::Utc>,
-    #[sqlx(rename = "Update_time")]
-    pub update_time: Option<chrono::DateTime<chrono::Utc>>,
-    #[sqlx(rename = "Engine")]
-    pub engine: Option<String>,
+    Query,
 }
 
 #[derive(sqlx::FromRow, Debug, Clone)]
@@ -71,6 +59,7 @@ pub struct RecordTable {
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub column_index: usize,
+    pub scroll: VerticalScroll,
 }
 
 impl Default for RecordTable {
@@ -80,6 +69,7 @@ impl Default for RecordTable {
             headers: vec![],
             rows: vec![],
             column_index: 0,
+            scroll: VerticalScroll::new(),
         }
     }
 }
@@ -89,28 +79,28 @@ impl RecordTable {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.rows.len() - 1 {
-                    0
+                    Some(i)
                 } else {
-                    i + 1
+                    Some(i + 1)
                 }
             }
-            None => 0,
+            None => None,
         };
-        self.state.select(Some(i));
+        self.state.select(i);
     }
 
     pub fn previous(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.rows.len() - 1
+                    Some(i)
                 } else {
-                    i - 1
+                    Some(i - 1)
                 }
             }
-            None => 0,
+            None => None,
         };
-        self.state.select(Some(i));
+        self.state.select(i);
     }
 
     pub fn next_column(&mut self) {
@@ -142,14 +132,61 @@ impl RecordTable {
         }
         rows
     }
-}
 
-impl Database {
-    pub async fn new(name: String, pool: &MySqlPool) -> anyhow::Result<Self> {
-        Ok(Self {
-            name: name.clone(),
-            tables: get_tables(name, pool).await?,
-        })
+    pub fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<'_, B>,
+        layout_chunk: Rect,
+        focused: bool,
+    ) -> anyhow::Result<()> {
+        self.state.selected().map_or_else(
+            || {
+                self.scroll.reset();
+            },
+            |selection| {
+                self.scroll.update(
+                    selection,
+                    self.rows.len(),
+                    layout_chunk.height.saturating_sub(2) as usize,
+                );
+            },
+        );
+
+        let headers = self.headers();
+        let header_cells = headers
+            .iter()
+            .map(|h| Cell::from(h.to_string()).style(Style::default().fg(Color::White)));
+        let header = Row::new(header_cells).height(1).bottom_margin(1);
+        let rows = self.rows();
+        let rows = rows.iter().map(|item| {
+            let height = item
+                .iter()
+                .map(|content| content.chars().filter(|c| *c == '\n').count())
+                .max()
+                .unwrap_or(0)
+                + 1;
+            let cells = item
+                .iter()
+                .map(|c| Cell::from(c.to_string()).style(Style::default().fg(Color::White)));
+            Row::new(cells).height(height as u16).bottom_margin(1)
+        });
+        let widths = (0..10)
+            .map(|_| Constraint::Percentage(10))
+            .collect::<Vec<Constraint>>();
+        let t = WTable::new(rows)
+            .header(header)
+            .block(Block::default().borders(Borders::ALL).title("Records"))
+            .highlight_style(Style::default().fg(Color::Green))
+            .style(if focused {
+                Style::default()
+            } else {
+                Style::default().fg(Color::DarkGray)
+            })
+            .widths(&widths);
+        f.render_stateful_widget(t, layout_chunk, &mut self.state);
+
+        self.scroll.draw(f, layout_chunk);
+        Ok(())
     }
 }
 
@@ -157,7 +194,6 @@ pub struct App {
     pub input: String,
     pub input_cursor_x: u16,
     pub query: String,
-    pub databases: Vec<Database>,
     pub record_table: RecordTable,
     pub structure_table: RecordTable,
     pub focus_block: FocusBlock,
@@ -166,7 +202,7 @@ pub struct App {
     pub selected_connection: ListState,
     pub selected_database: ListState,
     pub selected_table: ListState,
-    pub revision_files: crate::components::DatabasesComponent,
+    pub databases: DatabasesComponent,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -177,16 +213,15 @@ impl Default for App {
             input: String::new(),
             input_cursor_x: 0,
             query: String::new(),
-            databases: Vec::new(),
             record_table: RecordTable::default(),
             structure_table: RecordTable::default(),
-            focus_block: FocusBlock::DabataseList(false),
+            focus_block: FocusBlock::DabataseList,
             selected_tab: Tab::Records,
             user_config: None,
             selected_connection: ListState::default(),
             selected_database: ListState::default(),
             selected_table: ListState::default(),
-            revision_files: crate::components::DatabasesComponent::new(),
+            databases: DatabasesComponent::new(),
             pool: None,
             error: None,
         }
@@ -194,64 +229,6 @@ impl Default for App {
 }
 
 impl App {
-    pub fn next_table(&mut self) {
-        let i = match self.selected_table.selected() {
-            Some(i) => {
-                if i >= self.selected_database().unwrap().tables.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_table.select(Some(i));
-    }
-
-    pub fn previous_table(&mut self) {
-        let i = match self.selected_table.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.selected_database().unwrap().tables.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_table.select(Some(i));
-    }
-
-    pub fn next_database(&mut self) {
-        let i = match self.selected_database.selected() {
-            Some(i) => {
-                if i >= self.databases.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_table.select(Some(0));
-        self.selected_database.select(Some(i));
-    }
-
-    pub fn previous_database(&mut self) {
-        let i = match self.selected_database.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.databases.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_table.select(Some(0));
-        self.selected_database.select(Some(i));
-    }
-
     pub fn next_connection(&mut self) {
         if let Some(config) = &self.user_config {
             let i = match self.selected_connection.selected() {
@@ -296,23 +273,6 @@ impl App {
         }
     }
 
-    pub fn selected_database(&self) -> Option<&Database> {
-        match self.selected_database.selected() {
-            Some(i) => self.databases.get(i),
-            None => None,
-        }
-    }
-
-    pub fn selected_table(&self) -> Option<&Table> {
-        match self.selected_table.selected() {
-            Some(i) => match self.selected_database() {
-                Some(db) => db.tables.get(i),
-                None => None,
-            },
-            None => None,
-        }
-    }
-
     pub fn selected_connection(&self) -> Option<&Connection> {
         match &self.user_config {
             Some(config) => match self.selected_connection.selected() {
@@ -324,7 +284,7 @@ impl App {
     }
 
     pub fn table_status(&self) -> Vec<String> {
-        if let Some(table) = self.selected_table() {
+        if let Some((table, _)) = self.databases.tree.selected_table() {
             return vec![
                 format!("created: {}", table.create_time.to_string()),
                 format!(

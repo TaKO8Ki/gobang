@@ -2,12 +2,10 @@ use super::{
     utils::scroll_vertical::VerticalScroll, CommandBlocking, CommandInfo, Component,
     DrawableComponent, EventState,
 };
-use crate::event::{Event as Ev, Key};
+use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-// use DatabaseTreelist::{DatabaseTree, DatabaseTreeItem};
 use database_tree::{DatabaseTree, DatabaseTreeItem};
 use std::convert::From;
 use tui::{
@@ -28,6 +26,7 @@ const EMPTY_STR: &str = "";
 pub struct DatabasesComponent {
     pub tree: DatabaseTree,
     pub scroll: VerticalScroll,
+    pub focused: bool,
 }
 
 impl DatabasesComponent {
@@ -35,10 +34,11 @@ impl DatabasesComponent {
         Self {
             tree: DatabaseTree::default(),
             scroll: VerticalScroll::new(),
+            focused: true,
         }
     }
 
-    fn tree_item_to_span<'a>(item: &'a DatabaseTreeItem, selected: bool, width: u16) -> Span<'a> {
+    fn tree_item_to_span(item: &DatabaseTreeItem, selected: bool, width: u16) -> Span<'_> {
         let path = item.info().full_path.to_string();
         let indent = item.info().indent();
 
@@ -99,6 +99,11 @@ impl DatabasesComponent {
             area,
             Block::default()
                 .title(Span::styled(title, Style::default()))
+                .style(if self.focused {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                })
                 .borders(Borders::ALL)
                 .border_style(Style::default()),
             items,
@@ -126,35 +131,17 @@ impl Component for DatabasesComponent {
         CommandBlocking::PassingOn
     }
 
-    fn event(&mut self, event: Ev<Key>) -> Result<EventState> {
-        if let crate::event::Event::Input(key) = event {
-            if tree_nav(&mut self.tree, key) {
-                return Ok(EventState::Consumed);
-            } else if key == Key::Enter {
-            }
+    fn event(&mut self, key: Key) -> Result<EventState> {
+        if tree_nav(&mut self.tree, key) {
+            return Ok(EventState::Consumed);
         }
-
         Ok(EventState::NotConsumed)
     }
 }
 
 fn tree_nav(tree: &mut DatabaseTree, key: Key) -> bool {
-    let tree_collapse_recursive = KeyEvent {
-        code: KeyCode::Left,
-        modifiers: KeyModifiers::SHIFT,
-    };
-    let tree_expand_recursive = KeyEvent {
-        code: KeyCode::Right,
-        modifiers: KeyModifiers::SHIFT,
-    };
     if let Some(common_nav) = common_nav(key) {
         tree.move_selection(common_nav)
-    } else if key == Key::from(tree_collapse_recursive) {
-        tree.collapse_recursive();
-        true
-    } else if key == Key::from(tree_expand_recursive) {
-        tree.expand_recursive();
-        true
     } else {
         false
     }

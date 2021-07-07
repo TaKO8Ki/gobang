@@ -25,7 +25,7 @@ impl VerticalScroll {
         self.top.set(0);
     }
 
-    pub fn move_top(&self, move_type: ScrollType) -> bool {
+    pub fn _move_top(&self, move_type: ScrollType) -> bool {
         let old = self.top.get();
         let max = self.max_top.get();
 
@@ -62,7 +62,7 @@ impl VerticalScroll {
         new_top
     }
 
-    pub fn update_no_selection(&self, line_count: usize, visual_height: usize) -> usize {
+    pub fn _update_no_selection(&self, line_count: usize, visual_height: usize) -> usize {
         self.update(self.get_top(), line_count, visual_height)
     }
 

@@ -3,9 +3,9 @@ use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::Style,
     text::Span,
-    widgets::{Block, Borders, List, ListItem, Widget},
+    widgets::{Block, List, ListItem, Widget},
     Frame,
 };
 

@@ -1,5 +1,7 @@
+use crate::Table;
 use crate::{
-    databasetreeitems::DatabaseTreeItems, error::Result, tree_iter::TreeIterator, TreeItemInfo,
+    databasetreeitems::DatabaseTreeItems, error::Result, item::DatabaseTreeItemKind,
+    tree_iter::TreeIterator,
 };
 use std::{collections::BTreeSet, usize};
 
@@ -59,13 +61,19 @@ impl DatabaseTree {
         self.visual_selection.as_ref()
     }
 
-    pub fn selected_file(&self) -> Option<&TreeItemInfo> {
+    pub fn selected_item(&self) -> Option<&crate::DatabaseTreeItem> {
+        self.selection
+            .and_then(|index| self.items.tree_items.get(index))
+    }
+
+    pub fn selected_table(&self) -> Option<(Table, String)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
-            if item.kind().is_database() {
-                None
-            } else {
-                Some(item.info())
+            match item.kind() {
+                DatabaseTreeItemKind::Database { .. } => None,
+                DatabaseTreeItemKind::Table { table, database } => {
+                    Some((table.clone(), database.clone()))
+                }
             }
         })
     }
@@ -191,6 +199,21 @@ impl DatabaseTree {
                     break;
                 }
 
+                let item = self
+                    .items
+                    .tree_items
+                    .iter()
+                    .filter(|item| item.info().is_visible())
+                    .last()
+                    .unwrap();
+
+                if !up
+                    && self.selected_item().unwrap().kind().is_database()
+                    && self.selected_item().unwrap() == item
+                {
+                    break;
+                }
+
                 new_index
             };
 
@@ -207,7 +230,7 @@ impl DatabaseTree {
     }
 
     fn select_parent(&mut self, current_index: usize) -> Option<usize> {
-        let indent = self.items.tree_items[current_index].info().indent();
+        let indent = self.items.tree_items.get(current_index)?.info().indent();
 
         let mut index = current_index;
 
@@ -227,7 +250,7 @@ impl DatabaseTree {
     }
 
     fn selection_left(&mut self, current_index: usize) -> Option<usize> {
-        let item = &mut self.items.tree_items[current_index];
+        let item = &mut self.items.tree_items.get(current_index)?;
 
         if item.kind().is_database() && !item.kind().is_database_collapsed() {
             self.items.collapse(current_index, false);
@@ -238,7 +261,7 @@ impl DatabaseTree {
     }
 
     fn selection_right(&mut self, current_selection: usize) -> Option<usize> {
-        let item = &mut self.items.tree_items[current_selection];
+        let item = &mut self.items.tree_items.get(current_selection)?;
 
         if item.kind().is_database() {
             if item.kind().is_database_collapsed() {
