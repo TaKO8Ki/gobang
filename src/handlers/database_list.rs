@@ -12,6 +12,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
         Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
         Key::Enter => {
             if let Some((table, database)) = app.databases.tree.selected_table() {
+                app.focus_block = FocusBlock::RecordTable;
                 let (headers, records) = get_records(
                     &Database {
                         name: database.clone(),
@@ -21,9 +22,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                     app.pool.as_ref().unwrap(),
                 )
                 .await?;
-                app.record_table.state.select(Some(0));
-                app.record_table.headers = headers;
-                app.record_table.rows = records;
+                app.record_table.reset(headers, records);
 
                 let (headers, records) = get_columns(
                     &Database {
@@ -34,9 +33,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                     app.pool.as_ref().unwrap(),
                 )
                 .await?;
-                app.structure_table.state.select(Some(0));
-                app.structure_table.headers = headers;
-                app.structure_table.rows = records;
+                app.structure_table.reset(headers, records);
             }
         }
         _ => (),

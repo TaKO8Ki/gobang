@@ -75,13 +75,13 @@ impl Default for RecordTable {
 }
 
 impl RecordTable {
-    pub fn next(&mut self) {
+    pub fn next(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.rows.len() - 1 {
-                    Some(i)
+                if i >= self.rows.len() - lines {
+                    Some(self.rows.len() - 1)
                 } else {
-                    Some(i + 1)
+                    Some(i + lines)
                 }
             }
             None => None,
@@ -89,13 +89,29 @@ impl RecordTable {
         self.state.select(i);
     }
 
-    pub fn previous(&mut self) {
+    pub fn reset(&mut self, headers: Vec<String>, rows: Vec<Vec<String>>) {
+        self.headers = headers;
+        self.rows = rows;
+        self.column_index = 0;
+        self.state.select(None);
+        self.state.select(Some(0));
+    }
+
+    pub fn scroll_top(&mut self) {
+        self.state.select(Some(0));
+    }
+
+    pub fn scroll_bottom(&mut self) {
+        self.state.select(Some(self.rows.len() - 1));
+    }
+
+    pub fn previous(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i == 0 {
-                    Some(i)
+                if i <= lines {
+                    Some(0)
                 } else {
-                    Some(i - 1)
+                    Some(i - lines)
                 }
             }
             None => None,
@@ -176,7 +192,7 @@ impl RecordTable {
         let t = WTable::new(rows)
             .header(header)
             .block(Block::default().borders(Borders::ALL).title("Records"))
-            .highlight_style(Style::default().fg(Color::Green))
+            .highlight_style(Style::default().bg(Color::Blue))
             .style(if focused {
                 Style::default()
             } else {
