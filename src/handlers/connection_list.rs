@@ -10,8 +10,6 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
         Key::Char('j') => app.next_connection(),
         Key::Char('k') => app.previous_connection(),
         Key::Enter => {
-            app.selected_database.select(Some(0));
-            app.selected_table.select(Some(0));
             app.record_table.reset(vec![], vec![]);
             app.record_table.state.select(Some(0));
             if let Some(conn) = app.selected_connection() {
