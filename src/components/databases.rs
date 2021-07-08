@@ -1,7 +1,4 @@
-use super::{
-    utils::scroll_vertical::VerticalScroll, CommandBlocking, CommandInfo, Component,
-    DrawableComponent, EventState,
-};
+use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent};
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
@@ -26,7 +23,6 @@ const EMPTY_STR: &str = "";
 pub struct DatabasesComponent {
     pub tree: DatabaseTree,
     pub scroll: VerticalScroll,
-    pub focused: bool,
 }
 
 impl DatabasesComponent {
@@ -34,7 +30,6 @@ impl DatabasesComponent {
         Self {
             tree: DatabaseTree::default(),
             scroll: VerticalScroll::new(),
-            focused: true,
         }
     }
 
@@ -76,7 +71,7 @@ impl DatabasesComponent {
         )
     }
 
-    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect) {
+    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) {
         let tree_height = usize::from(area.height.saturating_sub(2));
         self.tree.visual_selection().map_or_else(
             || {
@@ -99,7 +94,7 @@ impl DatabasesComponent {
             area,
             Block::default()
                 .title(Span::styled(title, Style::default()))
-                .style(if self.focused {
+                .style(if focused {
                     Style::default()
                 } else {
                     Style::default().fg(Color::DarkGray)
@@ -113,29 +108,25 @@ impl DatabasesComponent {
 }
 
 impl DrawableComponent for DatabasesComponent {
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect) -> Result<()> {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         if true {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(100)].as_ref())
                 .split(area);
 
-            self.draw_tree(f, chunks[0]);
+            self.draw_tree(f, chunks[0], focused);
         }
         Ok(())
     }
 }
 
 impl Component for DatabasesComponent {
-    fn commands(&self, _out: &mut Vec<CommandInfo>, _force_all: bool) -> CommandBlocking {
-        CommandBlocking::PassingOn
-    }
-
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: Key) -> Result<()> {
         if tree_nav(&mut self.tree, key) {
-            return Ok(EventState::Consumed);
+            return Ok(());
         }
-        Ok(EventState::NotConsumed)
+        Ok(())
     }
 }
 
