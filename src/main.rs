@@ -12,12 +12,15 @@ mod log;
 use crate::app::App;
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
+use anyhow::Result;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
-use std::io::stdout;
+use std::{
+    io::{self, stdout},
+    panic,
+};
 use tui::{backend::CrosstermBackend, Terminal};
 
 #[tokio::main]
@@ -28,8 +31,9 @@ async fn main() -> anyhow::Result<()> {
 
     let user_config = user_config::UserConfig::new("sample.toml").ok();
 
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let stdout = stdout();
+    setup_terminal()?;
+    set_panic_handlers()?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -54,13 +58,36 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
+    shutdown_terminal();
     terminal.show_cursor()?;
 
     Ok(())
+}
+
+fn setup_terminal() -> Result<()> {
+    enable_raw_mode()?;
+    io::stdout().execute(EnterAlternateScreen)?;
+    Ok(())
+}
+
+fn set_panic_handlers() -> Result<()> {
+    panic::set_hook(Box::new(|e| {
+        eprintln!("panic: {:?}", e);
+        shutdown_terminal();
+    }));
+    Ok(())
+}
+
+fn shutdown_terminal() {
+    let leave_screen = io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
+
+    if let Err(e) = leave_screen {
+        eprintln!("leave_screen failed:\n{}", e);
+    }
+
+    let leave_raw_mode = disable_raw_mode();
+
+    if let Err(e) = leave_raw_mode {
+        eprintln!("leave_raw_mode failed:\n{}", e);
+    }
 }
