@@ -34,7 +34,6 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
-
     let mut app = App::new(user_config.unwrap());
 
     terminal.clear()?;

@@ -1,6 +1,6 @@
 use crate::{
     components::{ConnectionsComponent, DatabasesComponent, QueryComponent, TableComponent},
-    user_config::{Connection, UserConfig},
+    user_config::UserConfig,
 };
 use sqlx::mysql::MySqlPool;
 use strum::IntoEnumIterator;
@@ -84,48 +84,6 @@ impl App {
             connections: ConnectionsComponent::new(user_config.conn),
             focus_block: FocusBlock::ConnectionList,
             ..App::default()
-        }
-    }
-
-    pub fn next_connection(&mut self) {
-        if let Some(config) = &self.user_config {
-            let i = match self.selected_connection.selected() {
-                Some(i) => {
-                    if i >= config.conn.len() - 1 {
-                        0
-                    } else {
-                        i + 1
-                    }
-                }
-                None => 0,
-            };
-            self.selected_connection.select(Some(i));
-        }
-    }
-
-    pub fn previous_connection(&mut self) {
-        if let Some(config) = &self.user_config {
-            let i = match self.selected_connection.selected() {
-                Some(i) => {
-                    if i == 0 {
-                        config.conn.len() - 1
-                    } else {
-                        i - 1
-                    }
-                }
-                None => 0,
-            };
-            self.selected_connection.select(Some(i));
-        }
-    }
-
-    pub fn selected_connection(&self) -> Option<&Connection> {
-        match &self.user_config {
-            Some(config) => match self.selected_connection.selected() {
-                Some(i) => config.conn.get(i),
-                None => None,
-            },
-            None => None,
         }
     }
 

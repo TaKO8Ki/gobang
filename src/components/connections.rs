@@ -60,10 +60,17 @@ impl ConnectionsComponent {
         };
         self.state.select(Some(i));
     }
+
+    pub fn selected_connection(&self) -> Option<&Connection> {
+        match self.state.selected() {
+            Some(i) => self.connections.get(i),
+            None => None,
+        }
+    }
 }
 
 impl DrawableComponent for ConnectionsComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         let percent_x = 60;
         let percent_y = 50;
         let conns = &self.connections;
@@ -77,11 +84,7 @@ impl DrawableComponent for ConnectionsComponent {
         let tasks = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
             .highlight_style(Style::default().bg(Color::Blue))
-            .style(if focused {
-                Style::default()
-            } else {
-                Style::default().fg(Color::DarkGray)
-            });
+            .style(Style::default());
         let popup_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(

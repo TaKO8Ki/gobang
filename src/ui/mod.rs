@@ -16,48 +16,13 @@ pub mod scrolllist;
 
 pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<()> {
     if let FocusBlock::ConnectionList = app.focus_block {
-        let percent_x = 60;
-        let percent_y = 50;
-        let conns = &app.user_config.as_ref().unwrap().conn;
-        let connections: Vec<ListItem> = conns
-            .iter()
-            .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(i.database_url()))])
-                    .style(Style::default())
-            })
-            .collect();
-        let tasks = List::new(connections)
-            .block(Block::default().borders(Borders::ALL).title("Connections"))
-            .highlight_style(Style::default().bg(Color::Blue))
-            .style(match app.focus_block {
-                FocusBlock::ConnectionList => Style::default(),
-                _ => Style::default().fg(Color::DarkGray),
-            });
-        let popup_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Percentage((100 - percent_y) / 2),
-                    Constraint::Percentage(percent_y),
-                    Constraint::Percentage((100 - percent_y) / 2),
-                ]
-                .as_ref(),
-            )
-            .split(f.size());
-
-        let area = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Percentage((100 - percent_x) / 2),
-                    Constraint::Percentage(percent_x),
-                    Constraint::Percentage((100 - percent_x) / 2),
-                ]
-                .as_ref(),
-            )
-            .split(popup_layout[1])[1];
-        f.render_widget(Clear, area);
-        f.render_stateful_widget(tasks, area, &mut app.selected_connection);
+        app.connections.draw(
+            f,
+            Layout::default()
+                .constraints([Constraint::Percentage(100)])
+                .split(f.size())[0],
+            true,
+        )?;
         return Ok(());
     }
 
