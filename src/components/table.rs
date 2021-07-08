@@ -255,13 +255,7 @@ mod test {
     fn test_headers() {
         let mut component = TableComponent::default();
         component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
-        assert_eq!(
-            component.headers(),
-            vec!["", "a", "b", "c"]
-                .iter()
-                .map(|h| h.to_string())
-                .collect::<Vec<String>>()
-        )
+        assert_eq!(component.headers(), vec!["", "a", "b", "c"])
     }
 
     #[test]
@@ -273,16 +267,7 @@ mod test {
         ];
         assert_eq!(
             component.rows(),
-            vec![
-                vec!["1", "a", "b", "c"]
-                    .iter()
-                    .map(|h| h.to_string())
-                    .collect::<Vec<String>>(),
-                vec!["2", "d", "e", "f"]
-                    .iter()
-                    .map(|h| h.to_string())
-                    .collect::<Vec<String>>()
-            ],
+            vec![vec!["1", "a", "b", "c"], vec!["2", "d", "e", "f"]],
         )
     }
 }
