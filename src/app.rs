@@ -1,31 +1,13 @@
 use crate::{
-    components::{ConnectionsComponent, DatabasesComponent, QueryComponent, TableComponent},
+    components::{
+        ConnectionsComponent, DatabasesComponent, QueryComponent, TabComponent, TableComponent,
+    },
     user_config::UserConfig,
 };
 use sqlx::mysql::MySqlPool;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tui::widgets::ListState;
-
-#[derive(Debug, Clone, Copy, EnumIter)]
-pub enum Tab {
-    Records,
-    Structure,
-}
-
-impl std::fmt::Display for Tab {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl Tab {
-    pub fn names() -> Vec<String> {
-        Self::iter()
-            .map(|tab| format!("{} [{}]", tab, tab as u8 + 1))
-            .collect()
-    }
-}
 
 pub enum FocusBlock {
     DabataseList,
@@ -38,7 +20,7 @@ pub struct App {
     pub record_table: TableComponent,
     pub structure_table: TableComponent,
     pub focus_block: FocusBlock,
-    pub selected_tab: Tab,
+    pub tab: TabComponent,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
     pub databases: DatabasesComponent,
@@ -54,7 +36,7 @@ impl Default for App {
             record_table: TableComponent::default(),
             structure_table: TableComponent::default(),
             focus_block: FocusBlock::DabataseList,
-            selected_tab: Tab::Records,
+            tab: TabComponent::default(),
             user_config: None,
             selected_connection: ListState::default(),
             databases: DatabasesComponent::new(),

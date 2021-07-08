@@ -110,7 +110,7 @@ impl DrawableComponent for ConnectionsComponent {
             .split(popup_layout[1])[1];
         f.render_widget(Clear, area);
         f.render_stateful_widget(tasks, area, &mut self.state);
-        return Ok(());
+        Ok(())
     }
 }
 

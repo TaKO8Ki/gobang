@@ -2,6 +2,7 @@ pub mod command;
 pub mod connections;
 pub mod databases;
 pub mod query;
+pub mod tab;
 pub mod table;
 pub mod utils;
 
@@ -9,6 +10,7 @@ pub use command::{CommandInfo, CommandText};
 pub use connections::ConnectionsComponent;
 pub use databases::DatabasesComponent;
 pub use query::QueryComponent;
+pub use tab::TabComponent;
 pub use table::TableComponent;
 
 use anyhow::Result;

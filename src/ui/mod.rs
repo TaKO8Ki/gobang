@@ -1,13 +1,14 @@
-use crate::app::{App, FocusBlock, Tab};
+use crate::app::{App, FocusBlock};
+use crate::components::tab::Tab;
 use crate::components::DrawableComponent as _;
 use crate::event::Key;
 use database_tree::MoveSelection;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
     Frame,
 };
 
@@ -67,25 +68,14 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         )
         .split(main_chunks[1]);
 
-    let titles = Tab::names().iter().cloned().map(Spans::from).collect();
-    let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL))
-        .select(app.selected_tab as usize)
-        .style(Style::default().fg(Color::DarkGray))
-        .highlight_style(
-            Style::default()
-                .fg(Color::Reset)
-                .add_modifier(Modifier::UNDERLINED),
-        );
-    f.render_widget(tabs, right_chunks[0]);
-
+    app.tab.draw(f, right_chunks[0], false)?;
     app.query.draw(
         f,
         right_chunks[1],
         matches!(app.focus_block, FocusBlock::Query),
     )?;
 
-    match app.selected_tab {
+    match app.tab.selected_tab {
         Tab::Records => app.record_table.draw(
             f,
             right_chunks[2],
