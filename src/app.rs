@@ -1,13 +1,20 @@
+use crate::components::DrawableComponent as _;
 use crate::{
+    components::tab::Tab,
     components::{
         ConnectionsComponent, DatabasesComponent, QueryComponent, TabComponent, TableComponent,
+        TableStatusComponent,
     },
     user_config::UserConfig,
 };
-use sqlx::mysql::MySqlPool;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-use tui::widgets::ListState;
+use sqlx::MySqlPool;
+use tui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::{Block, Borders, Clear, ListState, Paragraph},
+    Frame,
+};
 
 pub enum FocusBlock {
     DabataseList,
@@ -25,6 +32,7 @@ pub struct App {
     pub selected_connection: ListState,
     pub databases: DatabasesComponent,
     pub connections: ConnectionsComponent,
+    pub table_status: TableStatusComponent,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -41,6 +49,7 @@ impl Default for App {
             selected_connection: ListState::default(),
             databases: DatabasesComponent::new(),
             connections: ConnectionsComponent::default(),
+            table_status: TableStatusComponent::default(),
             pool: None,
             error: None,
         }
@@ -57,28 +66,107 @@ impl App {
         }
     }
 
-    pub fn table_status(&self) -> Vec<String> {
-        if let Some((table, _)) = self.databases.tree.selected_table() {
-            return vec![
-                format!("created: {}", table.create_time.to_string()),
-                format!(
-                    "updated: {}",
-                    table
-                        .update_time
-                        .map(|time| time.to_string())
-                        .unwrap_or_default()
-                ),
-                format!(
-                    "engine: {}",
-                    table
-                        .engine
-                        .as_ref()
-                        .map(|engine| engine.to_string())
-                        .unwrap_or_default()
-                ),
-                format!("rows: {}", self.record_table.rows.len()),
-            ];
+    pub fn draw<B: Backend>(&mut self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
+        if let FocusBlock::ConnectionList = self.focus_block {
+            self.connections.draw(
+                f,
+                Layout::default()
+                    .constraints([Constraint::Percentage(100)])
+                    .split(f.size())[0],
+                false,
+            )?;
+            return Ok(());
         }
-        Vec::new()
+
+        let main_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
+            .split(f.size());
+        let left_chunks = Layout::default()
+            .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
+            .split(main_chunks[0]);
+
+        self.databases
+            .draw(
+                f,
+                left_chunks[0],
+                matches!(self.focus_block, FocusBlock::DabataseList),
+            )
+            .unwrap();
+        self.table_status.draw(
+            f,
+            left_chunks[1],
+            matches!(self.focus_block, FocusBlock::DabataseList),
+        )?;
+
+        let right_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(3),
+                    Constraint::Length(3),
+                    Constraint::Length(5),
+                ]
+                .as_ref(),
+            )
+            .split(main_chunks[1]);
+
+        self.tab.draw(f, right_chunks[0], false)?;
+        self.query.draw(
+            f,
+            right_chunks[1],
+            matches!(self.focus_block, FocusBlock::Query),
+        )?;
+
+        match self.tab.selected_tab {
+            Tab::Records => self.record_table.draw(
+                f,
+                right_chunks[2],
+                matches!(self.focus_block, FocusBlock::Table),
+            )?,
+            Tab::Structure => self.structure_table.draw(
+                f,
+                right_chunks[2],
+                matches!(self.focus_block, FocusBlock::Table),
+            )?,
+        }
+        self.draw_error_popup(f)?;
+        Ok(())
+    }
+
+    fn draw_error_popup<B: Backend>(&self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
+        if let Some(error) = self.error.as_ref() {
+            let percent_x = 60;
+            let percent_y = 20;
+            let error = Paragraph::new(error.to_string())
+                .block(Block::default().title("Error").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Red));
+            let popup_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [
+                        Constraint::Percentage((100 - percent_y) / 2),
+                        Constraint::Percentage(percent_y),
+                        Constraint::Percentage((100 - percent_y) / 2),
+                    ]
+                    .as_ref(),
+                )
+                .split(f.size());
+
+            let area = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(
+                    [
+                        Constraint::Percentage((100 - percent_x) / 2),
+                        Constraint::Percentage(percent_x),
+                        Constraint::Percentage((100 - percent_x) / 2),
+                    ]
+                    .as_ref(),
+                )
+                .split(popup_layout[1])[1];
+            f.render_widget(Clear, area);
+            f.render_widget(error, area);
+        }
+        Ok(())
     }
 }

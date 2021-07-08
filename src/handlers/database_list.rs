@@ -33,6 +33,9 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                 )
                 .await?;
                 app.structure_table.reset(headers, records);
+
+                app.table_status
+                    .update(app.record_table.rows.len() as u64, table);
             }
         }
         key => app.databases.event(key)?,

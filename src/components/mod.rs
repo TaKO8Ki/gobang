@@ -4,6 +4,7 @@ pub mod databases;
 pub mod query;
 pub mod tab;
 pub mod table;
+pub mod table_status;
 pub mod utils;
 
 pub use command::{CommandInfo, CommandText};
@@ -12,6 +13,7 @@ pub use databases::DatabasesComponent;
 pub use query::QueryComponent;
 pub use tab::TabComponent;
 pub use table::TableComponent;
+pub use table_status::TableStatusComponent;
 
 use anyhow::Result;
 use tui::{backend::Backend, layout::Rect, Frame};

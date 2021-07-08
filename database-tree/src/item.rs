@@ -88,7 +88,7 @@ impl DatabaseTreeItem {
         })
     }
 
-    pub fn new_database(database: &Database, collapsed: bool) -> Result<Self> {
+    pub fn new_database(database: &Database, _collapsed: bool) -> Result<Self> {
         Ok(Self {
             info: TreeItemInfo::new(0, true),
             kind: DatabaseTreeItemKind::Database {

@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     terminal.clear()?;
 
     loop {
-        terminal.draw(|f| ui::draw(f, &mut app).unwrap())?;
+        terminal.draw(|f| app.draw(f).unwrap())?;
         match events.next()? {
             Event::Input(key) => {
                 if key == Key::Char('q') {
