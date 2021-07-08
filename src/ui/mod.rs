@@ -4,13 +4,12 @@ use crate::event::Key;
 use database_tree::MoveSelection;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Cell, Clear, List, ListItem, Paragraph, Row, Table, Tabs},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
 
 pub mod scrollbar;
 pub mod scrolllist;
@@ -115,19 +114,12 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         );
     f.render_widget(tabs, right_chunks[0]);
 
-    let query = Paragraph::new(app.input.as_ref())
-        .style(match app.focus_block {
-            FocusBlock::Query => Style::default(),
-            _ => Style::default().fg(Color::DarkGray),
-        })
-        .block(Block::default().borders(Borders::ALL).title("Query"));
-    f.render_widget(query, right_chunks[1]);
-    if let FocusBlock::Query = app.focus_block {
-        f.set_cursor(
-            right_chunks[1].x + app.input.width() as u16 + 1 - app.input_cursor_x,
-            right_chunks[1].y + 1,
-        )
-    }
+    app.query.draw(
+        f,
+        right_chunks[1],
+        matches!(app.focus_block, FocusBlock::Query),
+    )?;
+
     match app.selected_tab {
         Tab::Records => app.record_table.draw(
             f,

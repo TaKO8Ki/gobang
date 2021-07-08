@@ -1,12 +1,11 @@
 use crate::{
-    components::{DatabasesComponent, TableComponent},
+    components::{DatabasesComponent, QueryComponent, TableComponent},
     user_config::{Connection, UserConfig},
 };
 use sqlx::mysql::MySqlPool;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tui::widgets::ListState;
-use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone, Copy, EnumIter)]
 pub enum Tab {
@@ -47,9 +46,7 @@ pub struct Column {
     pub null: String,
 }
 pub struct App {
-    pub input: String,
-    pub input_cursor_x: u16,
-    pub query: String,
+    pub query: QueryComponent,
     pub record_table: TableComponent,
     pub structure_table: TableComponent,
     pub focus_block: FocusBlock,
@@ -66,9 +63,7 @@ pub struct App {
 impl Default for App {
     fn default() -> App {
         App {
-            input: String::new(),
-            input_cursor_x: 0,
-            query: String::new(),
+            query: QueryComponent::default(),
             record_table: TableComponent::default(),
             structure_table: TableComponent::default(),
             focus_block: FocusBlock::DabataseList,
@@ -114,18 +109,6 @@ impl App {
                 None => 0,
             };
             self.selected_connection.select(Some(i));
-        }
-    }
-
-    pub fn increment_input_cursor_x(&mut self) {
-        if self.input_cursor_x > 0 {
-            self.input_cursor_x -= 1;
-        }
-    }
-
-    pub fn decrement_input_cursor_x(&mut self) {
-        if self.input_cursor_x < self.input.width() as u16 {
-            self.input_cursor_x += 1;
         }
     }
 
