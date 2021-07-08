@@ -9,3 +9,9 @@ A cross-platform terminal database tool written in Rust
 ![gobang](./resources/gobang.gif)
 
 </div>
+
+## Features
+
+- Cross-platform support (macOS, Windows, Linux)
+- Multiple Database support (MySQL PostgreSQL, SQLite)
+- Intuitive keyboard only control
