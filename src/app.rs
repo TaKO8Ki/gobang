@@ -33,18 +33,6 @@ pub enum FocusBlock {
     ConnectionList,
     Query,
 }
-
-#[derive(sqlx::FromRow, Debug, Clone)]
-pub struct Column {
-    #[sqlx(rename = "Field")]
-    pub field: String,
-    #[sqlx(rename = "Type")]
-    pub r#type: String,
-    #[sqlx(rename = "Collation")]
-    pub collation: String,
-    #[sqlx(rename = "Null")]
-    pub null: String,
-}
 pub struct App {
     pub query: QueryComponent,
     pub record_table: TableComponent,
