@@ -1,12 +1,14 @@
 pub mod command;
 pub mod databases;
+pub mod query;
+pub mod table;
 pub mod utils;
 
 pub use command::{CommandInfo, CommandText};
 pub use databases::DatabasesComponent;
+pub use table::TableComponent;
 
 use anyhow::Result;
-use std::convert::From;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 #[derive(Copy, Clone)]
@@ -25,38 +27,13 @@ pub enum Direction {
     Down,
 }
 
-#[derive(PartialEq)]
-pub enum CommandBlocking {
-    Blocking,
-    PassingOn,
-}
-
 pub trait DrawableComponent {
-    ///
-    fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect) -> Result<()>;
-}
-
-#[derive(PartialEq)]
-pub enum EventState {
-    Consumed,
-    NotConsumed,
-}
-
-impl From<bool> for EventState {
-    fn from(consumed: bool) -> Self {
-        if consumed {
-            Self::Consumed
-        } else {
-            Self::NotConsumed
-        }
-    }
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
 }
 
 /// base component trait
 pub trait Component {
-    fn commands(&self, out: &mut Vec<CommandInfo>, force_all: bool) -> CommandBlocking;
-
-    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
+    fn event(&mut self, key: crate::event::Key) -> Result<()>;
 
     fn focused(&self) -> bool {
         false
