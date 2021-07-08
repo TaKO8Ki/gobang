@@ -130,11 +130,11 @@ impl App {
                 matches!(self.focus_block, FocusBlock::Table),
             )?,
         }
-        self.draw_error_popup(f)?;
+        self.draw_error_popup(f);
         Ok(())
     }
 
-    fn draw_error_popup<B: Backend>(&self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
+    fn draw_error_popup<B: Backend>(&self, f: &mut Frame<'_, B>) {
         if let Some(error) = self.error.as_ref() {
             let percent_x = 60;
             let percent_y = 20;
@@ -167,6 +167,5 @@ impl App {
             f.render_widget(Clear, area);
             f.render_widget(error, area);
         }
-        Ok(())
     }
 }
