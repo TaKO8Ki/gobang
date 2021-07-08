@@ -6,7 +6,10 @@ mod ui;
 mod user_config;
 mod utils;
 
-use crate::app::{App, FocusBlock};
+#[macro_use]
+mod log;
+
+use crate::app::App;
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
@@ -21,6 +24,8 @@ use tui::{backend::CrosstermBackend, Terminal};
 async fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
 
+    outln!("gobang logger");
+
     let user_config = user_config::UserConfig::new("sample.toml").ok();
 
     let mut stdout = stdout();
@@ -29,17 +34,12 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
-
-    let mut app = App {
-        user_config,
-        focus_block: FocusBlock::ConnectionList,
-        ..App::default()
-    };
+    let mut app = App::new(user_config.unwrap());
 
     terminal.clear()?;
 
     loop {
-        terminal.draw(|f| ui::draw(f, &mut app).unwrap())?;
+        terminal.draw(|f| app.draw(f).unwrap())?;
         match events.next()? {
             Event::Input(key) => {
                 if key == Key::Char('q') {

@@ -2,12 +2,12 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct UserConfig {
     pub conn: Vec<Connection>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
     pub name: Option<String>,
     pub user: String,

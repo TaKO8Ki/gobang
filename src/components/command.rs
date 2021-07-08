@@ -1,4 +1,3 @@
-///
 #[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct CommandText {
     ///
@@ -10,8 +9,6 @@ pub struct CommandText {
     ///
     pub hide_help: bool,
 }
-
-///
 pub struct CommandInfo {
     ///
     pub text: CommandText,

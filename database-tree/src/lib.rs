@@ -31,7 +31,7 @@ pub struct Table {
     #[sqlx(rename = "Name")]
     pub name: String,
     #[sqlx(rename = "Create_time")]
-    pub create_time: chrono::DateTime<chrono::Utc>,
+    pub create_time: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(rename = "Update_time")]
     pub update_time: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(rename = "Engine")]
