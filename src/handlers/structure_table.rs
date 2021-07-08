@@ -6,7 +6,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
         Key::Left => app.focus_block = FocusBlock::DabataseList,
         Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
-        key => app.record_table.event(key)?,
+        key => app.structure_table.event(key)?,
     }
     Ok(())
 }

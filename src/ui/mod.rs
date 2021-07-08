@@ -71,7 +71,13 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
         .split(main_chunks[0]);
 
-    app.databases.draw(f, left_chunks[0]).unwrap();
+    app.databases
+        .draw(
+            f,
+            left_chunks[0],
+            matches!(app.focus_block, FocusBlock::DabataseList),
+        )
+        .unwrap();
 
     let table_status: Vec<ListItem> = app
         .table_status()
@@ -126,52 +132,17 @@ pub fn draw<B: Backend>(f: &mut Frame<'_, B>, app: &mut App) -> anyhow::Result<(
         Tab::Records => app.record_table.draw(
             f,
             right_chunks[2],
-            matches!(app.focus_block, FocusBlock::RecordTable),
+            matches!(app.focus_block, FocusBlock::Table),
         )?,
-        Tab::Structure => draw_structure_table(f, app, right_chunks[2])?,
+        Tab::Structure => app.structure_table.draw(
+            f,
+            right_chunks[2],
+            matches!(app.focus_block, FocusBlock::Table),
+        )?,
     }
     if let Some(err) = app.error.clone() {
         draw_error_popup(f, err)?;
     }
-    Ok(())
-}
-
-fn draw_structure_table<B: Backend>(
-    f: &mut Frame<'_, B>,
-    app: &mut App,
-    layout_chunk: Rect,
-) -> anyhow::Result<()> {
-    let headers = app.structure_table.headers();
-    let header_cells = headers
-        .iter()
-        .map(|h| Cell::from(h.to_string()).style(Style::default()));
-    let header = Row::new(header_cells).height(1).bottom_margin(1);
-    let rows = app.structure_table.rows();
-    let rows = rows.iter().map(|item| {
-        let height = item
-            .iter()
-            .map(|content| content.chars().filter(|c| *c == '\n').count())
-            .max()
-            .unwrap_or(0)
-            + 1;
-        let cells = item
-            .iter()
-            .map(|c| Cell::from(c.to_string()).style(Style::default()));
-        Row::new(cells).height(height as u16).bottom_margin(1)
-    });
-    let widths = (0..10)
-        .map(|_| Constraint::Percentage(10))
-        .collect::<Vec<Constraint>>();
-    let t = Table::new(rows)
-        .header(header)
-        .block(Block::default().borders(Borders::ALL).title("Structure"))
-        .highlight_style(Style::default().bg(Color::Blue))
-        .style(match app.focus_block {
-            FocusBlock::RecordTable => Style::default(),
-            _ => Style::default().fg(Color::DarkGray),
-        })
-        .widths(&widths);
-    f.render_stateful_widget(t, layout_chunk, &mut app.structure_table.state);
     Ok(())
 }
 
