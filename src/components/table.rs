@@ -246,3 +246,43 @@ impl Component for TableComponent {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::TableComponent;
+
+    #[test]
+    fn test_headers() {
+        let mut component = TableComponent::default();
+        component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
+        assert_eq!(
+            component.headers(),
+            vec!["", "a", "b", "c"]
+                .iter()
+                .map(|h| h.to_string())
+                .collect::<Vec<String>>()
+        )
+    }
+
+    #[test]
+    fn test_rows() {
+        let mut component = TableComponent::default();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        assert_eq!(
+            component.rows(),
+            vec![
+                vec!["1", "a", "b", "c"]
+                    .iter()
+                    .map(|h| h.to_string())
+                    .collect::<Vec<String>>(),
+                vec!["2", "d", "e", "f"]
+                    .iter()
+                    .map(|h| h.to_string())
+                    .collect::<Vec<String>>()
+            ],
+        )
+    }
+}
