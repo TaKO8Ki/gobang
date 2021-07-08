@@ -34,7 +34,7 @@ impl TableComponent {
     pub fn next(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.rows.len() - lines {
+                if i + lines >= self.rows.len() {
                     Some(self.rows.len() - 1)
                 } else {
                     Some(i + lines)
@@ -50,15 +50,23 @@ impl TableComponent {
         self.rows = rows;
         self.column_index = 0;
         self.state.select(None);
-        self.state.select(Some(0));
+        if !self.rows.is_empty() {
+            self.state.select(Some(0));
+        }
     }
 
     pub fn scroll_top(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
         self.state.select(None);
         self.state.select(Some(0));
     }
 
     pub fn scroll_bottom(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
         self.state.select(Some(self.rows.len() - 1));
     }
 

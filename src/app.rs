@@ -1,5 +1,5 @@
 use crate::{
-    components::{DatabasesComponent, QueryComponent, TableComponent},
+    components::{ConnectionsComponent, DatabasesComponent, QueryComponent, TableComponent},
     user_config::{Connection, UserConfig},
 };
 use sqlx::mysql::MySqlPool;
@@ -54,6 +54,7 @@ pub struct App {
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
     pub databases: DatabasesComponent,
+    pub connections: ConnectionsComponent,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -69,6 +70,7 @@ impl Default for App {
             user_config: None,
             selected_connection: ListState::default(),
             databases: DatabasesComponent::new(),
+            connections: ConnectionsComponent::default(),
             pool: None,
             error: None,
         }
@@ -76,6 +78,15 @@ impl Default for App {
 }
 
 impl App {
+    pub fn new(user_config: UserConfig) -> App {
+        App {
+            user_config: Some(user_config.clone()),
+            connections: ConnectionsComponent::new(user_config.conn),
+            focus_block: FocusBlock::ConnectionList,
+            ..App::default()
+        }
+    }
+
     pub fn next_connection(&mut self) {
         if let Some(config) = &self.user_config {
             let i = match self.selected_connection.selected() {

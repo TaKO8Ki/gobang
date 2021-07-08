@@ -9,7 +9,7 @@ mod utils;
 #[macro_use]
 mod log;
 
-use crate::app::{App, FocusBlock};
+use crate::app::App;
 use crate::event::{Event, Key};
 use crate::handlers::handle_app;
 use crossterm::{
@@ -35,11 +35,7 @@ async fn main() -> anyhow::Result<()> {
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
 
-    let mut app = App {
-        user_config,
-        focus_block: FocusBlock::ConnectionList,
-        ..App::default()
-    };
+    let mut app = App::new(user_config.unwrap());
 
     terminal.clear()?;
 

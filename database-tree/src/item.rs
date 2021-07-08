@@ -9,11 +9,8 @@ pub struct TreeItemInfo {
 }
 
 impl TreeItemInfo {
-    pub const fn new(indent: u8) -> Self {
-        Self {
-            indent,
-            visible: true,
-        }
+    pub const fn new(indent: u8, visible: bool) -> Self {
+        Self { indent, visible }
     }
 
     pub const fn is_visible(&self) -> bool {
@@ -83,7 +80,7 @@ impl DatabaseTreeItem {
         let indent = u8::try_from((3_usize).saturating_sub(2))?;
 
         Ok(Self {
-            info: TreeItemInfo::new(indent),
+            info: TreeItemInfo::new(indent, false),
             kind: DatabaseTreeItemKind::Table {
                 database: database.name.clone(),
                 table: table.clone(),
@@ -93,10 +90,10 @@ impl DatabaseTreeItem {
 
     pub fn new_database(database: &Database, collapsed: bool) -> Result<Self> {
         Ok(Self {
-            info: TreeItemInfo::new(0),
+            info: TreeItemInfo::new(0, true),
             kind: DatabaseTreeItemKind::Database {
                 name: database.name.to_string(),
-                collapsed,
+                collapsed: true,
             },
         })
     }
