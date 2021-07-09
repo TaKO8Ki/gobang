@@ -136,19 +136,14 @@ impl TableComponent {
         if column_index != self.column_index {
             return false;
         }
-        match self.state.selected() {
-            Some(selected_row_index) if row_index == selected_row_index => true,
-            _ => false,
-        }
+        matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index)
     }
 
     pub fn selected_cell(&self) -> Option<String> {
-        Some(
-            self.rows
-                .get(self.state.selected()?)?
-                .get(self.column_index.saturating_sub(1) + self.column_page)
-                .map(|cell| cell.to_string())?,
-        )
+        self.rows
+            .get(self.state.selected()?)?
+            .get(self.column_index.saturating_sub(1) + self.column_page)
+            .map(|cell| cell.to_string())
     }
 
     pub fn headers(&self) -> Vec<String> {
@@ -200,7 +195,7 @@ impl DrawableComponent for TableComponent {
             },
         );
 
-        TableValueComponent::new(self.selected_cell().unwrap_or(String::new()))
+        TableValueComponent::new(self.selected_cell().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
         let headers = self.headers();

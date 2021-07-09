@@ -47,6 +47,5 @@ impl DrawableComponent for TableValueComponent {
 impl Component for TableValueComponent {
     fn event(&mut self, _key: Key) -> Result<()> {
         todo!("scroll");
-        Ok(())
     }
 }
