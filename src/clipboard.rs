@@ -1,8 +1,6 @@
-#[cfg(any(test, not(any(target_os = "linux", target_os = "macos", windows))))]
+#[cfg(any(test, not(any(target_os = "macos", windows))))]
 use copypasta::nop_clipboard::NopClipboardContext;
-#[cfg(target_os = "linux")]
-use copypasta::x11_clipboard::{Primary as X11SelectionClipboard, X11ClipboardContext};
-#[cfg(any(target_os = "linux", target_os = "macos", windows))]
+#[cfg(any(target_os = "macos", windows))]
 use copypasta::ClipboardContext;
 use copypasta::ClipboardProvider;
 
@@ -17,7 +15,7 @@ impl Clipboard {
         Self::default()
     }
 
-    #[cfg(any(test, not(any(target_os = "linux", target_os = "macos", windows))))]
+    #[cfg(any(test, not(any(target_os = "macos", windows))))]
     pub fn new_nop() -> Self {
         Self {
             clipboard: Box::new(NopClipboardContext::new().unwrap()),
@@ -34,15 +32,15 @@ impl Default for Clipboard {
             selection: None,
         };
 
-        #[cfg(target_os = "linux")]
-        return Self {
-            clipboard: Box::new(ClipboardContext::new().unwrap()),
-            selection: Some(Box::new(
-                X11ClipboardContext::<X11SelectionClipboard>::new().unwrap(),
-            )),
-        };
+        // #[cfg(target_os = "linux")]
+        // return Self {
+        //     clipboard: Box::new(ClipboardContext::new().unwrap()),
+        //     selection: Some(Box::new(
+        //         X11ClipboardContext::<X11SelectionClipboard>::new().unwrap(),
+        //     )),
+        // };
 
-        #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+        #[cfg(not(any(target_os = "macos", windows)))]
         return Self::new_nop();
     }
 }
