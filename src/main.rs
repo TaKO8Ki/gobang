@@ -1,4 +1,5 @@
 mod app;
+mod clipboard;
 mod components;
 mod event;
 mod handlers;
@@ -33,7 +34,6 @@ async fn main() -> anyhow::Result<()> {
 
     let stdout = stdout();
     setup_terminal()?;
-    set_panic_handlers()?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;

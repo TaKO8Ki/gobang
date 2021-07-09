@@ -1,3 +1,4 @@
+use crate::clipboard::Clipboard;
 use crate::components::DrawableComponent as _;
 use crate::{
     components::tab::Tab,
@@ -33,6 +34,7 @@ pub struct App {
     pub databases: DatabasesComponent,
     pub connections: ConnectionsComponent,
     pub table_status: TableStatusComponent,
+    pub clipboard: Clipboard,
     pub pool: Option<MySqlPool>,
     pub error: Option<String>,
 }
@@ -50,6 +52,7 @@ impl Default for App {
             databases: DatabasesComponent::new(),
             connections: ConnectionsComponent::default(),
             table_status: TableStatusComponent::default(),
+            clipboard: Clipboard::new(),
             pool: None,
             error: None,
         }
