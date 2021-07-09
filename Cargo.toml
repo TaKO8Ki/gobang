@@ -31,15 +31,4 @@ strum = "0.21"
 strum_macros = "0.21"
 database-tree = { path = "./database-tree", version = "0.1" }
 easy-cast = "0.4"
-copypasta = { version = "0.7.0" }
-
-[target.'cfg(not(target_os = "macos"))'.dependencies]
-png = { version = "0.16.8", default-features = false, optional = true }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-raw-window-handle = "0.3.3"
-cocoa = "0.24.0"
-objc = "0.2.2"
-
-[target.'cfg(not(any(target_os="windows", target_os="macos")))'.dependencies]
-x11-dl = { version = "2", optional = true }
+copypasta = { version = "0.7.0", default-features = false }
