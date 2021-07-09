@@ -3,17 +3,16 @@ use crate::components::DrawableComponent as _;
 use crate::{
     components::tab::Tab,
     components::{
-        ConnectionsComponent, DatabasesComponent, QueryComponent, TabComponent, TableComponent,
-        TableStatusComponent,
+        ConnectionsComponent, DatabasesComponent, ErrorComponent, QueryComponent, TabComponent,
+        TableComponent, TableStatusComponent,
     },
     user_config::UserConfig,
 };
 use sqlx::MySqlPool;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, ListState, Paragraph},
+    layout::{Constraint, Direction, Layout, Rect},
+    widgets::ListState,
     Frame,
 };
 
@@ -36,7 +35,7 @@ pub struct App {
     pub table_status: TableStatusComponent,
     pub clipboard: Clipboard,
     pub pool: Option<MySqlPool>,
-    pub error: Option<String>,
+    pub error: ErrorComponent,
 }
 
 impl Default for App {
@@ -54,7 +53,7 @@ impl Default for App {
             table_status: TableStatusComponent::default(),
             clipboard: Clipboard::new(),
             pool: None,
-            error: None,
+            error: ErrorComponent::default(),
         }
     }
 }
@@ -133,42 +132,7 @@ impl App {
                 matches!(self.focus_block, FocusBlock::Table),
             )?,
         }
-        self.draw_error_popup(f);
+        self.error.draw(f, Rect::default(), false)?;
         Ok(())
-    }
-
-    fn draw_error_popup<B: Backend>(&self, f: &mut Frame<'_, B>) {
-        if let Some(error) = self.error.as_ref() {
-            let percent_x = 60;
-            let percent_y = 20;
-            let error = Paragraph::new(error.to_string())
-                .block(Block::default().title("Error").borders(Borders::ALL))
-                .style(Style::default().fg(Color::Red));
-            let popup_layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(
-                    [
-                        Constraint::Percentage((100 - percent_y) / 2),
-                        Constraint::Percentage(percent_y),
-                        Constraint::Percentage((100 - percent_y) / 2),
-                    ]
-                    .as_ref(),
-                )
-                .split(f.size());
-
-            let area = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(
-                    [
-                        Constraint::Percentage((100 - percent_x) / 2),
-                        Constraint::Percentage(percent_x),
-                        Constraint::Percentage((100 - percent_x) / 2),
-                    ]
-                    .as_ref(),
-                )
-                .split(popup_layout[1])[1];
-            f.render_widget(Clear, area);
-            f.render_widget(error, area);
-        }
     }
 }
