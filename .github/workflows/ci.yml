@@ -87,7 +87,6 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install libxcb-xkb-dev
-          sudo apt-get install -y libxkbcommon-x11-0
           sudo apt install libxcb-composite0-dev
       - name: Run Tests
         run: cargo test -- --skip=e2e --color always
