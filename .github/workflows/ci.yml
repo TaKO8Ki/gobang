@@ -86,6 +86,8 @@ jobs:
       - name: Install dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev sudo apt-get install libxcb-composite0-dev libxkbcommon-x11-0
+          sudo apt-get install libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev
+          sudo apt-get install -y libxkbcommon-x11-0
+          apt install libxcb-composite0-dev
       - name: Run Tests
         run: cargo test -- --skip=e2e --color always
