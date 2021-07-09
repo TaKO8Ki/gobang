@@ -83,5 +83,10 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install libxcb-xkb-dev
+          sudo apt install libxcb-composite0-dev
       - name: Run Tests
         run: cargo test -- --skip=e2e --color always
