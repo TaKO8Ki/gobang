@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
                 };
                 match handle_app(key, &mut app).await {
                     Ok(_) => (),
-                    Err(err) => app.error = Some(err.to_string()),
+                    Err(err) => app.error.set(err.to_string()),
                 }
             }
             Event::Tick => (),

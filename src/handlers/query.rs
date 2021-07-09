@@ -39,7 +39,7 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                 }
             }
         }
-        Key::Esc => app.focus_block = FocusBlock::DabataseList,
+        Key::Esc => app.focus_block = FocusBlock::Table,
         key => app.query.event(key)?,
     }
     Ok(())

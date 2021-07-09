@@ -10,15 +10,6 @@ use crate::components::Component as _;
 use crate::event::Key;
 
 pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
-    match app.focus_block {
-        FocusBlock::ConnectionList => connection_list::handler(key, app).await?,
-        FocusBlock::DabataseList => database_list::handler(key, app).await?,
-        FocusBlock::Table => match app.tab.selected_tab {
-            Tab::Records => record_table::handler(key, app).await?,
-            Tab::Structure => structure_table::handler(key, app).await?,
-        },
-        FocusBlock::Query => query::handler(key, app).await?,
-    }
     match key {
         Key::Char('d') => match app.focus_block {
             FocusBlock::Query => (),
@@ -29,8 +20,21 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
             _ => app.focus_block = FocusBlock::Table,
         },
         Key::Char('e') => app.focus_block = FocusBlock::Query,
-        Key::Esc => app.error = None,
+        Key::Esc if app.error.error.is_some() => {
+            app.error.error = None;
+            return Ok(());
+        }
         key => app.tab.event(key)?,
+    }
+
+    match app.focus_block {
+        FocusBlock::ConnectionList => connection_list::handler(key, app).await?,
+        FocusBlock::DabataseList => database_list::handler(key, app).await?,
+        FocusBlock::Table => match app.tab.selected_tab {
+            Tab::Records => record_table::handler(key, app).await?,
+            Tab::Structure => structure_table::handler(key, app).await?,
+        },
+        FocusBlock::Query => query::handler(key, app).await?,
     }
     Ok(())
 }
