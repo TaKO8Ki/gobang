@@ -4,8 +4,11 @@ use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::{Margin, Rect},
-    style::{Color, Style},
-    symbols::{block::FULL, line::DOUBLE_VERTICAL},
+    style::Style,
+    symbols::{
+        block::FULL,
+        line::{DOUBLE_HORIZONTAL, DOUBLE_VERTICAL},
+    },
     widgets::Widget,
     Frame,
 };
@@ -15,22 +18,28 @@ struct Scrollbar {
     pos: u16,
     style_bar: Style,
     style_pos: Style,
+    vertical: bool,
 }
 
 impl Scrollbar {
-    fn new(max: usize, pos: usize) -> Self {
+    fn new(max: usize, pos: usize, vertical: bool) -> Self {
         Self {
             max: u16::try_from(max).unwrap_or_default(),
             pos: u16::try_from(pos).unwrap_or_default(),
             style_pos: Style::default(),
             style_bar: Style::default(),
+            vertical,
         }
     }
 }
 
 impl Widget for Scrollbar {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if area.height <= 2 {
+        if self.vertical && area.height <= 2 {
+            return;
+        }
+
+        if !self.vertical && area.width <= 2 {
             return;
         }
 
@@ -43,17 +52,39 @@ impl Widget for Scrollbar {
             return;
         };
 
-        let (bar_top, bar_height) = {
-            let scrollbar_area = area.inner(&Margin {
-                horizontal: 0,
-                vertical: 1,
-            });
-
-            (scrollbar_area.top(), scrollbar_area.height)
+        let bottom = area.bottom().saturating_sub(1);
+        if bottom <= area.top() {
+            return;
         };
 
-        for y in bar_top..(bar_top + bar_height) {
-            buf.set_string(right, y, DOUBLE_VERTICAL, self.style_bar);
+        let (bar_top, bar_height) = {
+            let scrollbar_area = if self.vertical {
+                area.inner(&Margin {
+                    horizontal: 0,
+                    vertical: 1,
+                })
+            } else {
+                area.inner(&Margin {
+                    horizontal: 1,
+                    vertical: 0,
+                })
+            };
+
+            if self.vertical {
+                (scrollbar_area.top(), scrollbar_area.height)
+            } else {
+                (scrollbar_area.left(), scrollbar_area.width)
+            }
+        };
+
+        if self.vertical {
+            for y in bar_top..(bar_top + bar_height) {
+                buf.set_string(right, y, DOUBLE_VERTICAL, self.style_bar)
+            }
+        } else {
+            for x in bar_top..(bar_top + bar_height) {
+                buf.set_string(x, bottom, DOUBLE_HORIZONTAL, self.style_bar)
+            }
         }
 
         let progress = f32::from(self.pos) / f32::from(self.max);
@@ -63,12 +94,22 @@ impl Widget for Scrollbar {
         let pos: u16 = pos.cast_nearest();
         let pos = pos.saturating_sub(1);
 
-        buf.set_string(right, bar_top + pos, FULL, self.style_pos);
+        if self.vertical {
+            buf.set_string(right, bar_top + pos, FULL, self.style_pos);
+        } else {
+            buf.set_string(bar_top + pos, bottom, "▆", self.style_pos);
+        }
     }
 }
 
-pub fn draw_scrollbar<B: Backend>(f: &mut Frame<B>, r: Rect, max: usize, pos: usize) {
-    let mut widget = Scrollbar::new(max, pos);
-    widget.style_pos = Style::default().fg(Color::Blue);
+pub fn draw_scrollbar<B: Backend>(
+    f: &mut Frame<B>,
+    r: Rect,
+    max: usize,
+    pos: usize,
+    vertical: bool,
+) {
+    let mut widget = Scrollbar::new(max, pos, vertical);
+    widget.style_pos = Style::default();
     f.render_widget(widget, r);
 }

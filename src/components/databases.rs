@@ -1,5 +1,5 @@
 use super::{
-    compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
+    compute_character_width, utils::vertical_scroll::VerticalScroll, Component, DrawableComponent,
     EventState,
 };
 use crate::components::RecordTableComponent;

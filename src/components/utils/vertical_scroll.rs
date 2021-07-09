@@ -65,7 +65,7 @@ impl VerticalScroll {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        draw_scrollbar(f, r, self.max_top.get(), self.top.get());
+        draw_scrollbar(f, r, self.max_top.get(), self.top.get(), true);
     }
 }
 

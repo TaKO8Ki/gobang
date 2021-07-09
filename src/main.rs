@@ -67,13 +67,13 @@ fn setup_terminal() -> Result<()> {
     Ok(())
 }
 
-fn set_panic_handlers() -> Result<()> {
-    panic::set_hook(Box::new(|e| {
-        eprintln!("panic: {:?}", e);
-        shutdown_terminal();
-    }));
-    Ok(())
-}
+// fn set_panic_handlers() -> Result<()> {
+//     panic::set_hook(Box::new(|e| {
+//         println!("panic: {:?}", e);
+//         shutdown_terminal();
+//     }));
+//     Ok(())
+// }
 
 fn shutdown_terminal() {
     let leave_screen = io::stdout().execute(LeaveAlternateScreen).map(|_f| ());
