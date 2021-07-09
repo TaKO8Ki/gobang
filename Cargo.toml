@@ -26,6 +26,7 @@ strum = "0.21"
 strum_macros = "0.21"
 database-tree = { path = "./database-tree", version = "0.1" }
 easy-cast = "0.4"
+copypasta = { version = "0.7.0" }
 
 [workspace]
 members=[

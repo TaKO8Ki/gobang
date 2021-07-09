@@ -6,6 +6,11 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
         Key::Left => app.focus_block = FocusBlock::DabataseList,
         Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
+        Key::Char('y') => {
+            if let Some(text) = app.structure_table.selected_cell() {
+                app.clipboard.store(text)
+            }
+        }
         key => app.structure_table.event(key)?,
     }
     Ok(())

@@ -1,10 +1,12 @@
-use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent};
+use super::{
+    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, TableValueComponent,
+};
 use crate::event::Key;
 use anyhow::Result;
 use std::convert::From;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
@@ -95,7 +97,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index == self.headers.len() - 1 {
+        if self.column_index == self.headers.len() {
             return;
         }
         if self.column_index == 9 {
@@ -130,6 +132,20 @@ impl TableComponent {
         }
     }
 
+    pub fn is_selected_cell(&self, row_index: usize, column_index: usize) -> bool {
+        if column_index != self.column_index {
+            return false;
+        }
+        matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index)
+    }
+
+    pub fn selected_cell(&self) -> Option<String> {
+        self.rows
+            .get(self.state.selected()?)?
+            .get(self.column_index.saturating_sub(1) + self.column_page)
+            .map(|cell| cell.to_string())
+    }
+
     pub fn headers(&self) -> Vec<String> {
         let mut headers = self.headers[self.column_page..].to_vec();
         headers.insert(0, "".to_string());
@@ -161,6 +177,11 @@ impl TableComponent {
 
 impl DrawableComponent for TableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
+            .split(area);
+
         self.state.selected().map_or_else(
             || {
                 self.scroll.reset();
@@ -169,10 +190,13 @@ impl DrawableComponent for TableComponent {
                 self.scroll.update(
                     selection,
                     self.rows.len(),
-                    area.height.saturating_sub(2) as usize,
+                    layout[1].height.saturating_sub(2) as usize,
                 );
             },
         );
+
+        TableValueComponent::new(self.selected_cell().unwrap_or_default())
+            .draw(f, layout[0], focused)?;
 
         let headers = self.headers();
         let header_cells = headers
@@ -187,18 +211,9 @@ impl DrawableComponent for TableComponent {
                 .max()
                 .unwrap_or(0)
                 + 1;
-            let cells = item.iter().enumerate().map(|(column_page, c)| {
-                Cell::from(c.to_string()).style(if column_page == self.column_index {
-                    match self.state.selected() {
-                        Some(selected_row) => {
-                            if row_index == selected_row {
-                                Style::default().bg(Color::Blue)
-                            } else {
-                                Style::default()
-                            }
-                        }
-                        None => Style::default(),
-                    }
+            let cells = item.iter().enumerate().map(|(column_index, c)| {
+                Cell::from(c.to_string()).style(if self.is_selected_cell(row_index, column_index) {
+                    Style::default().bg(Color::Blue)
                 } else {
                     Style::default()
                 })
@@ -208,7 +223,7 @@ impl DrawableComponent for TableComponent {
         let widths = (0..10)
             .map(|_| Constraint::Percentage(10))
             .collect::<Vec<Constraint>>();
-        let t = Table::new(rows)
+        let table = Table::new(rows)
             .header(header)
             .block(Block::default().borders(Borders::ALL).title("Records"))
             .highlight_style(if self.select_entire_row {
@@ -222,9 +237,9 @@ impl DrawableComponent for TableComponent {
                 Style::default().fg(Color::DarkGray)
             })
             .widths(&widths);
-        f.render_stateful_widget(t, area, &mut self.state);
+        f.render_stateful_widget(table, layout[1], &mut self.state);
 
-        self.scroll.draw(f, area);
+        self.scroll.draw(f, layout[1]);
         Ok(())
     }
 }
