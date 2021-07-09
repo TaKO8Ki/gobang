@@ -1,6 +1,3 @@
-#[cfg(any(test, not(any(target_os = "macos", windows))))]
-use copypasta::nop_clipboard::NopClipboardContext;
-#[cfg(any(target_os = "macos", windows))]
 use copypasta::ClipboardContext;
 use copypasta::ClipboardProvider;
 
@@ -10,23 +7,21 @@ pub struct Clipboard {
 }
 
 impl Clipboard {
-    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     pub fn new() -> Self {
         Self::default()
     }
 
-    #[cfg(any(test, not(any(target_os = "macos", windows))))]
-    pub fn new_nop() -> Self {
-        Self {
-            clipboard: Box::new(NopClipboardContext::new().unwrap()),
-            selection: None,
-        }
-    }
+    // #[cfg(any(test, not(any(target_os = "macos", windows))))]
+    // pub fn new_nop() -> Self {
+    //     Self {
+    //         clipboard: Box::new(NopClipboardContext::new().unwrap()),
+    //         selection: None,
+    //     }
+    // }
 }
 
 impl Default for Clipboard {
     fn default() -> Self {
-        #[cfg(any(target_os = "macos", windows))]
         return Self {
             clipboard: Box::new(ClipboardContext::new().unwrap()),
             selection: None,
@@ -40,8 +35,8 @@ impl Default for Clipboard {
         //     )),
         // };
 
-        #[cfg(not(any(target_os = "macos", windows)))]
-        return Self::new_nop();
+        // #[cfg(not(any(target_os = "macos", windows)))]
+        // return Self::new_nop();
     }
 }
 
