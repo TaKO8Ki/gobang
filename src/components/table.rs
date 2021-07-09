@@ -1,5 +1,5 @@
-use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent};
-use crate::event::Key;
+use super::{utils::vertical_scroll::VerticalScroll, Component, DrawableComponent};
+use crate::{components::utils::horizontal_scroll::HorizontalScroll, event::Key};
 use anyhow::Result;
 use std::convert::From;
 use tui::{
@@ -16,7 +16,8 @@ pub struct TableComponent {
     pub rows: Vec<Vec<String>>,
     pub column_index: usize,
     pub column_page: usize,
-    pub scroll: VerticalScroll,
+    pub vertical_scroll: VerticalScroll,
+    pub horizontal_scroll: HorizontalScroll,
     pub select_entire_row: bool,
 }
 
@@ -28,7 +29,8 @@ impl Default for TableComponent {
             rows: vec![],
             column_page: 0,
             column_index: 0,
-            scroll: VerticalScroll::new(),
+            vertical_scroll: VerticalScroll::new(),
+            horizontal_scroll: HorizontalScroll::new(),
             select_entire_row: false,
         }
     }
@@ -95,7 +97,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index == self.headers.len() - 1 {
+        if self.column_index == self.headers.len() {
             return;
         }
         if self.column_index == 9 {
@@ -163,15 +165,28 @@ impl DrawableComponent for TableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         self.state.selected().map_or_else(
             || {
-                self.scroll.reset();
+                self.vertical_scroll.reset();
             },
             |selection| {
-                self.scroll.update(
+                self.vertical_scroll.update(
                     selection,
                     self.rows.len(),
                     area.height.saturating_sub(2) as usize,
                 );
             },
+        );
+
+        let column_width = area.width.saturating_pow(10);
+        self.horizontal_scroll.update(
+            if self.headers.is_empty() {
+                0
+            } else {
+                column_width
+                    .saturating_mul(self.headers[..self.column_index].len() as u16)
+                    .saturating_add(1) as usize
+            },
+            column_width.saturating_mul(self.headers.len() as u16) as usize,
+            area.width.saturating_sub(2) as usize,
         );
 
         let headers = self.headers();
@@ -224,7 +239,8 @@ impl DrawableComponent for TableComponent {
             .widths(&widths);
         f.render_stateful_widget(t, area, &mut self.state);
 
-        self.scroll.draw(f, area);
+        self.vertical_scroll.draw(f, area);
+        self.horizontal_scroll.draw(f, area);
         Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent};
+use super::{utils::vertical_scroll::VerticalScroll, Component, DrawableComponent};
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;

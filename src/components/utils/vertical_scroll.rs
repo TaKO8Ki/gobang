@@ -1,8 +1,6 @@
-use std::cell::Cell;
-
-use tui::{backend::Backend, layout::Rect, Frame};
-
 use crate::{components::ScrollType, ui::scrollbar::draw_scrollbar};
+use std::cell::Cell;
+use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct VerticalScroll {
     top: Cell<usize>,
@@ -67,7 +65,7 @@ impl VerticalScroll {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        draw_scrollbar(f, r, self.max_top.get(), self.top.get());
+        draw_scrollbar(f, r, self.max_top.get(), self.top.get(), true);
     }
 }
 
