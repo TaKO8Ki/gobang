@@ -44,6 +44,16 @@ impl DatabaseTree {
         Ok(new_self)
     }
 
+    pub fn filter(&self, filter_text: String) -> Self {
+        let mut new_self = Self {
+            items: self.items.filter(filter_text),
+            selection: Some(0),
+            visual_selection: None,
+        };
+        new_self.visual_selection = new_self.calc_visual_selection();
+        new_self
+    }
+
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
         self.items.expand(0, false);
