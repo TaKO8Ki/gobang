@@ -19,7 +19,7 @@ pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
         //     FocusBlock::Query => (),
         //     _ => app.focus_block = FocusBlock::Table,
         // },
-        // Key::Ctrl('e') => app.focus_block = FocusBlock::Query,
+        Key::Ctrl('e') => app.focus_block = FocusBlock::Query,
         Key::Esc if app.error.error.is_some() => {
             app.error.error = None;
             return Ok(());

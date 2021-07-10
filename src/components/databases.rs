@@ -3,8 +3,8 @@ use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use colored::Colorize;
-use database_tree::{DatabaseTree, DatabaseTreeItem};
+use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
     backend::Backend,
@@ -33,6 +33,7 @@ pub struct DatabasesComponent {
     pub filterd_tree: Option<DatabaseTree>,
     pub scroll: VerticalScroll,
     pub input: String,
+    pub input_cursor_x: u16,
     pub focus_block: FocusBlock,
 }
 
@@ -43,12 +44,37 @@ impl DatabasesComponent {
             filterd_tree: None,
             scroll: VerticalScroll::new(),
             input: String::new(),
+            input_cursor_x: 0,
             focus_block: FocusBlock::Tree,
         }
     }
 
+    pub fn update(&mut self, list: &[Database], collapsed: &BTreeSet<&String>) -> Result<()> {
+        self.tree = DatabaseTree::new(list, collapsed)?;
+        self.filterd_tree = None;
+        self.input = String::new();
+        self.input_cursor_x = 0;
+        Ok(())
+    }
+
+    pub fn tree_focused(&self) -> bool {
+        matches!(self.focus_block, FocusBlock::Tree)
+    }
+
     pub fn tree(&self) -> &DatabaseTree {
         self.filterd_tree.as_ref().unwrap_or(&self.tree)
+    }
+
+    pub fn increment_input_cursor_x(&mut self) {
+        if self.input_cursor_x > 0 {
+            self.input_cursor_x -= 1;
+        }
+    }
+
+    pub fn decrement_input_cursor_x(&mut self) {
+        if self.input_cursor_x < self.input.width() as u16 {
+            self.input_cursor_x += 1;
+        }
     }
 
     fn tree_item_to_span(item: DatabaseTreeItem, selected: bool, width: u16) -> Span<'static> {
@@ -164,7 +190,10 @@ impl DatabasesComponent {
         );
         self.scroll.draw(f, area);
         if let FocusBlock::Filter = self.focus_block {
-            f.set_cursor(area.x + self.input.width() as u16 + 1, area.y + 1)
+            f.set_cursor(
+                area.x + self.input.width() as u16 + 1 - self.input_cursor_x,
+                area.y + 1,
+            )
         }
     }
 }
@@ -193,15 +222,28 @@ impl Component for DatabasesComponent {
                 self.input.push(c);
                 self.filterd_tree = Some(self.tree.filter(self.input.clone()))
             }
-            Key::Delete | Key::Backspace if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.input.pop();
+            Key::Delete | Key::Backspace => {
                 if self.input.is_empty() {
                     self.filterd_tree = None
                 } else {
+                    if self.input_cursor_x == 0 {
+                        self.input.pop();
+                        return Ok(());
+                    }
+                    if self.input.width() - self.input_cursor_x as usize > 0 {
+                        self.input.remove(
+                            self.input
+                                .width()
+                                .saturating_sub(self.input_cursor_x as usize)
+                                .saturating_sub(1),
+                        );
+                    }
                     self.filterd_tree = Some(self.tree.filter(self.input.clone()))
                 }
             }
-            Key::Esc if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Left => self.decrement_input_cursor_x(),
+            Key::Right => self.increment_input_cursor_x(),
+            Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
                 self.focus_block = FocusBlock::Tree
             }
             key => tree_nav(
