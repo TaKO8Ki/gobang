@@ -98,6 +98,15 @@ impl DatabaseTreeItem {
         })
     }
 
+    pub fn set_collapsed(&mut self, collapsed: bool) {
+        if let DatabaseTreeItemKind::Database { name, .. } = self.kind() {
+            self.kind = DatabaseTreeItemKind::Database {
+                name: name.to_string(),
+                collapsed,
+            }
+        }
+    }
+
     pub const fn info(&self) -> &TreeItemInfo {
         &self.info
     }
@@ -128,8 +137,23 @@ impl DatabaseTreeItem {
         }
     }
 
+    pub fn show(&mut self) {
+        self.info.visible = true;
+    }
+
     pub fn hide(&mut self) {
         self.info.visible = false;
+    }
+
+    pub fn is_match(&self, filter_text: &str) -> bool {
+        match self.kind.clone() {
+            DatabaseTreeItemKind::Database { name, .. } => name.contains(filter_text),
+            DatabaseTreeItemKind::Table { table, .. } => table.name.contains(filter_text),
+        }
+    }
+
+    pub fn is_database(&self) -> bool {
+        self.kind.is_database()
     }
 }
 

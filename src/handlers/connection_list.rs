@@ -2,7 +2,7 @@ use crate::app::{App, FocusBlock};
 use crate::components::Component as _;
 use crate::event::Key;
 use crate::utils::{get_databases, get_tables};
-use database_tree::{Database, DatabaseTree};
+use database_tree::Database;
 use sqlx::mysql::MySqlPool;
 use std::collections::BTreeSet;
 
@@ -21,23 +21,23 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
             }
             if let Some(conn) = app.connections.selected_connection() {
                 match &conn.database {
-                    Some(database) => {
-                        app.databases.tree = DatabaseTree::new(
+                    Some(database) => app
+                        .databases
+                        .update(
                             &[Database::new(
                                 database.clone(),
                                 get_tables(database.clone(), app.pool.as_ref().unwrap()).await?,
                             )],
                             &BTreeSet::new(),
                         )
-                        .unwrap()
-                    }
-                    None => {
-                        app.databases.tree = DatabaseTree::new(
+                        .unwrap(),
+                    None => app
+                        .databases
+                        .update(
                             get_databases(app.pool.as_ref().unwrap()).await?.as_slice(),
                             &BTreeSet::new(),
                         )
-                        .unwrap()
-                    }
+                        .unwrap(),
                 }
             };
         }

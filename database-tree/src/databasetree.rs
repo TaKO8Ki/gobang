@@ -44,6 +44,16 @@ impl DatabaseTree {
         Ok(new_self)
     }
 
+    pub fn filter(&self, filter_text: String) -> Self {
+        let mut new_self = Self {
+            items: self.items.filter(filter_text),
+            selection: Some(0),
+            visual_selection: None,
+        };
+        new_self.visual_selection = new_self.calc_visual_selection();
+        new_self
+    }
+
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
         self.items.expand(0, false);
@@ -280,5 +290,159 @@ impl DatabaseTree {
             .get(index)
             .map(|item| item.info().is_visible())
             .unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{Database, DatabaseTree, MoveSelection, Table};
+    // use pretty_assertions::assert_eq;
+    use std::collections::BTreeSet;
+
+    impl Table {
+        fn new(name: String) -> Self {
+            Table {
+                name,
+                create_time: None,
+                update_time: None,
+                engine: None,
+            }
+        }
+    }
+
+    #[test]
+    fn test_selection() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Table::new("b".to_string())],
+        )];
+
+        // a
+        //   b
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(0));
+        assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(1));
+    }
+
+    #[test]
+    fn test_selection_skips_collapsed() {
+        let items = vec![
+            Database::new(
+                "a".to_string(),
+                vec![Table::new("b".to_string()), Table::new("c".to_string())],
+            ),
+            Database::new("d".to_string(), vec![Table::new("e".to_string())]),
+        ];
+
+        // a
+        //   b
+        //   c
+        // d
+        //   e
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.items.collapse(0, false);
+        tree.selection = Some(1);
+
+        assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(3));
+    }
+
+    #[test]
+    fn test_selection_left_collapse() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Table::new("b".to_string()), Table::new("c".to_string())],
+        )];
+
+        // a
+        //   b
+        //   c
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(0);
+        tree.items.expand(0, false);
+
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert_eq!(tree.selection, Some(0));
+        assert!(tree.items.tree_items[0].kind().is_database_collapsed());
+        assert!(!tree.items.tree_items[1].info().is_visible());
+        assert!(!tree.items.tree_items[2].info().is_visible());
+    }
+
+    #[test]
+    fn test_selection_left_parent() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Table::new("b".to_string()), Table::new("c".to_string())],
+        )];
+
+        // a
+        //   b
+        //   c
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(2);
+        tree.items.expand(0, false);
+
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert_eq!(tree.selection, Some(0));
+    }
+
+    #[test]
+    fn test_selection_right_expand() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Table::new("b".to_string()), Table::new("c".to_string())],
+        )];
+
+        // a
+        //   b
+        //   c
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        tree.selection = Some(0);
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(0));
+        assert!(!tree.items.tree_items[0].kind().is_database_collapsed());
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(1));
+    }
+
+    #[test]
+    fn test_visible_selection() {
+        let items = vec![
+            Database::new(
+                "a".to_string(),
+                vec![Table::new("b".to_string()), Table::new("c".to_string())],
+            ),
+            Database::new("d".to_string(), vec![Table::new("e".to_string())]),
+        ];
+
+        // a
+        //   b
+        //   c
+        // d
+        //   e
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.items.expand(0, false);
+        tree.items.expand(3, false);
+
+        tree.selection = Some(0);
+        assert!(tree.move_selection(MoveSelection::Left));
+        assert!(tree.move_selection(MoveSelection::Down));
+        let s = tree.visual_selection().unwrap();
+
+        assert_eq!(s.count, 3);
+        assert_eq!(s.index, 1);
     }
 }

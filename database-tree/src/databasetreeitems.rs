@@ -19,6 +19,27 @@ impl DatabaseTreeItems {
         })
     }
 
+    pub fn filter(&self, filter_text: String) -> Self {
+        Self {
+            tree_items: self
+                .tree_items
+                .iter()
+                .filter(|item| item.is_database() || item.is_match(&filter_text))
+                .map(|item| {
+                    if item.is_database() {
+                        let mut item = item.clone();
+                        item.set_collapsed(false);
+                        item
+                    } else {
+                        let mut item = item.clone();
+                        item.show();
+                        item
+                    }
+                })
+                .collect::<Vec<DatabaseTreeItem>>(),
+        }
+    }
+
     fn create_items(
         list: &[Database],
         collapsed: &BTreeSet<&String>,

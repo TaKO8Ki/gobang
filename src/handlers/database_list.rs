@@ -6,11 +6,12 @@ use database_tree::Database;
 
 pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
-        Key::Esc => app.focus_block = FocusBlock::DabataseList,
-        Key::Right => app.focus_block = FocusBlock::Table,
-        Key::Char('c') => app.focus_block = FocusBlock::ConnectionList,
-        Key::Enter => {
-            if let Some((table, database)) = app.databases.tree.selected_table() {
+        Key::Char('c') if app.databases.tree_focused() => {
+            app.focus_block = FocusBlock::ConnectionList
+        }
+        Key::Right if app.databases.tree_focused() => app.focus_block = FocusBlock::Table,
+        Key::Enter if app.databases.tree_focused() => {
+            if let Some((table, database)) = app.databases.tree().selected_table() {
                 app.focus_block = FocusBlock::Table;
                 let (headers, records) = get_records(
                     &Database {

@@ -11,15 +11,7 @@ use crate::event::Key;
 
 pub async fn handle_app(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
-        Key::Char('d') => match app.focus_block {
-            FocusBlock::Query => (),
-            _ => app.focus_block = FocusBlock::DabataseList,
-        },
-        Key::Char('r') => match app.focus_block {
-            FocusBlock::Query => (),
-            _ => app.focus_block = FocusBlock::Table,
-        },
-        Key::Char('e') => app.focus_block = FocusBlock::Query,
+        Key::Ctrl('e') => app.focus_block = FocusBlock::Query,
         Key::Esc if app.error.error.is_some() => {
             app.error.error = None;
             return Ok(());
