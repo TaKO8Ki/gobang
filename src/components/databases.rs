@@ -156,7 +156,7 @@ impl DatabasesComponent {
                 format!(
                     "{}{:w$}",
                     if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
-                        "Press / to filter".to_string()
+                        " / to filter tables".to_string()
                     } else {
                         self.input.clone()
                     },
