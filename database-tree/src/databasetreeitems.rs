@@ -29,11 +29,11 @@ impl DatabaseTreeItems {
                     if item.is_database() {
                         let mut item = item.clone();
                         item.set_collapsed(false);
-                        item.clone()
+                        item
                     } else {
                         let mut item = item.clone();
                         item.show();
-                        item.clone()
+                        item
                     }
                 })
                 .collect::<Vec<DatabaseTreeItem>>(),

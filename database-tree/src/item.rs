@@ -145,7 +145,7 @@ impl DatabaseTreeItem {
         self.info.visible = false;
     }
 
-    pub fn is_match(&self, filter_text: &String) -> bool {
+    pub fn is_match(&self, filter_text: &str) -> bool {
         match self.kind.clone() {
             DatabaseTreeItemKind::Database { name, .. } => name.contains(filter_text),
             DatabaseTreeItemKind::Table { table, .. } => table.name.contains(filter_text),

@@ -2,7 +2,7 @@ use crate::app::{App, FocusBlock};
 use crate::components::Component as _;
 use crate::event::Key;
 use crate::utils::{get_databases, get_tables};
-use database_tree::{Database, DatabaseTree};
+use database_tree::Database;
 use sqlx::mysql::MySqlPool;
 use std::collections::BTreeSet;
 

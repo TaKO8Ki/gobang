@@ -49,7 +49,7 @@ impl DrawableComponent for ErrorComponent {
 }
 
 impl Component for ErrorComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, _key: Key) -> Result<()> {
         Ok(())
     }
 }

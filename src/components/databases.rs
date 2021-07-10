@@ -143,13 +143,10 @@ impl DatabasesComponent {
         items.insert(
             0,
             Span::styled(
-                format!(
-                    "{}",
-                    (0..area.width as usize)
-                        .map(|_| HORIZONTAL)
-                        .collect::<Vec<&str>>()
-                        .join("")
-                ),
+                (0..area.width as usize)
+                    .map(|_| HORIZONTAL)
+                    .collect::<Vec<&str>>()
+                    .join(""),
                 Style::default(),
             ),
         );
@@ -200,14 +197,12 @@ impl DatabasesComponent {
 
 impl DrawableComponent for DatabasesComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        if true {
-            let chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(100)].as_ref())
-                .split(area);
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(100)].as_ref())
+            .split(area);
 
-            self.draw_tree(f, chunks[0], focused);
-        }
+        self.draw_tree(f, chunks[0], focused);
         Ok(())
     }
 }
@@ -262,7 +257,5 @@ impl Component for DatabasesComponent {
 fn tree_nav(tree: &mut DatabaseTree, key: Key) {
     if let Some(common_nav) = common_nav(key) {
         tree.move_selection(common_nav);
-    } else {
-        false;
     }
 }

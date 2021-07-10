@@ -1,5 +1,4 @@
 use crate::app::{App, FocusBlock};
-use crate::components::databases::FocusBlock as DatabaseFocusBlock;
 use crate::components::Component as _;
 use crate::event::Key;
 use crate::utils::{get_columns, get_records};
