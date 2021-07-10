@@ -223,14 +223,10 @@ impl Component for DatabasesComponent {
                 self.filterd_tree = Some(self.tree.filter(self.input.clone()))
             }
             Key::Delete | Key::Backspace => {
-                if self.input.is_empty() {
-                    self.filterd_tree = None
-                } else {
+                if !self.input.is_empty() {
                     if self.input_cursor_x == 0 {
                         self.input.pop();
-                        return Ok(());
-                    }
-                    if self.input.width() - self.input_cursor_x as usize > 0 {
+                    } else if self.input.width() - self.input_cursor_x as usize > 0 {
                         self.input.remove(
                             self.input
                                 .width()
@@ -238,7 +234,11 @@ impl Component for DatabasesComponent {
                                 .saturating_sub(1),
                         );
                     }
-                    self.filterd_tree = Some(self.tree.filter(self.input.clone()))
+                    self.filterd_tree = if self.input.is_empty() {
+                        None
+                    } else {
+                        Some(self.tree.filter(self.input.clone()))
+                    }
                 }
             }
             Key::Left => self.decrement_input_cursor_x(),
