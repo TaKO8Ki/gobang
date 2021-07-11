@@ -11,6 +11,9 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
+
+pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 
 pub struct TableComponent {
     pub state: TableState,
@@ -158,16 +161,7 @@ impl TableComponent {
             .iter()
             .map(|row| row[self.column_page..].to_vec())
             .collect::<Vec<Vec<String>>>();
-        let mut new_rows = match self.state.selected() {
-            Some(index) => {
-                if index + 100 <= self.rows.len() {
-                    rows[..index + 100].to_vec()
-                } else {
-                    rows
-                }
-            }
-            None => rows,
-        };
+        let mut new_rows = rows;
         for (index, row) in new_rows.iter_mut().enumerate() {
             row.insert(0, (index + 1).to_string())
         }
