@@ -221,9 +221,41 @@ impl DrawableComponent for TableComponent {
             });
             Row::new(cells).height(height as u16).bottom_margin(1)
         });
-        let widths = (0..10)
-            .map(|_| Constraint::Percentage(10))
+        let mut widths = Vec::new();
+        for n in 0..self.headers().len() {
+            let length = self
+                .rows()
+                .iter()
+                .map(|row| {
+                    row.get(n)
+                        .map_or(String::new(), |cell| cell.to_string())
+                        .width()
+                })
+                .collect::<Vec<usize>>()
+                .iter()
+                .max()
+                .map_or(3, |v| {
+                    *v.max(
+                        &self
+                            .headers()
+                            .iter()
+                            .map(|header| header.width())
+                            .collect::<Vec<usize>>()
+                            .get(n)
+                            .unwrap_or(&3),
+                    )
+                    .clamp(&3, &20) as u16
+                });
+            if widths.iter().sum::<u16>() + length > layout[1].width {
+                break;
+            }
+            widths.push(length);
+        }
+        let widths = &widths
+            .iter()
+            .map(|width| Constraint::Length(*width))
             .collect::<Vec<Constraint>>();
+
         let table = Table::new(rows)
             .header(header)
             .block(Block::default().borders(Borders::ALL).title("Records"))
@@ -237,7 +269,7 @@ impl DrawableComponent for TableComponent {
             } else {
                 Style::default().fg(Color::DarkGray)
             })
-            .widths(&widths);
+            .widths(widths);
         f.render_stateful_widget(table, layout[1], &mut self.state);
 
         self.scroll.draw(f, layout[1]);
