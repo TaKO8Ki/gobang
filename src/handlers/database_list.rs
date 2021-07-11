@@ -1,4 +1,5 @@
 use crate::app::{App, FocusBlock};
+use crate::components::table::RECORDS_LIMIT_PER_PAGE;
 use crate::components::Component as _;
 use crate::event::Key;
 use crate::utils::{get_columns, get_records};
@@ -19,6 +20,8 @@ pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
                         tables: vec![],
                     },
                     &table,
+                    0,
+                    RECORDS_LIMIT_PER_PAGE,
                     app.pool.as_ref().unwrap(),
                 )
                 .await?;
