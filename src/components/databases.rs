@@ -12,7 +12,7 @@ use tui::{
     style::{Color, Style},
     symbols::line::HORIZONTAL,
     text::Span,
-    widgets::{Block, Borders},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -156,7 +156,7 @@ impl DatabasesComponent {
                 format!(
                     "{}{:w$}",
                     if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
-                        " / to filter tables".to_string()
+                        "Filter tables".to_string()
                     } else {
                         self.input.clone()
                     },

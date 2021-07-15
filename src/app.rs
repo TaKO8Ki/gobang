@@ -3,8 +3,8 @@ use crate::components::DrawableComponent as _;
 use crate::{
     components::tab::Tab,
     components::{
-        ConnectionsComponent, DatabasesComponent, ErrorComponent, QueryComponent, TabComponent,
-        TableComponent, TableStatusComponent,
+        ConnectionsComponent, DatabasesComponent, ErrorComponent, RecordTableComponent,
+        TabComponent, TableComponent, TableStatusComponent,
     },
     user_config::UserConfig,
 };
@@ -16,17 +16,15 @@ use tui::{
     Frame,
 };
 
-pub enum FocusBlock {
+pub enum Focus {
     DabataseList,
     Table,
     ConnectionList,
-    Query,
 }
 pub struct App {
-    pub query: QueryComponent,
-    pub record_table: TableComponent,
+    pub record_table: RecordTableComponent,
     pub structure_table: TableComponent,
-    pub focus_block: FocusBlock,
+    pub focus: Focus,
     pub tab: TabComponent,
     pub user_config: Option<UserConfig>,
     pub selected_connection: ListState,
@@ -41,10 +39,9 @@ pub struct App {
 impl Default for App {
     fn default() -> App {
         App {
-            query: QueryComponent::default(),
-            record_table: TableComponent::default(),
+            record_table: RecordTableComponent::default(),
             structure_table: TableComponent::default(),
-            focus_block: FocusBlock::DabataseList,
+            focus: Focus::DabataseList,
             tab: TabComponent::default(),
             user_config: None,
             selected_connection: ListState::default(),
@@ -63,13 +60,13 @@ impl App {
         App {
             user_config: Some(user_config.clone()),
             connections: ConnectionsComponent::new(user_config.conn),
-            focus_block: FocusBlock::ConnectionList,
+            focus: Focus::ConnectionList,
             ..App::default()
         }
     }
 
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
-        if let FocusBlock::ConnectionList = self.focus_block {
+        if let Focus::ConnectionList = self.focus {
             self.connections.draw(
                 f,
                 Layout::default()
@@ -89,48 +86,27 @@ impl App {
             .split(main_chunks[0]);
 
         self.databases
-            .draw(
-                f,
-                left_chunks[0],
-                matches!(self.focus_block, FocusBlock::DabataseList),
-            )
+            .draw(f, left_chunks[0], matches!(self.focus, Focus::DabataseList))
             .unwrap();
-        self.table_status.draw(
-            f,
-            left_chunks[1],
-            matches!(self.focus_block, FocusBlock::DabataseList),
-        )?;
+        self.table_status
+            .draw(f, left_chunks[1], matches!(self.focus, Focus::DabataseList))?;
 
         let right_chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(3),
-                    Constraint::Length(3),
-                    Constraint::Length(5),
-                ]
-                .as_ref(),
-            )
+            .constraints([Constraint::Length(3), Constraint::Length(5)].as_ref())
             .split(main_chunks[1]);
 
         self.tab.draw(f, right_chunks[0], false)?;
-        self.query.draw(
-            f,
-            right_chunks[1],
-            matches!(self.focus_block, FocusBlock::Query),
-        )?;
 
         match self.tab.selected_tab {
-            Tab::Records => self.record_table.draw(
-                f,
-                right_chunks[2],
-                matches!(self.focus_block, FocusBlock::Table),
-            )?,
-            Tab::Structure => self.structure_table.draw(
-                f,
-                right_chunks[2],
-                matches!(self.focus_block, FocusBlock::Table),
-            )?,
+            Tab::Records => {
+                self.record_table
+                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
+            }
+            Tab::Structure => {
+                self.structure_table
+                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
+            }
         }
         self.error.draw(f, Rect::default(), false)?;
         Ok(())

@@ -71,8 +71,8 @@ impl ConnectionsComponent {
 
 impl DrawableComponent for ConnectionsComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
-        let percent_x = 60;
-        let percent_y = 50;
+        let width = 80;
+        let height = 20;
         let conns = &self.connections;
         let connections: Vec<ListItem> = conns
             .iter()
@@ -85,29 +85,13 @@ impl DrawableComponent for ConnectionsComponent {
             .block(Block::default().borders(Borders::ALL).title("Connections"))
             .highlight_style(Style::default().bg(Color::Blue))
             .style(Style::default());
-        let popup_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Percentage((100 - percent_y) / 2),
-                    Constraint::Percentage(percent_y),
-                    Constraint::Percentage((100 - percent_y) / 2),
-                ]
-                .as_ref(),
-            )
-            .split(f.size());
 
-        let area = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Percentage((100 - percent_x) / 2),
-                    Constraint::Percentage(percent_x),
-                    Constraint::Percentage((100 - percent_x) / 2),
-                ]
-                .as_ref(),
-            )
-            .split(popup_layout[1])[1];
+        let area = Rect::new(
+            (f.size().width.saturating_sub(width)) / 2,
+            (f.size().height.saturating_sub(height)) / 2,
+            width.min(f.size().width),
+            height.min(f.size().height),
+        );
         f.render_widget(Clear, area);
         f.render_stateful_widget(tasks, area, &mut self.state);
         Ok(())

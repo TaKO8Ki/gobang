@@ -1,4 +1,4 @@
-use crate::app::{App, FocusBlock};
+use crate::app::{App, Focus};
 use crate::components::Component as _;
 use crate::event::Key;
 use crate::utils::{get_databases, get_tables};
@@ -9,15 +9,14 @@ use std::collections::BTreeSet;
 pub async fn handler(key: Key, app: &mut App) -> anyhow::Result<()> {
     match key {
         Key::Enter => {
-            app.record_table.reset(vec![], vec![]);
-            app.record_table.state.select(Some(0));
+            app.record_table.reset();
             if let Some(conn) = app.connections.selected_connection() {
                 if let Some(pool) = app.pool.as_ref() {
                     pool.close().await;
                 }
                 let pool = MySqlPool::connect(conn.database_url().as_str()).await?;
                 app.pool = Some(pool);
-                app.focus_block = FocusBlock::DabataseList;
+                app.focus = Focus::DabataseList;
             }
             if let Some(conn) = app.connections.selected_connection() {
                 match &conn.database {

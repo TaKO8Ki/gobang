@@ -2,9 +2,10 @@ pub mod command;
 pub mod connections;
 pub mod databases;
 pub mod error;
-pub mod query;
+pub mod record_table;
 pub mod tab;
 pub mod table;
+pub mod table_filter;
 pub mod table_status;
 pub mod table_value;
 pub mod utils;
@@ -13,13 +14,15 @@ pub use command::{CommandInfo, CommandText};
 pub use connections::ConnectionsComponent;
 pub use databases::DatabasesComponent;
 pub use error::ErrorComponent;
-pub use query::QueryComponent;
+pub use record_table::RecordTableComponent;
 pub use tab::TabComponent;
 pub use table::TableComponent;
+pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use tui::{backend::Backend, layout::Rect, Frame};
 
 #[derive(Copy, Clone)]
@@ -43,8 +46,11 @@ pub trait DrawableComponent {
 }
 
 /// base component trait
+#[async_trait]
 pub trait Component {
     fn event(&mut self, key: crate::event::Key) -> Result<()>;
+
+    // async fn async_event(&mut self, key: crate::event::Key) -> Result<()>;
 
     fn focused(&self) -> bool {
         false

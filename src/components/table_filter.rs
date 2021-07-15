@@ -5,26 +5,29 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
-pub struct QueryComponent {
+pub struct TableFilterComponent {
+    pub table: Option<String>,
     pub input: String,
     pub input_cursor_x: u16,
 }
 
-impl Default for QueryComponent {
+impl Default for TableFilterComponent {
     fn default() -> Self {
         Self {
+            table: None,
             input: String::new(),
             input_cursor_x: 0,
         }
     }
 }
 
-impl QueryComponent {
+impl TableFilterComponent {
     pub fn increment_input_cursor_x(&mut self) {
         if self.input_cursor_x > 0 {
             self.input_cursor_x -= 1;
@@ -38,19 +41,43 @@ impl QueryComponent {
     }
 }
 
-impl DrawableComponent for QueryComponent {
+impl DrawableComponent for TableFilterComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let query = Paragraph::new(self.input.as_ref())
-            .style(if focused {
-                Style::default()
-            } else {
-                Style::default().fg(Color::DarkGray)
-            })
-            .block(Block::default().borders(Borders::ALL).title("Query"));
+        let query = Paragraph::new(Spans::from(vec![
+            Span::styled(
+                self.table
+                    .as_ref()
+                    .map_or("-".to_string(), |table| table.to_string()),
+                Style::default().fg(Color::Blue),
+            ),
+            Span::from(format!(
+                " {}",
+                if focused || !self.input.is_empty() {
+                    self.input.as_ref()
+                } else {
+                    "Enter a SQL expression in WHERE clause"
+                }
+            )),
+        ]))
+        .style(if focused {
+            Style::default()
+        } else {
+            Style::default().fg(Color::DarkGray)
+        })
+        .block(Block::default().borders(Borders::ALL));
         f.render_widget(query, area);
         if focused {
             f.set_cursor(
-                area.x + self.input.width() as u16 + 1 - self.input_cursor_x,
+                (area.x
+                    + self.input.width() as u16
+                    + 1
+                    + self
+                        .table
+                        .as_ref()
+                        .map_or(String::new(), |table| table.to_string())
+                        .width() as u16
+                    + 1)
+                .saturating_sub(self.input_cursor_x),
                 area.y + 1,
             )
         }
@@ -58,7 +85,7 @@ impl DrawableComponent for QueryComponent {
     }
 }
 
-impl Component for QueryComponent {
+impl Component for TableFilterComponent {
     fn event(&mut self, key: Key) -> Result<()> {
         match key {
             Key::Char(c) => self.input.push(c),

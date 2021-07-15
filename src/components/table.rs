@@ -11,9 +11,13 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
 
 pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
+
+pub enum FocusBlock {
+    Table,
+    Filter,
+}
 
 pub struct TableComponent {
     pub state: TableState,
@@ -23,6 +27,7 @@ pub struct TableComponent {
     pub column_page: usize,
     pub scroll: VerticalScroll,
     pub select_entire_row: bool,
+    pub eod: bool,
 }
 
 impl Default for TableComponent {
@@ -32,15 +37,29 @@ impl Default for TableComponent {
             headers: vec![],
             rows: vec![],
             column_page: 0,
-            column_index: 0,
+            column_index: 1,
             scroll: VerticalScroll::new(),
             select_entire_row: false,
+            eod: false,
         }
     }
 }
 
 impl TableComponent {
-    pub fn reset(&mut self, headers: Vec<String>, rows: Vec<Vec<String>>) {
+    pub fn new(rows: Vec<Vec<String>>, headers: Vec<String>) -> Self {
+        let mut state = TableState::default();
+        if !rows.is_empty() {
+            state.select(Some(0))
+        }
+        Self {
+            rows,
+            headers,
+            state,
+            ..Self::default()
+        }
+    }
+
+    pub fn update(&mut self, headers: Vec<String>, rows: Vec<Vec<String>>) {
         self.headers = headers;
         self.rows = rows;
         self.column_page = 0;
@@ -49,6 +68,10 @@ impl TableComponent {
         if !self.rows.is_empty() {
             self.state.select(Some(0));
         }
+    }
+
+    pub fn end(&mut self) {
+        self.eod = true;
     }
 
     pub fn next(&mut self, lines: usize) {

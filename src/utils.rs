@@ -34,15 +34,27 @@ pub async fn get_records(
     table: &Table,
     page: u16,
     limit: u8,
+    filter: Option<String>,
     pool: &MySqlPool,
 ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-    let query = format!(
-        "SELECT * FROM `{}`.`{}` limit {page}, {limit}",
-        database.name,
-        table.name,
-        page = page,
-        limit = limit
-    );
+    let query = if let Some(filter) = filter {
+        format!(
+            "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
+            database = database.name,
+            table = table.name,
+            filter = filter,
+            page = page,
+            limit = limit
+        )
+    } else {
+        format!(
+            "SELECT * FROM `{}`.`{}` limit {page}, {limit}",
+            database.name,
+            table.name,
+            page = page,
+            limit = limit
+        )
+    };
     let mut rows = sqlx::query(query.as_str()).fetch(pool);
     let headers =
         sqlx::query(format!("SHOW COLUMNS FROM `{}`.`{}`", database.name, table.name).as_str())
