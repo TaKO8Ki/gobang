@@ -4,7 +4,7 @@ use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::{Margin, Rect},
-    style::Style,
+    style::{Color, Style},
     symbols::{block::FULL, line::DOUBLE_VERTICAL},
     widgets::Widget,
     Frame,
@@ -70,6 +70,6 @@ impl Widget for Scrollbar {
 
 pub fn draw_scrollbar<B: Backend>(f: &mut Frame<B>, r: Rect, max: usize, pos: usize) {
     let mut widget = Scrollbar::new(max, pos);
-    widget.style_pos = Style::default();
+    widget.style_pos = Style::default().fg(Color::Blue);
     f.render_widget(widget, r);
 }
