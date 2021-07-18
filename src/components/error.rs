@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -49,7 +49,7 @@ impl DrawableComponent for ErrorComponent {
 }
 
 impl Component for ErrorComponent {
-    fn event(&mut self, _key: Key) -> Result<()> {
-        Ok(())
+    fn event(&mut self, _key: Key) -> Result<EventState> {
+        Ok(EventState::NotConsumed)
     }
 }

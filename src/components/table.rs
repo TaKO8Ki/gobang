@@ -1,5 +1,6 @@
 use super::{
-    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, TableValueComponent,
+    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
+    TableValueComponent,
 };
 use crate::event::Key;
 use anyhow::Result;
@@ -11,9 +12,6 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
-
-pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 
 pub struct TableComponent {
     pub state: TableState,
@@ -23,6 +21,7 @@ pub struct TableComponent {
     pub column_page: usize,
     pub scroll: VerticalScroll,
     pub select_entire_row: bool,
+    pub eod: bool,
 }
 
 impl Default for TableComponent {
@@ -32,23 +31,31 @@ impl Default for TableComponent {
             headers: vec![],
             rows: vec![],
             column_page: 0,
-            column_index: 0,
+            column_index: 1,
             scroll: VerticalScroll::new(),
             select_entire_row: false,
+            eod: false,
         }
     }
 }
 
 impl TableComponent {
-    pub fn reset(&mut self, headers: Vec<String>, rows: Vec<Vec<String>>) {
-        self.headers = headers;
-        self.rows = rows;
-        self.column_page = 0;
-        self.column_index = 1;
-        self.state.select(None);
-        if !self.rows.is_empty() {
-            self.state.select(Some(0));
+    pub fn new(rows: Vec<Vec<String>>, headers: Vec<String>) -> Self {
+        let mut state = TableState::default();
+        if !rows.is_empty() {
+            state.select(None);
+            state.select(Some(0))
         }
+        Self {
+            rows,
+            headers,
+            state,
+            ..Self::default()
+        }
+    }
+
+    pub fn end(&mut self) {
+        self.eod = true;
     }
 
     pub fn next(&mut self, lines: usize) {
@@ -239,20 +246,47 @@ impl DrawableComponent for TableComponent {
 }
 
 impl Component for TableComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
-            Key::Char('h') => self.previous_column(),
-            Key::Char('j') => self.next(1),
-            Key::Ctrl('d') => self.next(10),
-            Key::Char('k') => self.previous(1),
-            Key::Ctrl('u') => self.previous(10),
-            Key::Char('g') => self.scroll_top(),
-            Key::Char('r') => self.select_entire_row = true,
-            Key::Shift('G') | Key::Shift('g') => self.scroll_bottom(),
-            Key::Char('l') => self.next_column(),
+            Key::Char('h') => {
+                self.previous_column();
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('j') => {
+                self.next(1);
+                return Ok(EventState::NotConsumed);
+            }
+            Key::Ctrl('d') => {
+                self.next(10);
+                return Ok(EventState::NotConsumed);
+            }
+            Key::Char('k') => {
+                self.previous(1);
+                return Ok(EventState::Consumed);
+            }
+            Key::Ctrl('u') => {
+                self.previous(10);
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('g') => {
+                self.scroll_top();
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('r') => {
+                self.select_entire_row = true;
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('G') => {
+                self.scroll_bottom();
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('l') => {
+                self.next_column();
+                return Ok(EventState::Consumed);
+            }
             _ => (),
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }
 

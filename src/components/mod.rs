@@ -2,9 +2,10 @@ pub mod command;
 pub mod connections;
 pub mod databases;
 pub mod error;
-pub mod query;
+pub mod record_table;
 pub mod tab;
 pub mod table;
+pub mod table_filter;
 pub mod table_status;
 pub mod table_value;
 pub mod utils;
@@ -13,14 +14,18 @@ pub use command::{CommandInfo, CommandText};
 pub use connections::ConnectionsComponent;
 pub use databases::DatabasesComponent;
 pub use error::ErrorComponent;
-pub use query::QueryComponent;
+pub use record_table::RecordTableComponent;
 pub use tab::TabComponent;
 pub use table::TableComponent;
+pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
 
 use anyhow::Result;
+use async_trait::async_trait;
+use std::convert::TryInto;
 use tui::{backend::Backend, layout::Rect, Frame};
+use unicode_width::UnicodeWidthChar;
 
 #[derive(Copy, Clone)]
 pub enum ScrollType {
@@ -38,13 +43,36 @@ pub enum Direction {
     Down,
 }
 
+#[derive(PartialEq)]
+pub enum EventState {
+    Consumed,
+    NotConsumed,
+}
+
+impl EventState {
+    pub fn is_consumed(&self) -> bool {
+        *self == Self::Consumed
+    }
+}
+
+impl From<bool> for EventState {
+    fn from(consumed: bool) -> Self {
+        if consumed {
+            Self::Consumed
+        } else {
+            Self::NotConsumed
+        }
+    }
+}
+
 pub trait DrawableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
 }
 
 /// base component trait
+#[async_trait]
 pub trait Component {
-    fn event(&mut self, key: crate::event::Key) -> Result<()>;
+    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
 
     fn focused(&self) -> bool {
         false
@@ -70,4 +98,8 @@ pub trait Component {
             self.show()
         }
     }
+}
+
+fn compute_character_width(c: char) -> u16 {
+    UnicodeWidthChar::width(c).unwrap().try_into().unwrap()
 }

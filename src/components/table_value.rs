@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -45,7 +45,7 @@ impl DrawableComponent for TableValueComponent {
 }
 
 impl Component for TableValueComponent {
-    fn event(&mut self, _key: Key) -> Result<()> {
+    fn event(&mut self, _key: Key) -> Result<EventState> {
         todo!("scroll");
     }
 }
