@@ -1,4 +1,5 @@
-use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent};
+use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState};
+use crate::components::RecordTableComponent;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
@@ -12,7 +13,7 @@ use tui::{
     style::{Color, Style},
     symbols::line::HORIZONTAL,
     text::Span,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -34,6 +35,7 @@ pub struct DatabasesComponent {
     pub scroll: VerticalScroll,
     pub input: String,
     pub input_cursor_x: u16,
+    pub record_table: RecordTableComponent,
     pub focus_block: FocusBlock,
 }
 
@@ -45,12 +47,13 @@ impl DatabasesComponent {
             scroll: VerticalScroll::new(),
             input: String::new(),
             input_cursor_x: 0,
+            record_table: RecordTableComponent::default(),
             focus_block: FocusBlock::Tree,
         }
     }
 
-    pub fn update(&mut self, list: &[Database], collapsed: &BTreeSet<&String>) -> Result<()> {
-        self.tree = DatabaseTree::new(list, collapsed)?;
+    pub fn update(&mut self, list: &[Database]) -> Result<()> {
+        self.tree = DatabaseTree::new(list, &BTreeSet::new())?;
         self.filterd_tree = None;
         self.input = String::new();
         self.input_cursor_x = 0;
@@ -208,16 +211,28 @@ impl DrawableComponent for DatabasesComponent {
 }
 
 impl Component for DatabasesComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
+        if tree_nav(
+            if let Some(tree) = self.filterd_tree.as_mut() {
+                tree
+            } else {
+                &mut self.tree
+            },
+            key,
+        ) {
+            return Ok(EventState::Consumed);
+        }
         match key {
             Key::Char('/') if matches!(self.focus_block, FocusBlock::Tree) => {
-                self.focus_block = FocusBlock::Filter
+                self.focus_block = FocusBlock::Filter;
+                return Ok(EventState::Consumed);
             }
             Key::Char(c) if matches!(self.focus_block, FocusBlock::Filter) => {
                 self.input.push(c);
-                self.filterd_tree = Some(self.tree.filter(self.input.clone()))
+                self.filterd_tree = Some(self.tree.filter(self.input.clone()));
+                return Ok(EventState::Consumed);
             }
-            Key::Delete | Key::Backspace => {
+            Key::Delete | Key::Backspace if matches!(self.focus_block, FocusBlock::Filter) => {
                 if !self.input.is_empty() {
                     if self.input_cursor_x == 0 {
                         self.input.pop();
@@ -233,29 +248,32 @@ impl Component for DatabasesComponent {
                         None
                     } else {
                         Some(self.tree.filter(self.input.clone()))
-                    }
+                    };
+                    return Ok(EventState::Consumed);
                 }
             }
-            Key::Left => self.decrement_input_cursor_x(),
-            Key::Right => self.increment_input_cursor_x(),
-            Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.focus_block = FocusBlock::Tree
+            Key::Left if matches!(self.focus_block, FocusBlock::Filter) => {
+                self.decrement_input_cursor_x();
+                return Ok(EventState::Consumed);
             }
-            key => tree_nav(
-                if let Some(tree) = self.filterd_tree.as_mut() {
-                    tree
-                } else {
-                    &mut self.tree
-                },
-                key,
-            ),
+            Key::Right if matches!(self.focus_block, FocusBlock::Filter) => {
+                self.increment_input_cursor_x();
+                return Ok(EventState::Consumed);
+            }
+            Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
+                self.focus_block = FocusBlock::Tree;
+                return Ok(EventState::Consumed);
+            }
+            _ => (),
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }
 
-fn tree_nav(tree: &mut DatabaseTree, key: Key) {
+fn tree_nav(tree: &mut DatabaseTree, key: Key) -> bool {
     if let Some(common_nav) = common_nav(key) {
-        tree.move_selection(common_nav);
+        tree.move_selection(common_nav)
+    } else {
+        false
     }
 }

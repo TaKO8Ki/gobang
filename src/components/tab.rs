@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
 use strum::IntoEnumIterator;
@@ -62,12 +62,17 @@ impl DrawableComponent for TabComponent {
 }
 
 impl Component for TabComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
-            Key::Char('1') => self.selected_tab = Tab::Records,
-            Key::Char('2') => self.selected_tab = Tab::Structure,
-            _ => (),
+            Key::Char('1') => {
+                self.selected_tab = Tab::Records;
+                Ok(EventState::Consumed)
+            }
+            Key::Char('2') => {
+                self.selected_tab = Tab::Structure;
+                Ok(EventState::Consumed)
+            }
+            _ => Ok(EventState::NotConsumed),
         }
-        Ok(())
     }
 }

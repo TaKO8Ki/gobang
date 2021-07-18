@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -86,25 +86,35 @@ impl DrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
-            Key::Char(c) => self.input.push(c),
+            Key::Char(c) => {
+                self.input.push(c);
+                return Ok(EventState::Consumed);
+            }
             Key::Delete | Key::Backspace => {
                 if self.input.width() > 0 {
                     if self.input_cursor_x == 0 {
                         self.input.pop();
-                        return Ok(());
+                        return Ok(EventState::Consumed);
                     }
                     if self.input.width() - self.input_cursor_x as usize > 0 {
                         self.input
                             .remove(self.input.width() - self.input_cursor_x as usize);
                     }
+                    return Ok(EventState::Consumed);
                 }
             }
-            Key::Left => self.decrement_input_cursor_x(),
-            Key::Right => self.increment_input_cursor_x(),
+            Key::Left => {
+                self.decrement_input_cursor_x();
+                return Ok(EventState::Consumed);
+            }
+            Key::Right => {
+                self.increment_input_cursor_x();
+                return Ok(EventState::Consumed);
+            }
             _ => (),
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }

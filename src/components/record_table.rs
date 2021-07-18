@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::event::Key;
 use anyhow::Result;
@@ -45,6 +45,7 @@ impl RecordTableComponent {
     pub fn reset(&mut self) {
         self.table = TableComponent::default();
         if !self.table.rows.is_empty() {
+            self.table.state.select(None);
             self.table.state.select(Some(0))
         }
         self.filter = TableFilterComponent::default();
@@ -56,6 +57,10 @@ impl RecordTableComponent {
 
     pub fn set_table(&mut self, table: String) {
         self.filter.table = Some(table)
+    }
+
+    pub fn filter_focused(&self) -> bool {
+        matches!(self.focus, Focus::Filter)
     }
 }
 
@@ -76,14 +81,16 @@ impl DrawableComponent for RecordTableComponent {
 }
 
 impl Component for RecordTableComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
-            Key::Char('/') => self.focus = Focus::Filter,
-            Key::Enter if matches!(self.focus, Focus::Filter) => self.focus = Focus::Table,
-            key if matches!(self.focus, Focus::Filter) => self.filter.event(key)?,
-            key if matches!(self.focus, Focus::Table) => self.table.event(key)?,
+            Key::Char('/') => {
+                self.focus = Focus::Filter;
+                return Ok(EventState::Consumed);
+            }
+            key if matches!(self.focus, Focus::Filter) => return Ok(self.filter.event(key)?),
+            key if matches!(self.focus, Focus::Table) => return Ok(self.table.event(key)?),
             _ => (),
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }

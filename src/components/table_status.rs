@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -85,7 +85,7 @@ impl DrawableComponent for TableStatusComponent {
 }
 
 impl Component for TableStatusComponent {
-    fn event(&mut self, _key: Key) -> Result<()> {
-        Ok(())
+    fn event(&mut self, _key: Key) -> Result<EventState> {
+        Ok(EventState::NotConsumed)
     }
 }

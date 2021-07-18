@@ -1,10 +1,10 @@
-use super::{Component, DrawableComponent};
+use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use crate::user_config::Connection;
 use anyhow::Result;
 use tui::{
     backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     style::{Color, Style},
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
@@ -99,12 +99,18 @@ impl DrawableComponent for ConnectionsComponent {
 }
 
 impl Component for ConnectionsComponent {
-    fn event(&mut self, key: Key) -> Result<()> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
-            Key::Char('j') => self.next_connection(),
-            Key::Char('k') => self.previous_connection(),
+            Key::Char('j') => {
+                self.next_connection();
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('k') => {
+                self.previous_connection();
+                return Ok(EventState::Consumed);
+            }
             _ => (),
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }

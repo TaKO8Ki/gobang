@@ -2,7 +2,6 @@ mod app;
 mod clipboard;
 mod components;
 mod event;
-mod handlers;
 mod ui;
 mod user_config;
 mod utils;
@@ -12,7 +11,6 @@ mod log;
 
 use crate::app::App;
 use crate::event::{Event, Key};
-use crate::handlers::handle_app;
 use anyhow::Result;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -49,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
                 if key == Key::Char('q') {
                     break;
                 };
-                match handle_app(key, &mut app).await {
+                match app.event(key).await {
                     Ok(_) => (),
                     Err(err) => app.error.set(err.to_string()),
                 }

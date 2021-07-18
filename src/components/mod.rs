@@ -41,6 +41,28 @@ pub enum Direction {
     Down,
 }
 
+#[derive(PartialEq)]
+pub enum EventState {
+    Consumed,
+    NotConsumed,
+}
+
+impl EventState {
+    pub fn is_consumed(&self) -> bool {
+        *self == Self::Consumed
+    }
+}
+
+impl From<bool> for EventState {
+    fn from(consumed: bool) -> Self {
+        if consumed {
+            Self::Consumed
+        } else {
+            Self::NotConsumed
+        }
+    }
+}
+
 pub trait DrawableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
 }
@@ -48,9 +70,7 @@ pub trait DrawableComponent {
 /// base component trait
 #[async_trait]
 pub trait Component {
-    fn event(&mut self, key: crate::event::Key) -> Result<()>;
-
-    // async fn async_event(&mut self, key: crate::event::Key) -> Result<()>;
+    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
 
     fn focused(&self) -> bool {
         false
