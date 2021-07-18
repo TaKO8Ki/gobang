@@ -61,6 +61,14 @@ impl DatabasesComponent {
         self.input.iter().collect()
     }
 
+    pub fn displey_input_str(&self, limit: usize) -> String {
+        let mut input = self.input.clone();
+        while input.iter().collect::<String>().width() > limit {
+            input.remove(0);
+        }
+        input.iter().collect()
+    }
+
     pub fn update(&mut self, list: &[Database]) -> Result<()> {
         self.tree = DatabaseTree::new(list, &BTreeSet::new())?;
         self.filterd_tree = None;
@@ -158,7 +166,7 @@ impl DatabasesComponent {
                     if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
                         "Filter tables".to_string()
                     } else {
-                        self.input_str()
+                        self.displey_input_str(area.width.saturating_sub(3) as usize)
                     },
                     w = area.width as usize
                 ),
@@ -187,7 +195,11 @@ impl DatabasesComponent {
         );
         self.scroll.draw(f, area);
         if let FocusBlock::Filter = self.focus_block {
-            f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
+            f.set_cursor(
+                (area.x + self.input_cursor_position + 1)
+                    .clamp(area.x + 1, area.x + area.width.saturating_sub(2)),
+                area.y + 1,
+            )
         }
     }
 }
