@@ -10,7 +10,6 @@ use tui::{
     Frame,
 };
 
-///
 struct Scrollbar {
     max: u16,
     pos: u16,
