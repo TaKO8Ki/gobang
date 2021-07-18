@@ -1,7 +1,6 @@
-use super::{Component, DrawableComponent, EventState};
+use super::{compute_character_width, Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
-use std::convert::TryInto;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -10,7 +9,7 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
     pub table: Option<String>,
@@ -31,18 +30,6 @@ impl Default for TableFilterComponent {
 }
 
 impl TableFilterComponent {
-    pub fn increment_input_idx(&mut self) {
-        if self.input_idx > 0 {
-            self.input_idx -= 1;
-        }
-    }
-
-    pub fn decrement_input_idx(&mut self) {
-        if self.input_idx < self.input.iter().collect::<String>().width() {
-            self.input_idx += 1;
-        }
-    }
-
     pub fn input_str(&self) -> String {
         self.input.iter().collect()
     }
@@ -142,12 +129,8 @@ impl Component for TableFilterComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            _ => println!("{}", key),
+            _ => (),
         }
         Ok(EventState::NotConsumed)
     }
-}
-
-fn compute_character_width(c: char) -> u16 {
-    UnicodeWidthChar::width(c).unwrap().try_into().unwrap()
 }

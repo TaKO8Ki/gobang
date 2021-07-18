@@ -276,7 +276,7 @@ impl Component for TableComponent {
                 self.select_entire_row = true;
                 return Ok(EventState::Consumed);
             }
-            Key::Shift('G') | Key::Shift('g') => {
+            Key::Char('G') => {
                 self.scroll_bottom();
                 return Ok(EventState::Consumed);
             }

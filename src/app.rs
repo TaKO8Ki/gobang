@@ -116,20 +116,22 @@ impl App {
         Ok(())
     }
 
-    pub async fn event(&mut self, key: Key) -> anyhow::Result<()> {
+    pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         if let Key::Esc = key {
             if self.error.error.is_some() {
                 self.error.error = None;
-                return Ok(());
+                return Ok(EventState::Consumed);
             }
         }
 
         if self.components_event(key).await?.is_consumed() {
-            return Ok(());
+            return Ok(EventState::Consumed);
         };
 
-        self.move_focus(key);
-        Ok(())
+        if self.move_focus(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        };
+        Ok(EventState::NotConsumed)
     }
 
     pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
@@ -267,7 +269,6 @@ impl App {
                                 }
                             }
                         };
-                        return Ok(EventState::NotConsumed);
                     }
                     Tab::Structure => {
                         if self.structure_table.event(key)?.is_consumed() {
@@ -279,7 +280,6 @@ impl App {
                                 self.clipboard.store(text)
                             }
                         };
-                        return Ok(EventState::Consumed);
                     }
                 };
             }
@@ -287,29 +287,36 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<()> {
+    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
         if let Key::Char('c') = key {
             self.focus = Focus::ConnectionList;
-            return Ok(());
+            return Ok(EventState::Consumed);
         }
         if self.tab.event(key)?.is_consumed() {
-            return Ok(());
+            return Ok(EventState::Consumed);
         }
         match self.focus {
             Focus::ConnectionList => {
                 if let Key::Enter = key {
-                    self.focus = Focus::DabataseList
+                    self.focus = Focus::DabataseList;
+                    return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => match key {
-                Key::Right if self.databases.tree_focused() => self.focus = Focus::Table,
+                Key::Right if self.databases.tree_focused() => {
+                    self.focus = Focus::Table;
+                    return Ok(EventState::Consumed);
+                }
                 _ => (),
             },
             Focus::Table => match key {
-                Key::Left => self.focus = Focus::DabataseList,
+                Key::Left => {
+                    self.focus = Focus::DabataseList;
+                    return Ok(EventState::Consumed);
+                }
                 _ => (),
             },
         }
-        Ok(())
+        Ok(EventState::NotConsumed)
     }
 }

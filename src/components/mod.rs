@@ -23,7 +23,9 @@ pub use table_value::TableValueComponent;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use std::convert::TryInto;
 use tui::{backend::Backend, layout::Rect, Frame};
+use unicode_width::UnicodeWidthChar;
 
 #[derive(Copy, Clone)]
 pub enum ScrollType {
@@ -96,4 +98,8 @@ pub trait Component {
             self.show()
         }
     }
+}
+
+fn compute_character_width(c: char) -> u16 {
+    UnicodeWidthChar::width(c).unwrap().try_into().unwrap()
 }

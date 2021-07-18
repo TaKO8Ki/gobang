@@ -1,4 +1,7 @@
-use super::{utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState};
+use super::{
+    compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
+    EventState,
+};
 use crate::components::RecordTableComponent;
 use crate::event::Key;
 use crate::ui::common_nav;
@@ -33,8 +36,9 @@ pub struct DatabasesComponent {
     pub tree: DatabaseTree,
     pub filterd_tree: Option<DatabaseTree>,
     pub scroll: VerticalScroll,
-    pub input: String,
-    pub input_cursor_x: u16,
+    pub input: Vec<char>,
+    pub input_idx: usize,
+    pub input_cursor_position: u16,
     pub record_table: RecordTableComponent,
     pub focus_block: FocusBlock,
 }
@@ -45,18 +49,23 @@ impl DatabasesComponent {
             tree: DatabaseTree::default(),
             filterd_tree: None,
             scroll: VerticalScroll::new(),
-            input: String::new(),
-            input_cursor_x: 0,
+            input: Vec::new(),
+            input_idx: 0,
+            input_cursor_position: 0,
             record_table: RecordTableComponent::default(),
             focus_block: FocusBlock::Tree,
         }
     }
 
+    pub fn input_str(&self) -> String {
+        self.input.iter().collect()
+    }
+
     pub fn update(&mut self, list: &[Database]) -> Result<()> {
         self.tree = DatabaseTree::new(list, &BTreeSet::new())?;
         self.filterd_tree = None;
-        self.input = String::new();
-        self.input_cursor_x = 0;
+        self.input = Vec::new();
+        self.input_idx = 0;
         Ok(())
     }
 
@@ -66,18 +75,6 @@ impl DatabasesComponent {
 
     pub fn tree(&self) -> &DatabaseTree {
         self.filterd_tree.as_ref().unwrap_or(&self.tree)
-    }
-
-    pub fn increment_input_cursor_x(&mut self) {
-        if self.input_cursor_x > 0 {
-            self.input_cursor_x -= 1;
-        }
-    }
-
-    pub fn decrement_input_cursor_x(&mut self) {
-        if self.input_cursor_x < self.input.width() as u16 {
-            self.input_cursor_x += 1;
-        }
     }
 
     fn tree_item_to_span(item: DatabaseTreeItem, selected: bool, width: u16) -> Span<'static> {
@@ -161,7 +158,7 @@ impl DatabasesComponent {
                     if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
                         "Filter tables".to_string()
                     } else {
-                        self.input.clone()
+                        self.input_str()
                     },
                     w = area.width as usize
                 ),
@@ -190,10 +187,7 @@ impl DatabasesComponent {
         );
         self.scroll.draw(f, area);
         if let FocusBlock::Filter = self.focus_block {
-            f.set_cursor(
-                area.x + self.input.width() as u16 + 1 - self.input_cursor_x,
-                area.y + 1,
-            )
+            f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
         }
     }
 }
@@ -212,6 +206,7 @@ impl DrawableComponent for DatabasesComponent {
 
 impl Component for DatabasesComponent {
     fn event(&mut self, key: Key) -> Result<EventState> {
+        let input_str: String = self.input.iter().collect();
         if tree_nav(
             if let Some(tree) = self.filterd_tree.as_mut() {
                 tree
@@ -228,41 +223,58 @@ impl Component for DatabasesComponent {
                 return Ok(EventState::Consumed);
             }
             Key::Char(c) if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.input.insert(
-                    self.input
-                        .width()
-                        .saturating_sub(self.input_cursor_x as usize),
-                    c,
-                );
-                self.filterd_tree = Some(self.tree.filter(self.input.clone()));
+                self.input.insert(self.input_idx, c);
+                self.input_idx += 1;
+                self.input_cursor_position += compute_character_width(c);
+
+                self.filterd_tree = Some(self.tree.filter(self.input_str()));
                 return Ok(EventState::Consumed);
             }
             Key::Delete | Key::Backspace if matches!(self.focus_block, FocusBlock::Filter) => {
-                if !self.input.is_empty() {
-                    if self.input_cursor_x == 0 {
-                        self.input.pop();
-                    } else if self.input.width() - self.input_cursor_x as usize > 0 {
-                        self.input.remove(
-                            self.input
-                                .width()
-                                .saturating_sub(self.input_cursor_x as usize)
-                                .saturating_sub(1),
-                        );
+                if input_str.width() > 0 {
+                    if !self.input.is_empty() && self.input_idx > 0 {
+                        let last_c = self.input.remove(self.input_idx - 1);
+                        self.input_idx -= 1;
+                        self.input_cursor_position -= compute_character_width(last_c);
                     }
+
                     self.filterd_tree = if self.input.is_empty() {
                         None
                     } else {
-                        Some(self.tree.filter(self.input.clone()))
+                        Some(self.tree.filter(self.input_str()))
                     };
                     return Ok(EventState::Consumed);
                 }
             }
             Key::Left if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.decrement_input_cursor_x();
+                if !self.input.is_empty() && self.input_idx > 0 {
+                    self.input_idx -= 1;
+                    self.input_cursor_position = self
+                        .input_cursor_position
+                        .saturating_sub(compute_character_width(self.input[self.input_idx]));
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Ctrl('a') => {
+                if !self.input.is_empty() && self.input_idx > 0 {
+                    self.input_idx = 0;
+                    self.input_cursor_position = 0
+                }
                 return Ok(EventState::Consumed);
             }
             Key::Right if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.increment_input_cursor_x();
+                if self.input_idx < self.input.len() {
+                    let next_c = self.input[self.input_idx];
+                    self.input_idx += 1;
+                    self.input_cursor_position += compute_character_width(next_c);
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Ctrl('e') => {
+                if self.input_idx < self.input.len() {
+                    self.input_idx = self.input.len();
+                    self.input_cursor_position = self.input_str().width() as u16;
+                }
                 return Ok(EventState::Consumed);
             }
             Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
