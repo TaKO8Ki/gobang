@@ -12,6 +12,7 @@ use tui::{
     widgets::{Block, Borders, Cell, Row, Table, TableState},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
 pub struct TableComponent {
     pub state: TableState,
@@ -239,7 +240,7 @@ impl DrawableComponent for TableComponent {
                         &self
                             .headers()
                             .iter()
-                            .map(|header| header.width())
+                            .map(|header| header.to_string().width())
                             .collect::<Vec<usize>>()
                             .get(n)
                             .unwrap_or(&3),
