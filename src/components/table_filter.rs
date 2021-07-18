@@ -1,6 +1,7 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::event::Key;
 use anyhow::Result;
+use std::convert::TryInto;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -9,35 +10,41 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 pub struct TableFilterComponent {
     pub table: Option<String>,
-    pub input: String,
-    pub input_cursor_x: u16,
+    pub input: Vec<char>,
+    pub input_idx: usize,
+    pub input_cursor_position: u16,
 }
 
 impl Default for TableFilterComponent {
     fn default() -> Self {
         Self {
             table: None,
-            input: String::new(),
-            input_cursor_x: 0,
+            input: Vec::new(),
+            input_idx: 0,
+            input_cursor_position: 0,
         }
     }
 }
 
 impl TableFilterComponent {
-    pub fn increment_input_cursor_x(&mut self) {
-        if self.input_cursor_x > 0 {
-            self.input_cursor_x -= 1;
+    pub fn increment_input_idx(&mut self) {
+        if self.input_idx > 0 {
+            self.input_idx -= 1;
         }
     }
 
-    pub fn decrement_input_cursor_x(&mut self) {
-        if self.input_cursor_x < self.input.width() as u16 {
-            self.input_cursor_x += 1;
+    pub fn decrement_input_idx(&mut self) {
+        if self.input_idx < self.input.iter().collect::<String>().width() {
+            self.input_idx += 1;
         }
+    }
+
+    pub fn input_str(&self) -> String {
+        self.input.iter().collect()
     }
 }
 
@@ -53,9 +60,9 @@ impl DrawableComponent for TableFilterComponent {
             Span::from(format!(
                 " {}",
                 if focused || !self.input.is_empty() {
-                    self.input.as_ref()
+                    self.input.iter().collect::<String>()
                 } else {
-                    "Enter a SQL expression in WHERE clause"
+                    "Enter a SQL expression in WHERE clause".to_string()
                 }
             )),
         ]))
@@ -69,15 +76,13 @@ impl DrawableComponent for TableFilterComponent {
         if focused {
             f.set_cursor(
                 (area.x
-                    + self.input.width() as u16
-                    + 1
-                    + self
+                    + (1 + self
                         .table
                         .as_ref()
                         .map_or(String::new(), |table| table.to_string())
-                        .width() as u16
-                    + 1)
-                .saturating_sub(self.input_cursor_x),
+                        .width()
+                        + 1) as u16)
+                    .saturating_add(self.input_cursor_position),
                 area.y + 1,
             )
         }
@@ -87,34 +92,62 @@ impl DrawableComponent for TableFilterComponent {
 
 impl Component for TableFilterComponent {
     fn event(&mut self, key: Key) -> Result<EventState> {
+        let input_str: String = self.input.iter().collect();
         match key {
             Key::Char(c) => {
-                self.input.push(c);
+                self.input.insert(self.input_idx, c);
+                self.input_idx += 1;
+                self.input_cursor_position += compute_character_width(c);
+
                 return Ok(EventState::Consumed);
             }
             Key::Delete | Key::Backspace => {
-                if self.input.width() > 0 {
-                    if self.input_cursor_x == 0 {
-                        self.input.pop();
-                        return Ok(EventState::Consumed);
+                if input_str.width() > 0 {
+                    if !self.input.is_empty() && self.input_idx > 0 {
+                        let last_c = self.input.remove(self.input_idx - 1);
+                        self.input_idx -= 1;
+                        self.input_cursor_position -= compute_character_width(last_c);
                     }
-                    if self.input.width() - self.input_cursor_x as usize > 0 {
-                        self.input
-                            .remove(self.input.width() - self.input_cursor_x as usize);
-                    }
-                    return Ok(EventState::Consumed);
                 }
+                return Ok(EventState::Consumed);
             }
             Key::Left => {
-                self.decrement_input_cursor_x();
+                if !self.input.is_empty() && self.input_idx > 0 {
+                    self.input_idx -= 1;
+                    self.input_cursor_position = self
+                        .input_cursor_position
+                        .saturating_sub(compute_character_width(self.input[self.input_idx]));
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Ctrl('a') => {
+                if !self.input.is_empty() && self.input_idx > 0 {
+                    self.input_idx = 0;
+                    self.input_cursor_position = 0
+                }
                 return Ok(EventState::Consumed);
             }
             Key::Right => {
-                self.increment_input_cursor_x();
+                if self.input_idx < self.input.len() {
+                    let next_c = self.input[self.input_idx];
+                    self.input_idx += 1;
+                    self.input_cursor_position += compute_character_width(next_c);
+                }
                 return Ok(EventState::Consumed);
             }
-            _ => (),
+            Key::Ctrl('e') => {
+                if self.input_idx < self.input.len() {
+                    self.input_idx = self.input.len();
+                    self.input_cursor_position = self.input_str().width() as u16;
+                }
+                return Ok(EventState::Consumed);
+            }
+            _ => println!("{}", key),
         }
         Ok(EventState::NotConsumed)
     }
+}
+
+fn compute_character_width(c: char) -> u16 {
+    UnicodeWidthChar::width(c).unwrap().try_into().unwrap()
 }

@@ -228,7 +228,12 @@ impl Component for DatabasesComponent {
                 return Ok(EventState::Consumed);
             }
             Key::Char(c) if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.input.push(c);
+                self.input.insert(
+                    self.input
+                        .width()
+                        .saturating_sub(self.input_cursor_x as usize),
+                    c,
+                );
                 self.filterd_tree = Some(self.tree.filter(self.input.clone()));
                 return Ok(EventState::Consumed);
             }

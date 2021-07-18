@@ -40,6 +40,10 @@ impl RecordTableComponent {
     pub fn update(&mut self, rows: Vec<Vec<String>>, headers: Vec<String>) {
         self.table.rows = rows;
         self.table.headers = headers;
+        if !self.table.rows.is_empty() {
+            self.table.state.select(None);
+            self.table.state.select(Some(0));
+        }
     }
 
     pub fn reset(&mut self) {

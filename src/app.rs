@@ -117,10 +117,6 @@ impl App {
     }
 
     pub async fn event(&mut self, key: Key) -> anyhow::Result<()> {
-        if self.tab.event(key)?.is_consumed() {
-            return Ok(());
-        }
-
         if let Key::Esc = key {
             if self.error.error.is_some() {
                 self.error.error = None;
@@ -228,7 +224,7 @@ impl App {
                                         if self.record_table.filter.input.is_empty() {
                                             None
                                         } else {
-                                            Some(self.record_table.filter.input.to_string())
+                                            Some(self.record_table.filter.input_str())
                                         },
                                     )
                                     .await?;
@@ -259,7 +255,7 @@ impl App {
                                             if self.record_table.filter.input.is_empty() {
                                                 None
                                             } else {
-                                                Some(self.record_table.filter.input.to_string())
+                                                Some(self.record_table.filter.input_str())
                                             },
                                         )
                                         .await?;
@@ -291,10 +287,13 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub fn move_focus(&mut self, key: Key) {
+    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<()> {
         if let Key::Char('c') = key {
             self.focus = Focus::ConnectionList;
-            return;
+            return Ok(());
+        }
+        if self.tab.event(key)?.is_consumed() {
+            return Ok(());
         }
         match self.focus {
             Focus::ConnectionList => {
@@ -311,5 +310,6 @@ impl App {
                 _ => (),
             },
         }
+        Ok(())
     }
 }

@@ -195,10 +195,6 @@ impl From<event::KeyEvent> for Key {
                 code: event::KeyCode::Char(c),
                 modifiers: event::KeyModifiers::CONTROL,
             } => Key::Ctrl(c),
-            event::KeyEvent {
-                code: event::KeyCode::Char(c),
-                modifiers: event::KeyModifiers::SHIFT,
-            } => Key::Shift(c),
 
             event::KeyEvent {
                 code: event::KeyCode::Char(c),
