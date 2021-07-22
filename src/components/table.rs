@@ -20,6 +20,7 @@ pub struct TableComponent {
     pub rows: Vec<Vec<String>>,
     pub column_index: usize,
     pub column_page: usize,
+    pub column_page_end: std::cell::Cell<usize>,
     pub scroll: VerticalScroll,
     pub select_entire_row: bool,
     pub eod: bool,
@@ -33,6 +34,7 @@ impl Default for TableComponent {
             rows: vec![],
             column_page: 0,
             column_index: 1,
+            column_page_end: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(),
             select_entire_row: false,
             eod: false,
@@ -108,10 +110,10 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index == self.headers.len() {
+        if self.column_index >= self.headers().len().saturating_sub(1) {
             return;
         }
-        if self.column_index == 9 {
+        if self.column_index.saturating_add(1) >= self.column_page_end.get().saturating_sub(1) {
             self.next_column_page();
             return;
         }
@@ -132,9 +134,7 @@ impl TableComponent {
     }
 
     pub fn next_column_page(&mut self) {
-        if self.headers.len() > 9 && self.column_page < self.headers.len() - 9 {
-            self.column_page += 1
-        }
+        self.column_page += 1
     }
 
     pub fn previous_column_page(&mut self) {
@@ -223,7 +223,8 @@ impl DrawableComponent for TableComponent {
             Row::new(cells).height(height as u16).bottom_margin(1)
         });
         let mut widths = Vec::new();
-        for n in 0..self.headers().len() {
+        let headers = self.headers().clone();
+        for n in 0..headers.len() {
             let length = self
                 .rows()
                 .iter()
@@ -237,8 +238,7 @@ impl DrawableComponent for TableComponent {
                 .max()
                 .map_or(3, |v| {
                     *v.max(
-                        &self
-                            .headers()
+                        headers
                             .iter()
                             .map(|header| header.to_string().width())
                             .collect::<Vec<usize>>()
@@ -247,15 +247,27 @@ impl DrawableComponent for TableComponent {
                     )
                     .clamp(&3, &20) as u16
                 });
-            if widths.iter().sum::<u16>() + length > layout[1].width {
+            if widths
+                .iter()
+                .map(|(_, width)| *width)
+                .collect::<Vec<u16>>()
+                .iter()
+                .sum::<u16>()
+                + length
+                >= layout[1].width.saturating_sub(3)
+            {
                 break;
             }
-            widths.push(length);
+            widths.push((headers[n].clone(), length));
         }
-        let widths = &widths
+        let mut widths = widths
             .iter()
-            .map(|width| Constraint::Length(*width))
+            .map(|(_, width)| Constraint::Length(*width))
             .collect::<Vec<Constraint>>();
+
+        widths.push(Constraint::Min(5));
+
+        self.column_page_end.set(widths.len().saturating_sub(1));
 
         let table = Table::new(rows)
             .header(header)
@@ -270,7 +282,7 @@ impl DrawableComponent for TableComponent {
             } else {
                 Style::default().fg(Color::DarkGray)
             })
-            .widths(widths);
+            .widths(&widths);
         f.render_stateful_widget(table, layout[1], &mut self.state);
 
         self.scroll.draw(f, layout[1]);
