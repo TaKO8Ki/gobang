@@ -27,4 +27,13 @@ If you already have a Rust environment set up, you can use the `cargo install` c
 ```
 $ cargo install --version 0.1.0-alpha.0 gobang
 ```
+## Keymap
 
+| Key | Description |
+| ---- | ---- |
+| <kbd>h</kbd> | move right |
+| <kbd>j</kbd> | move down |
+| <kbd>k</kbd> | move up |
+| <kbd>l</kbd> | move left |
+| <kbd>Ctrl</kbd> + <kbd>d</kbd> | scroll down multiple lines |
+| <kbd>Ctrl</kbd> + <kbd>u</kbd> | scroll up multiple lines |

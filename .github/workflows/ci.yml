@@ -89,4 +89,4 @@ jobs:
           sudo apt-get install libxcb-xkb-dev
           sudo apt install libxcb-composite0-dev
       - name: Run Tests
-        run: cargo test -- --skip=e2e --color always
+        run: cargo test --workspace -- --skip=e2e --color always
