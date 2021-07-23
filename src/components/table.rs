@@ -33,7 +33,7 @@ impl Default for TableComponent {
             headers: vec![],
             rows: vec![],
             column_page: 0,
-            column_index: 1,
+            column_index: 0,
             column_page_end: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(),
             select_entire_row: false,
@@ -113,10 +113,10 @@ impl TableComponent {
         if self.column_index >= self.headers().len().saturating_sub(1) {
             return;
         }
-        if self.column_index.saturating_add(1) >= self.column_page_end.get().saturating_sub(1) {
-            self.next_column_page();
-            return;
-        }
+        // if self.column_index >= self.column_page_end.get().saturating_sub(1) {
+        //     self.next_column_page();
+        //     return;
+        // }
         self.select_entire_row = false;
         self.column_index += 1;
     }
@@ -125,7 +125,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index == 1 {
+        if self.column_index == 0 {
             self.previous_column_page();
             return;
         }
@@ -153,13 +153,17 @@ impl TableComponent {
     pub fn selected_cell(&self) -> Option<String> {
         self.rows
             .get(self.state.selected()?)?
-            .get(self.column_index.saturating_sub(1) + self.column_page)
+            .get(self.column_index)
             .map(|cell| cell.to_string())
     }
 
     pub fn headers(&self) -> Vec<String> {
-        let mut headers = self.headers[self.column_page..].to_vec();
-        headers.insert(0, "".to_string());
+        self.headers.clone()
+    }
+
+    pub fn headers_with_number(&self, left: usize, right: usize) -> Vec<String> {
+        let mut headers = self.headers.clone()[left..right].to_vec();
+        // headers.insert(0, "".to_string());
         headers
     }
 
@@ -167,63 +171,29 @@ impl TableComponent {
         let rows = self
             .rows
             .iter()
-            .map(|row| row[self.column_page..].to_vec())
+            .map(|row| row.to_vec())
             .collect::<Vec<Vec<String>>>();
         let mut new_rows = rows;
-        for (index, row) in new_rows.iter_mut().enumerate() {
-            row.insert(0, (index + 1).to_string())
-        }
         new_rows
     }
-}
 
-impl DrawableComponent for TableComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
-            .split(area);
-
-        self.state.selected().map_or_else(
-            || {
-                self.scroll.reset();
-            },
-            |selection| {
-                self.scroll.update(
-                    selection,
-                    self.rows.len(),
-                    layout[1].height.saturating_sub(2) as usize,
-                );
-            },
-        );
-
-        TableValueComponent::new(self.selected_cell().unwrap_or_default())
-            .draw(f, layout[0], focused)?;
-
-        let headers = self.headers();
-        let header_cells = headers
+    pub fn rows_with_number(&self, left: usize, right: usize) -> Vec<Vec<String>> {
+        let rows = self
+            .rows
             .iter()
-            .map(|h| Cell::from(h.to_string()).style(Style::default()));
-        let header = Row::new(header_cells).height(1).bottom_margin(1);
-        let rows = self.rows();
-        let rows = rows.iter().enumerate().map(|(row_index, item)| {
-            let height = item
-                .iter()
-                .map(|content| content.chars().filter(|c| *c == '\n').count())
-                .max()
-                .unwrap_or(0)
-                + 1;
-            let cells = item.iter().enumerate().map(|(column_index, c)| {
-                Cell::from(c.to_string()).style(if self.is_selected_cell(row_index, column_index) {
-                    Style::default().bg(Color::Blue)
-                } else {
-                    Style::default()
-                })
-            });
-            Row::new(cells).height(height as u16).bottom_margin(1)
-        });
+            .map(|row| row.to_vec())
+            .collect::<Vec<Vec<String>>>();
+        let mut new_rows: Vec<Vec<String>> =
+            rows.iter().map(|row| row[left..right].to_vec()).collect();
+        // for (index, row) in new_rows.iter_mut().enumerate() {
+        //     row.insert(0, (index + 1).to_string())
+        // }
+        new_rows
+    }
+
+    pub fn calculate_cell_widths(&self, area: Rect) -> Vec<Constraint> {
+        let headers = self.headers();
         let mut widths = Vec::new();
-        let headers = self.headers().clone();
         for n in 0..headers.len() {
             let length = self
                 .rows()
@@ -254,20 +224,196 @@ impl DrawableComponent for TableComponent {
                 .iter()
                 .sum::<u16>()
                 + length
-                >= layout[1].width.saturating_sub(3)
+                >= area.width.saturating_sub(3)
             {
                 break;
             }
             widths.push((headers[n].clone(), length));
         }
-        let mut widths = widths
+        // crate::outln!("widths: {:?}", widths);
+        let mut constraints = widths
             .iter()
             .map(|(_, width)| Constraint::Length(*width))
             .collect::<Vec<Constraint>>();
+        constraints.push(Constraint::Min(10));
+        constraints
+    }
 
-        widths.push(Constraint::Min(5));
+    pub fn calculate_widths(
+        &self,
+        area: Rect,
+    ) -> (usize, Vec<String>, Vec<Vec<String>>, Vec<Constraint>) {
+        if self.rows.is_empty() {
+            return (0, Vec::new(), Vec::new(), Vec::new());
+        }
 
-        self.column_page_end.set(widths.len().saturating_sub(1));
+        let right_column_index = self.column_index.clone();
+        // crate::outln!("selected header: {}", self.headers[right_column_index]);
+        let mut column_index = self.column_index;
+        // let mut widths = vec![(
+        //     String::new(),
+        //     self.rows()
+        //         .iter()
+        //         .map(|row| {
+        //             row.get(0)
+        //                 .map_or(String::new(), |cell| cell.to_string())
+        //                 .width()
+        //         })
+        //         .collect::<Vec<usize>>()
+        //         .iter()
+        //         .max()
+        //         .map_or(3, |width| *width) as u16,
+        // )];
+        let mut widths = vec![];
+        crate::outln!("selected_column: {:?}", self.headers().get(column_index));
+        loop {
+            let length = self
+                .rows()
+                .iter()
+                .map(|row| {
+                    row.get(column_index)
+                        .map_or(String::new(), |cell| cell.to_string())
+                        .width()
+                })
+                .collect::<Vec<usize>>()
+                .iter()
+                .max()
+                .map_or(3, |v| {
+                    *v.max(
+                        &self
+                            .headers()
+                            .get(column_index)
+                            .map_or(3, |header| header.to_string().width()),
+                    )
+                    .clamp(&3, &20) as u16
+                });
+            if widths.iter().map(|(_, width)| width).sum::<u16>() + length
+                > area.width.saturating_sub(10)
+            {
+                column_index += 1;
+                break;
+            }
+            widths.push((self.headers[column_index].clone(), length));
+            if column_index == 0 {
+                break;
+            }
+            column_index -= 1;
+        }
+        let left_column_index = column_index;
+        widths.reverse();
+        // let last = widths.pop().unwrap();
+        // widths.insert(0, last);
+        crate::outln!("ahead widths: {:?}", widths);
+        let selected_column_index = widths.len().saturating_sub(1);
+        let mut column_index = right_column_index + 1;
+        while widths.iter().map(|(_, width)| width).sum::<u16>() < area.width.saturating_sub(10) {
+            let length = self
+                .rows()
+                .iter()
+                .map(|row| {
+                    row.get(column_index)
+                        .map_or(String::new(), |cell| cell.to_string())
+                        .width()
+                })
+                .collect::<Vec<usize>>()
+                .iter()
+                .max()
+                .map_or(3, |v| {
+                    *v.max(
+                        self.headers()
+                            .iter()
+                            .map(|header| header.to_string().width())
+                            .collect::<Vec<usize>>()
+                            .get(column_index)
+                            .unwrap_or(&3),
+                    )
+                    .clamp(&3, &20) as u16
+                });
+            match self.headers.get(column_index) {
+                Some(header) => {
+                    widths.push((header.to_string(), length));
+                }
+                None => break,
+            }
+            column_index += 1
+        }
+        if self.column_index != self.headers.len().saturating_sub(1) {
+            widths.pop();
+        }
+        let right_column_index = column_index;
+        let mut constraints = widths
+            .iter()
+            .map(|(_, width)| Constraint::Length(*width))
+            .collect::<Vec<Constraint>>();
+        if self.column_index != self.headers.len().saturating_sub(1) {
+            constraints.push(Constraint::Min(10));
+        }
+        crate::outln!(
+            "widths: {:?} len: {}, constraints: {:?} len: {}",
+            widths,
+            widths.len(),
+            constraints,
+            constraints.len()
+        );
+        // crate::outln!("headers: {:?}, selected_column_index: {}", &self.headers_with_number(left_column_index, right_column_index)
+        //                 .get(selected_column_index), selected_column_index);
+        // crate::outln!("widths: {:?}", widths);
+        (
+            selected_column_index,
+            self.headers_with_number(left_column_index, right_column_index),
+            self.rows_with_number(left_column_index, right_column_index),
+            constraints,
+        )
+    }
+}
+
+impl DrawableComponent for TableComponent {
+    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
+            .split(area);
+
+        self.state.selected().map_or_else(
+            || {
+                self.scroll.reset();
+            },
+            |selection| {
+                self.scroll.update(
+                    selection,
+                    self.rows.len(),
+                    layout[1].height.saturating_sub(2) as usize,
+                );
+            },
+        );
+
+        TableValueComponent::new(self.selected_cell().unwrap_or_default())
+            .draw(f, layout[0], focused)?;
+
+        let (selected_column_index, headers, rows, constraints) = self.calculate_widths(layout[1]);
+        let header_cells = headers
+            .iter()
+            .map(|h| Cell::from(h.to_string()).style(Style::default()));
+        let header = Row::new(header_cells).height(1).bottom_margin(1);
+        let rows = rows.iter().enumerate().map(|(row_index, item)| {
+            let height = item
+                .iter()
+                .map(|content| content.chars().filter(|c| *c == '\n').count())
+                .max()
+                .unwrap_or(0)
+                + 1;
+            let cells = item.iter().enumerate().map(|(column_index, c)| {
+                let is_selected = 
+                matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && selected_column_index == column_index);
+                Cell::from(c.to_string()).style(if is_selected {
+                    Style::default().bg(Color::Blue)
+                } else {
+                    Style::default()
+                })
+            });
+            Row::new(cells).height(height as u16).bottom_margin(1)
+        });
+        // self.column_page_end.set(widths.len().saturating_sub(1));
 
         let table = Table::new(rows)
             .header(header)
@@ -282,7 +428,7 @@ impl DrawableComponent for TableComponent {
             } else {
                 Style::default().fg(Color::DarkGray)
             })
-            .widths(&widths);
+            .widths(&constraints);
         f.render_stateful_widget(table, layout[1], &mut self.state);
 
         self.scroll.draw(f, layout[1]);
