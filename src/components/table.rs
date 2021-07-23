@@ -20,7 +20,7 @@ pub struct TableComponent {
     pub rows: Vec<Vec<String>>,
     pub column_index: usize,
     pub column_page: usize,
-    pub column_page_end: std::cell::Cell<usize>,
+    pub column_page_start: std::cell::Cell<usize>,
     pub scroll: VerticalScroll,
     pub select_entire_row: bool,
     pub eod: bool,
@@ -34,7 +34,7 @@ impl Default for TableComponent {
             rows: vec![],
             column_page: 0,
             column_index: 0,
-            column_page_end: std::cell::Cell::new(0),
+            column_page_start: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(),
             select_entire_row: false,
             eod: false,
@@ -113,10 +113,6 @@ impl TableComponent {
         if self.column_index >= self.headers().len().saturating_sub(1) {
             return;
         }
-        // if self.column_index >= self.column_page_end.get().saturating_sub(1) {
-        //     self.next_column_page();
-        //     return;
-        // }
         self.select_entire_row = false;
         self.column_index += 1;
     }
@@ -246,21 +242,13 @@ impl TableComponent {
         if self.rows.is_empty() {
             return (0, Vec::new(), Vec::new(), Vec::new());
         }
+        if self.column_index < self.column_page_start.get() {
+            self.column_page_start.set(self.column_index);
+        }
 
         let right_column_index = self.column_index.clone();
         let mut column_index = self.column_index;
-        let number_clomn_width = self
-            .rows()
-            .iter()
-            .map(|row| {
-                row.get(0)
-                    .map_or(String::new(), |cell| cell.to_string())
-                    .width()
-            })
-            .collect::<Vec<usize>>()
-            .iter()
-            .max()
-            .map_or(3, |width| *width) as u16;
+        let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
         // crate::outln!("selected_column: {:?}", self.headers().get(column_index));
         loop {
@@ -294,7 +282,7 @@ impl TableComponent {
                 break;
             }
             widths.push((self.headers[column_index].clone(), length));
-            if column_index == 0 {
+            if column_index == self.column_page_start.get() {
                 break;
             }
             column_index -= 1;
@@ -351,6 +339,7 @@ impl TableComponent {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_clomn_width));
+        self.column_page_start.set(left_column_index);
         (
             selected_column_index + 1,
             self.headers_with_number(left_column_index, right_column_index),
@@ -412,7 +401,6 @@ impl DrawableComponent for TableComponent {
             });
             Row::new(cells).height(height as u16).bottom_margin(1)
         });
-        // self.column_page_end.set(widths.len().saturating_sub(1));
 
         let table = Table::new(rows)
             .header(header)
