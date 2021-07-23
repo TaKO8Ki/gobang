@@ -288,7 +288,7 @@ impl TableComponent {
                     .clamp(&3, &20) as u16
                 });
             if widths.iter().map(|(_, width)| width).sum::<u16>() + length
-                > area.width.saturating_sub(10)
+                > area.width.saturating_sub(7)
             {
                 column_index += 1;
                 break;
@@ -306,7 +306,7 @@ impl TableComponent {
         crate::outln!("ahead widths: {:?}", widths);
         let selected_column_index = widths.len().saturating_sub(1);
         let mut column_index = right_column_index + 1;
-        while widths.iter().map(|(_, width)| width).sum::<u16>() < area.width.saturating_sub(10) {
+        while widths.iter().map(|(_, width)| width).sum::<u16>() <= area.width.saturating_sub(7) {
             let length = self
                 .rows()
                 .iter()
@@ -390,7 +390,8 @@ impl DrawableComponent for TableComponent {
         TableValueComponent::new(self.selected_cell().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
-        let (selected_column_index, headers, rows, constraints) = self.calculate_widths(layout[1]);
+        let block= Block::default().borders(Borders::ALL).title("Records");
+        let (selected_column_index, headers, rows, constraints) = self.calculate_widths(block.inner(layout[1]));
         let header_cells = headers
             .iter()
             .map(|h| Cell::from(h.to_string()).style(Style::default()));
@@ -417,7 +418,7 @@ impl DrawableComponent for TableComponent {
 
         let table = Table::new(rows)
             .header(header)
-            .block(Block::default().borders(Borders::ALL).title("Records"))
+            .block(block)
             .highlight_style(if self.select_entire_row {
                 Style::default().bg(Color::Blue)
             } else {
