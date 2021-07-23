@@ -182,7 +182,6 @@ impl TableComponent {
         let mut column_index = self.column_index;
         let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
-        // crate::outln!("selected_column: {:?}", self.headers().get(column_index));
         loop {
             let length = self
                 .rows()
