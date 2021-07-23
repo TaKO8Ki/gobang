@@ -122,28 +122,14 @@ impl TableComponent {
             return;
         }
         if self.column_index == 0 {
-            self.previous_column_page();
             return;
         }
         self.select_entire_row = false;
         self.column_index -= 1;
     }
 
-    pub fn next_column_page(&mut self) {
-        self.column_page += 1
-    }
-
-    pub fn previous_column_page(&mut self) {
-        if self.column_page > 0 {
-            self.column_page -= 1
-        }
-    }
-
-    pub fn is_selected_cell(&self, row_index: usize, column_index: usize) -> bool {
-        if column_index != self.column_index {
-            return false;
-        }
-        matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index)
+    pub fn is_row_number_clumn(&self, row_index: usize, column_index: usize) -> bool {
+        matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
     }
 
     pub fn selected_cell(&self) -> Option<String> {
@@ -164,13 +150,7 @@ impl TableComponent {
     }
 
     pub fn rows(&self) -> Vec<Vec<String>> {
-        let rows = self
-            .rows
-            .iter()
-            .map(|row| row.to_vec())
-            .collect::<Vec<Vec<String>>>();
-        let mut new_rows = rows;
-        new_rows
+        self.rows.clone()
     }
 
     pub fn rows_with_number(&self, left: usize, right: usize) -> Vec<Vec<String>> {
@@ -185,54 +165,6 @@ impl TableComponent {
             row.insert(0, (index + 1).to_string())
         }
         new_rows
-    }
-
-    pub fn calculate_cell_widths(&self, area: Rect) -> Vec<Constraint> {
-        let headers = self.headers();
-        let mut widths = Vec::new();
-        for n in 0..headers.len() {
-            let length = self
-                .rows()
-                .iter()
-                .map(|row| {
-                    row.get(n)
-                        .map_or(String::new(), |cell| cell.to_string())
-                        .width()
-                })
-                .collect::<Vec<usize>>()
-                .iter()
-                .max()
-                .map_or(3, |v| {
-                    *v.max(
-                        headers
-                            .iter()
-                            .map(|header| header.to_string().width())
-                            .collect::<Vec<usize>>()
-                            .get(n)
-                            .unwrap_or(&3),
-                    )
-                    .clamp(&3, &20) as u16
-                });
-            if widths
-                .iter()
-                .map(|(_, width)| *width)
-                .collect::<Vec<u16>>()
-                .iter()
-                .sum::<u16>()
-                + length
-                >= area.width.saturating_sub(3)
-            {
-                break;
-            }
-            widths.push((headers[n].clone(), length));
-        }
-        // crate::outln!("widths: {:?}", widths);
-        let mut constraints = widths
-            .iter()
-            .map(|(_, width)| Constraint::Length(*width))
-            .collect::<Vec<Constraint>>();
-        constraints.push(Constraint::Min(10));
-        constraints
     }
 
     pub fn calculate_widths(
@@ -393,7 +325,7 @@ impl DrawableComponent for TableComponent {
             let cells = item.iter().enumerate().map(|(column_index, c)| {
                 Cell::from(c.to_string()).style(if matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && selected_column_index == column_index) {
                     Style::default().bg(Color::Blue)
-                } else if matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)  {
+                } else if self.is_row_number_clumn(row_index, column_index)  {
                     Style::default().add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
@@ -476,7 +408,7 @@ mod test {
     fn test_headers() {
         let mut component = TableComponent::default();
         component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
-        assert_eq!(component.headers(), vec!["", "a", "b", "c"])
+        assert_eq!(component.headers_with_number(1, 2), vec!["", "b"])
     }
 
     #[test]
@@ -487,8 +419,8 @@ mod test {
             vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
         ];
         assert_eq!(
-            component.rows(),
-            vec![vec!["1", "a", "b", "c"], vec!["2", "d", "e", "f"]],
+            component.rows_with_number(1, 2),
+            vec![vec!["1", "b"], vec!["2", "e"]],
         )
     }
 }
