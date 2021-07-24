@@ -1,6 +1,6 @@
 use super::{
-    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    TableValueComponent,
+    utils::{horizontal_scroll::HorizontalScroll, vertical_scroll::VerticalScroll},
+    Component, DrawableComponent, EventState, TableValueComponent,
 };
 use crate::event::Key;
 use anyhow::Result;
@@ -22,6 +22,8 @@ pub struct TableComponent {
     pub column_page: usize,
     pub column_page_start: std::cell::Cell<usize>,
     pub scroll: VerticalScroll,
+    pub vertical_scroll: VerticalScroll,
+    pub horizontal_scroll: HorizontalScroll,
     pub select_entire_row: bool,
     pub eod: bool,
 }
@@ -36,6 +38,8 @@ impl Default for TableComponent {
             column_index: 0,
             column_page_start: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(),
+            vertical_scroll: VerticalScroll::new(),
+            horizontal_scroll: HorizontalScroll::new(),
             select_entire_row: false,
             eod: false,
         }
@@ -287,15 +291,28 @@ impl DrawableComponent for TableComponent {
 
         self.state.selected().map_or_else(
             || {
-                self.scroll.reset();
+                self.vertical_scroll.reset();
             },
             |selection| {
-                self.scroll.update(
+                self.vertical_scroll.update(
                     selection,
                     self.rows.len(),
                     layout[1].height.saturating_sub(2) as usize,
                 );
             },
+        );
+
+        let column_width = area.width.saturating_pow(10);
+        self.horizontal_scroll.update(
+            if self.headers.is_empty() {
+                0
+            } else {
+                column_width
+                    .saturating_mul(self.headers[..self.column_index].len() as u16)
+                    .saturating_add(1) as usize
+            },
+            column_width.saturating_mul(self.headers.len() as u16) as usize,
+            area.width.saturating_sub(2) as usize,
         );
 
         TableValueComponent::new(self.selected_cell().unwrap_or_default())
@@ -347,7 +364,8 @@ impl DrawableComponent for TableComponent {
             .widths(&constraints);
         f.render_stateful_widget(table, layout[1], &mut self.state);
 
-        self.scroll.draw(f, layout[1]);
+        self.vertical_scroll.draw(f, layout[1]);
+        self.horizontal_scroll.draw(f, layout[1]);
         Ok(())
     }
 }
