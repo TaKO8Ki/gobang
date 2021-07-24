@@ -202,7 +202,7 @@ impl TableComponent {
             return matches!(
             self.state.selected(),
             Some(selected_row_index)
-                if ((x + 1).min(selected_column_index)..(x + 1).max(selected_column_index) + 1)
+                if ((x.saturating_add(1).saturating_sub(self.column_page_start.get())).min(selected_column_index)..(x.saturating_add(1).saturating_sub(self.column_page_start.get())).max(selected_column_index) + 1)
                     .contains(&column_index)
                     && (y.min(selected_row_index)..y.max(selected_row_index) + 1)
                         .contains(&row_index)
