@@ -130,6 +130,44 @@ impl TableComponent {
         self.selected_left_column_index -= 1;
     }
 
+    pub fn expand_selected_area_x(&mut self, positive: bool) {
+        if self.selected_right_cell.is_none() {
+            self.selected_right_cell = Some((
+                self.selected_left_column_index,
+                self.state.selected().unwrap_or(0),
+            ));
+        }
+        if let Some((x, y)) = self.selected_right_cell {
+            self.selected_right_cell = Some((
+                if positive {
+                    (x + 1).min(self.headers.len().saturating_sub(1))
+                } else {
+                    x.saturating_sub(1)
+                },
+                y,
+            ));
+        }
+    }
+
+    pub fn expand_selected_area_y(&mut self, positive: bool) {
+        if self.selected_right_cell.is_none() {
+            self.selected_right_cell = Some((
+                self.selected_left_column_index,
+                self.state.selected().unwrap_or(0),
+            ));
+        }
+        if let Some((x, y)) = self.selected_right_cell {
+            self.selected_right_cell = Some((
+                x,
+                if positive {
+                    (y + 1).min(self.rows.len().saturating_sub(1))
+                } else {
+                    y.saturating_sub(1)
+                },
+            ));
+        }
+    }
+
     pub fn is_row_number_clumn(&self, row_index: usize, column_index: usize) -> bool {
         matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
     }
@@ -439,59 +477,19 @@ impl Component for TableComponent {
                 return Ok(EventState::Consumed);
             }
             Key::Char('H') => {
-                if self.selected_right_cell.is_none() {
-                    self.selected_right_cell = Some((
-                        self.selected_left_column_index,
-                        self.state.selected().unwrap_or(0),
-                    ));
-                }
-                if let Some((x, y)) = self.selected_right_cell {
-                    self.selected_right_cell = Some((x.saturating_sub(1), y));
-                }
+                self.expand_selected_area_x(false);
                 return Ok(EventState::Consumed);
             }
             Key::Char('K') => {
-                if self.selected_right_cell.is_none() {
-                    self.selected_right_cell = Some((
-                        self.selected_left_column_index,
-                        self.state.selected().unwrap_or(0),
-                    ));
-                }
-                if let Some((x, y)) = self.selected_right_cell {
-                    self.selected_right_cell = Some((x, y.saturating_sub(1)));
-                    if (x, y.saturating_sub(1))
-                        == (
-                            self.selected_left_column_index,
-                            self.state.selected().unwrap_or(0),
-                        )
-                    {
-                        self.selected_right_cell = None;
-                    }
-                }
+                self.expand_selected_area_y(false);
                 return Ok(EventState::Consumed);
             }
             Key::Char('J') => {
-                if self.selected_right_cell.is_none() {
-                    self.selected_right_cell = Some((
-                        self.selected_left_column_index,
-                        self.state.selected().unwrap_or(0),
-                    ));
-                }
-                if let Some((x, y)) = self.selected_right_cell {
-                    self.selected_right_cell = Some((x, y + 1));
-                }
+                self.expand_selected_area_y(true);
                 return Ok(EventState::Consumed);
             }
             Key::Char('L') => {
-                if self.selected_right_cell.is_none() {
-                    self.selected_right_cell = Some((
-                        self.selected_left_column_index,
-                        self.state.selected().unwrap_or(0),
-                    ));
-                }
-                if let Some((x, y)) = self.selected_right_cell {
-                    self.selected_right_cell = Some((x + 1, y));
-                }
+                self.expand_selected_area_x(true);
                 return Ok(EventState::Consumed);
             }
             _ => (),
