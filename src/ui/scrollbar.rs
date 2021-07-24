@@ -4,7 +4,7 @@ use tui::{
     backend::Backend,
     buffer::Buffer,
     layout::{Margin, Rect},
-    style::Style,
+    style::{Color, Modifier, Style},
     symbols::{
         block::FULL,
         line::{DOUBLE_HORIZONTAL, DOUBLE_VERTICAL},
@@ -97,7 +97,12 @@ impl Widget for Scrollbar {
         if self.vertical {
             buf.set_string(right, bar_top + pos, FULL, self.style_pos);
         } else {
-            buf.set_string(bar_top + pos, bottom, "▆", self.style_pos);
+            buf.set_string(
+                bar_top + pos,
+                bottom,
+                "\u{2212}",
+                self.style_pos.add_modifier(Modifier::BOLD),
+            );
         }
     }
 }
@@ -110,6 +115,6 @@ pub fn draw_scrollbar<B: Backend>(
     vertical: bool,
 ) {
     let mut widget = Scrollbar::new(max, pos, vertical);
-    widget.style_pos = Style::default();
+    widget.style_pos = Style::default().fg(Color::Blue);
     f.render_widget(widget, r);
 }

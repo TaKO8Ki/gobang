@@ -302,6 +302,19 @@ impl DrawableComponent for TableComponent {
             },
         );
 
+        let column_width = area.width.saturating_pow(10);
+        self.horizontal_scroll.update(
+            if self.headers.is_empty() {
+                0
+            } else {
+                column_width
+                    .saturating_mul(self.headers[..self.column_index].len() as u16)
+                    .saturating_add(1) as usize
+            },
+            column_width.saturating_mul(self.headers.len() as u16) as usize,
+            area.width.saturating_sub(2) as usize,
+        );
+
         TableValueComponent::new(self.selected_cell().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
@@ -315,18 +328,6 @@ impl DrawableComponent for TableComponent {
                 Style::default()
             })
         });
-        let column_width = area.width.saturating_pow(10);
-        self.horizontal_scroll.update(
-            if self.headers.is_empty() {
-                0
-            } else {
-                column_width
-                    .saturating_mul(self.headers[..self.column_index].len() as u16)
-                    .saturating_add(1) as usize
-            },
-            column_width.saturating_mul(self.headers.len() as u16) as usize,
-            area.width.saturating_sub(2) as usize,
-        );
         let header = Row::new(header_cells).height(1).bottom_margin(1);
         let rows = rows.iter().enumerate().map(|(row_index, item)| {
             let height = item
