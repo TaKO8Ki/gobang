@@ -170,7 +170,7 @@ impl TableComponent {
         matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
     }
 
-    pub fn selected_cell(&self) -> Option<String> {
+    pub fn selected_cells(&self) -> Option<String> {
         if let Some((x, y)) = self.selected_right_cell {
             let selected_row_index = self.state.selected()?;
             return Some(
@@ -192,7 +192,7 @@ impl TableComponent {
             .map(|cell| cell.to_string())
     }
 
-    pub fn is_selected_cells(
+    pub fn is_selected_cell(
         &self,
         row_index: usize,
         column_index: usize,
@@ -370,7 +370,7 @@ impl DrawableComponent for TableComponent {
             },
         );
 
-        TableValueComponent::new(self.selected_cell().unwrap_or_default())
+        TableValueComponent::new(self.selected_cells().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
         let block = Block::default().borders(Borders::ALL).title("Records");
@@ -393,7 +393,7 @@ impl DrawableComponent for TableComponent {
                 + 1;
             let cells = item.iter().enumerate().map(|(column_index, c)| {
                 Cell::from(c.to_string()).style(
-                    if self.is_selected_cells(row_index, column_index, selected_column_index) {
+                    if self.is_selected_cell(row_index, column_index, selected_column_index) {
                         Style::default().bg(Color::Blue)
                     } else if self.is_row_number_clumn(row_index, column_index) {
                         Style::default().add_modifier(Modifier::BOLD)
@@ -519,6 +519,86 @@ mod test {
             component.rows_with_number(1, 2),
             vec![vec!["1", "b"], vec!["2", "e"]],
         )
+    }
+
+    #[test]
+    fn test_selected_cell_when_one_cell_selected() {
+        //    1  2 3
+        // 1 |a| b c
+        // 2  d  e f
+
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(0));
+        assert_eq!(component.selected_cells(), Some("a".to_string()));
+    }
+
+    #[test]
+    fn test_selected_cell_when_multiple_cells_selected() {
+        //    1  2  3
+        // 1 |a  b| c
+        // 2 |d  e| f
+
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(0));
+        component.selected_right_cell = Some((1, 1));
+        assert_eq!(component.selected_cells(), Some("a,b\nd,e".to_string()));
+    }
+
+    #[test]
+    fn test_is_selected_cell_when_one_cell_selected() {
+        //    1  2 3
+        // 1 |a| b c
+        // 2  d  e f
+
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(0));
+        // a
+        assert!(component.is_selected_cell(0, 1, 1));
+        // d
+        assert!(!component.is_selected_cell(1, 1, 1));
+        // e
+        assert!(!component.is_selected_cell(1, 2, 1));
+    }
+
+    #[test]
+    fn test_is_selected_cell_when_multiple_cells_selected() {
+        //    1  2  3
+        // 1 |a  b| c
+        // 2 |d  e| f
+
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(0));
+        component.selected_right_cell = Some((1, 1));
+        // a
+        assert!(component.is_selected_cell(0, 1, 1));
+        // b
+        assert!(component.is_selected_cell(0, 2, 1));
+        // d
+        assert!(component.is_selected_cell(1, 1, 1));
+        // e
+        assert!(component.is_selected_cell(1, 2, 1));
+        // f
+        assert!(!component.is_selected_cell(1, 3, 1));
     }
 
     #[test]

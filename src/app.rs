@@ -206,7 +206,7 @@ impl App {
                         };
 
                         if let Key::Char('y') = key {
-                            if let Some(text) = self.record_table.table.selected_cell() {
+                            if let Some(text) = self.record_table.table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         }
@@ -276,7 +276,7 @@ impl App {
                         };
 
                         if let Key::Char('y') = key {
-                            if let Some(text) = self.structure_table.selected_cell() {
+                            if let Some(text) = self.structure_table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         };
