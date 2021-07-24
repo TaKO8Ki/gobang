@@ -18,13 +18,12 @@ pub struct TableComponent {
     pub state: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
-    pub selected_left_column_index: usize,
-    pub selected_right_cell: Option<(usize, usize)>,
-    pub column_page: usize,
-    pub column_page_start: std::cell::Cell<usize>,
-    pub scroll: VerticalScroll,
-    pub select_entire_row: bool,
     pub eod: bool,
+    selected_left_column_index: usize,
+    selected_right_cell: Option<(usize, usize)>,
+    column_page_start: std::cell::Cell<usize>,
+    scroll: VerticalScroll,
+    select_entire_row: bool,
 }
 
 impl Default for TableComponent {
@@ -33,7 +32,6 @@ impl Default for TableComponent {
             state: TableState::default(),
             headers: vec![],
             rows: vec![],
-            column_page: 0,
             selected_left_column_index: 0,
             selected_right_cell: None,
             column_page_start: std::cell::Cell::new(0),
