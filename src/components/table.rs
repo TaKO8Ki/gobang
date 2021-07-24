@@ -18,7 +18,8 @@ pub struct TableComponent {
     pub state: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
-    pub column_index: usize,
+    pub selected_left_column_index: usize,
+    pub selected_right_cell: Option<(usize, usize)>,
     pub column_page: usize,
     pub column_page_start: std::cell::Cell<usize>,
     pub scroll: VerticalScroll,
@@ -33,7 +34,8 @@ impl Default for TableComponent {
             headers: vec![],
             rows: vec![],
             column_page: 0,
-            column_index: 0,
+            selected_left_column_index: 0,
+            selected_right_cell: None,
             column_page_start: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(),
             select_entire_row: false,
@@ -110,22 +112,22 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index >= self.headers().len().saturating_sub(1) {
+        if self.selected_left_column_index >= self.headers().len().saturating_sub(1) {
             return;
         }
         self.select_entire_row = false;
-        self.column_index += 1;
+        self.selected_left_column_index += 1;
     }
 
     pub fn previous_column(&mut self) {
         if self.rows.is_empty() {
             return;
         }
-        if self.column_index == 0 {
+        if self.selected_left_column_index == 0 {
             return;
         }
         self.select_entire_row = false;
-        self.column_index -= 1;
+        self.selected_left_column_index -= 1;
     }
 
     pub fn is_row_number_clumn(&self, row_index: usize, column_index: usize) -> bool {
@@ -133,10 +135,44 @@ impl TableComponent {
     }
 
     pub fn selected_cell(&self) -> Option<String> {
+        if let Some((x, y)) = self.selected_right_cell {
+            let selected_row_index = self.state.selected()?;
+            return Some(
+                self.rows[y.min(selected_row_index)..y.max(selected_row_index) + 1]
+                    .iter()
+                    .map(|row| {
+                        row[x.min(self.selected_left_column_index)
+                            ..x.max(self.selected_left_column_index) + 1]
+                            .join(",")
+                            .to_string()
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            );
+        }
         self.rows
             .get(self.state.selected()?)?
-            .get(self.column_index)
+            .get(self.selected_left_column_index)
             .map(|cell| cell.to_string())
+    }
+
+    pub fn is_selected_cells(
+        &self,
+        row_index: usize,
+        column_index: usize,
+        selected_column_index: usize,
+    ) -> bool {
+        if let Some((x, y)) = self.selected_right_cell {
+            return matches!(
+            self.state.selected(),
+            Some(selected_row_index)
+                if ((x + 1).min(selected_column_index)..(x + 1).max(selected_column_index) + 1)
+                    .contains(&column_index)
+                    && (y.min(selected_row_index)..y.max(selected_row_index) + 1)
+                        .contains(&row_index)
+            );
+        }
+        matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index &&  column_index == selected_column_index)
     }
 
     pub fn headers(&self) -> Vec<String> {
@@ -174,12 +210,12 @@ impl TableComponent {
         if self.rows.is_empty() {
             return (0, Vec::new(), Vec::new(), Vec::new());
         }
-        if self.column_index < self.column_page_start.get() {
-            self.column_page_start.set(self.column_index);
+        if self.selected_left_column_index < self.column_page_start.get() {
+            self.column_page_start.set(self.selected_left_column_index);
         }
 
-        let right_column_index = self.column_index.clone();
-        let mut column_index = self.column_index;
+        let right_column_index = self.selected_left_column_index.clone();
+        let mut column_index = self.selected_left_column_index;
         let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
         loop {
@@ -256,7 +292,7 @@ impl TableComponent {
             }
             column_index += 1
         }
-        if self.column_index != self.headers.len().saturating_sub(1) {
+        if self.selected_left_column_index != self.headers.len().saturating_sub(1) {
             widths.pop();
         }
         let right_column_index = column_index;
@@ -264,7 +300,7 @@ impl TableComponent {
             .iter()
             .map(|(_, width)| Constraint::Length(*width))
             .collect::<Vec<Constraint>>();
-        if self.column_index != self.headers.len().saturating_sub(1) {
+        if self.selected_left_column_index != self.headers.len().saturating_sub(1) {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_clomn_width));
@@ -320,13 +356,15 @@ impl DrawableComponent for TableComponent {
                 .unwrap_or(0)
                 + 1;
             let cells = item.iter().enumerate().map(|(column_index, c)| {
-                Cell::from(c.to_string()).style(if matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index && selected_column_index == column_index) {
-                    Style::default().bg(Color::Blue)
-                } else if self.is_row_number_clumn(row_index, column_index)  {
-                    Style::default().add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                })
+                Cell::from(c.to_string()).style(
+                    if self.is_selected_cells(row_index, column_index, selected_column_index) {
+                        Style::default().bg(Color::Blue)
+                    } else if self.is_row_number_clumn(row_index, column_index) {
+                        Style::default().add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default()
+                    },
+                )
             });
             Row::new(cells).height(height as u16).bottom_margin(1)
         });
@@ -357,38 +395,103 @@ impl Component for TableComponent {
         match key {
             Key::Char('h') => {
                 self.previous_column();
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('j') => {
                 self.next(1);
+                self.selected_right_cell = None;
                 return Ok(EventState::NotConsumed);
             }
             Key::Ctrl('d') => {
                 self.next(10);
+                self.selected_right_cell = None;
                 return Ok(EventState::NotConsumed);
             }
             Key::Char('k') => {
                 self.previous(1);
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Ctrl('u') => {
                 self.previous(10);
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('g') => {
                 self.scroll_top();
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('r') => {
                 self.select_entire_row = true;
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('G') => {
                 self.scroll_bottom();
+                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('l') => {
                 self.next_column();
+                self.selected_right_cell = None;
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('H') => {
+                if self.selected_right_cell.is_none() {
+                    self.selected_right_cell = Some((
+                        self.selected_left_column_index,
+                        self.state.selected().unwrap_or(0),
+                    ));
+                }
+                if let Some((x, y)) = self.selected_right_cell {
+                    self.selected_right_cell = Some((x.saturating_sub(1), y));
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('K') => {
+                if self.selected_right_cell.is_none() {
+                    self.selected_right_cell = Some((
+                        self.selected_left_column_index,
+                        self.state.selected().unwrap_or(0),
+                    ));
+                }
+                if let Some((x, y)) = self.selected_right_cell {
+                    self.selected_right_cell = Some((x, y.saturating_sub(1)));
+                    if (x, y.saturating_sub(1))
+                        == (
+                            self.selected_left_column_index,
+                            self.state.selected().unwrap_or(0),
+                        )
+                    {
+                        self.selected_right_cell = None;
+                    }
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('J') => {
+                if self.selected_right_cell.is_none() {
+                    self.selected_right_cell = Some((
+                        self.selected_left_column_index,
+                        self.state.selected().unwrap_or(0),
+                    ));
+                }
+                if let Some((x, y)) = self.selected_right_cell {
+                    self.selected_right_cell = Some((x, y + 1));
+                }
+                return Ok(EventState::Consumed);
+            }
+            Key::Char('L') => {
+                if self.selected_right_cell.is_none() {
+                    self.selected_right_cell = Some((
+                        self.selected_left_column_index,
+                        self.state.selected().unwrap_or(0),
+                    ));
+                }
+                if let Some((x, y)) = self.selected_right_cell {
+                    self.selected_right_cell = Some((x + 1, y));
+                }
                 return Ok(EventState::Consumed);
             }
             _ => (),
