@@ -29,22 +29,6 @@ use std::convert::TryInto;
 use tui::{backend::Backend, layout::Rect, Frame};
 use unicode_width::UnicodeWidthChar;
 
-#[derive(Copy, Clone)]
-pub enum ScrollType {
-    Up,
-    Down,
-    Home,
-    End,
-    PageUp,
-    PageDown,
-}
-
-#[derive(Copy, Clone)]
-pub enum Direction {
-    Up,
-    Down,
-}
-
 #[derive(PartialEq)]
 pub enum EventState {
     Consumed,

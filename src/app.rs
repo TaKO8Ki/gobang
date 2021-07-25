@@ -1,7 +1,5 @@
 use crate::clipboard::Clipboard;
-use crate::components::{
-    CommandInfo, CommandText, Component as _, DrawableComponent as _, EventState,
-};
+use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
 use crate::event::Key;
 use crate::utils::{MySqlPool, Pool};
 use crate::{
@@ -121,37 +119,13 @@ impl App {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        let mut res = Vec::new();
-
-        res.push(CommandInfo::new(
-            crate::components::command::move_left("h"),
-            true,
-            true,
-        ));
-
-        res.push(CommandInfo::new(
-            crate::components::command::move_down("j"),
-            true,
-            true,
-        ));
-
-        res.push(CommandInfo::new(
-            crate::components::command::move_up("k"),
-            true,
-            true,
-        ));
-
-        res.push(CommandInfo::new(
-            crate::components::command::move_right("l"),
-            true,
-            true,
-        ));
-
-        res.push(CommandInfo::new(
-            crate::components::command::filter("/"),
-            true,
-            true,
-        ));
+        let res = vec![
+            CommandInfo::new(crate::components::command::move_left("h"), true, true),
+            CommandInfo::new(crate::components::command::move_down("j"), true, true),
+            CommandInfo::new(crate::components::command::move_up("k"), true, true),
+            CommandInfo::new(crate::components::command::move_right("l"), true, true),
+            CommandInfo::new(crate::components::command::filter("/"), true, true),
+        ];
 
         res
     }

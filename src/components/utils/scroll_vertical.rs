@@ -1,4 +1,4 @@
-use crate::{components::ScrollType, ui::scrollbar::draw_scrollbar};
+use crate::ui::scrollbar::draw_scrollbar;
 use std::cell::Cell;
 use tui::{backend::Backend, layout::Rect, Frame};
 
@@ -23,29 +23,6 @@ impl VerticalScroll {
         self.top.set(0);
     }
 
-    pub fn _move_top(&self, move_type: ScrollType) -> bool {
-        let old = self.top.get();
-        let max = self.max_top.get();
-
-        let new_scroll_top = match move_type {
-            ScrollType::Down => old.saturating_add(1),
-            ScrollType::Up => old.saturating_sub(1),
-            ScrollType::Home => 0,
-            ScrollType::End => max,
-            _ => old,
-        };
-
-        let new_scroll_top = new_scroll_top.clamp(0, max);
-
-        if new_scroll_top == old {
-            return false;
-        }
-
-        self.top.set(new_scroll_top);
-
-        true
-    }
-
     pub fn update(&self, selection: usize, selection_max: usize, visual_height: usize) -> usize {
         let new_top = calc_scroll_top(self.get_top(), visual_height, selection, selection_max);
         self.top.set(new_top);
@@ -58,10 +35,6 @@ impl VerticalScroll {
         }
 
         new_top
-    }
-
-    pub fn _update_no_selection(&self, line_count: usize, visual_height: usize) -> usize {
-        self.update(self.get_top(), line_count, visual_height)
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {

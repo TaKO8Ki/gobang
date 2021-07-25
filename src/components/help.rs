@@ -123,7 +123,7 @@ impl HelpComponent {
 
             for command_info in group {
                 txt.push(Spans::from(Span::styled(
-                    format!("{}", command_info.text.name),
+                    command_info.text.name.to_string(),
                     Style::default(),
                 )));
             }

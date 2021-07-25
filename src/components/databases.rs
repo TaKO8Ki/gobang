@@ -14,7 +14,6 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    symbols::line::HORIZONTAL,
     text::Span,
     widgets::{Block, Borders, Paragraph},
     Frame,
@@ -170,15 +169,9 @@ impl DatabasesComponent {
 
         let items = tree
             .iterate(self.scroll.get_top(), tree_height)
-            .map(|(item, selected)| Self::tree_item_to_span(item.clone(), selected, area.width))
-            .collect::<Vec<Span>>();
+            .map(|(item, selected)| Self::tree_item_to_span(item.clone(), selected, area.width));
 
-        draw_list_block(
-            f,
-            chunks[1],
-            Block::default().borders(Borders::NONE),
-            items.into_iter(),
-        );
+        draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
         self.scroll.draw(f, area);
         if let FocusBlock::Filter = self.focus_block {
             f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
