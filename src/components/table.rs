@@ -15,12 +15,12 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 pub struct TableComponent {
-    pub selected_row: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
-    selection_area_corner: Option<(usize, usize)>,
+    pub selected_row: TableState,
     selected_column: usize,
+    selection_area_corner: Option<(usize, usize)>,
     column_page_start: std::cell::Cell<usize>,
     scroll: VerticalScroll,
 }
@@ -169,7 +169,7 @@ impl TableComponent {
         }
     }
 
-    fn is_row_number_clumn(&self, row_index: usize, column_index: usize) -> bool {
+    fn is_number_column(&self, row_index: usize, column_index: usize) -> bool {
         matches!(self.selected_row.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
     }
 
@@ -402,7 +402,7 @@ impl DrawableComponent for TableComponent {
                 Cell::from(c.to_string()).style(
                     if self.is_selected_cell(row_index, column_index, selected_column_index) {
                         Style::default().bg(Color::Blue)
-                    } else if self.is_row_number_clumn(row_index, column_index) {
+                    } else if self.is_number_column(row_index, column_index) {
                         Style::default().add_modifier(Modifier::BOLD)
                     } else {
                         Style::default()
