@@ -301,20 +301,18 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
             }
-            Focus::DabataseList => match key {
-                Key::Right if self.databases.tree_focused() => {
+            Focus::DabataseList => {
+                if matches!(key, Key::Right) && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
-                _ => (),
-            },
-            Focus::Table => match key {
-                Key::Left => {
+            }
+            Focus::Table => {
+                if let Key::Left = key {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
-                _ => (),
-            },
+            }
         }
         Ok(EventState::NotConsumed)
     }

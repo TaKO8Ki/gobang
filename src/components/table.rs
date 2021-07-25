@@ -52,9 +52,9 @@ impl TableComponent {
             state.select(Some(0))
         }
         Self {
-            rows,
-            headers,
             state,
+            headers,
+            rows,
             ..Self::default()
         }
     }
@@ -227,7 +227,6 @@ impl TableComponent {
                         row[x.min(self.selected_left_column_index)
                             ..x.max(self.selected_left_column_index) + 1]
                             .join(",")
-                            .to_string()
                     })
                     .collect::<Vec<String>>()
                     .join("\n"),
@@ -299,7 +298,7 @@ impl TableComponent {
             self.column_page_start.set(self.selected_column_index());
         }
 
-        let right_column_index = self.selected_column_index().clone();
+        let right_column_index = self.selected_column_index();
         let mut column_index = self.selected_column_index();
         let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
@@ -324,7 +323,7 @@ impl TableComponent {
                     )
                     .clamp(&3, &20)
                 });
-            if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len() * 1
+            if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len()
                 > area_width.saturating_sub(number_clomn_width) as usize
             {
                 column_index += 1;
@@ -340,7 +339,7 @@ impl TableComponent {
         widths.reverse();
         let selected_column_index = widths.len().saturating_sub(1);
         let mut column_index = right_column_index + 1;
-        while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len() * 1
+        while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len()
             <= area_width.saturating_sub(number_clomn_width) as usize
         {
             let length = self

@@ -91,8 +91,8 @@ impl Component for RecordTableComponent {
                 self.focus = Focus::Filter;
                 return Ok(EventState::Consumed);
             }
-            key if matches!(self.focus, Focus::Filter) => return Ok(self.filter.event(key)?),
-            key if matches!(self.focus, Focus::Table) => return Ok(self.table.event(key)?),
+            key if matches!(self.focus, Focus::Filter) => return self.filter.event(key),
+            key if matches!(self.focus, Focus::Table) => return self.table.event(key),
             _ => (),
         }
         Ok(EventState::NotConsumed)
