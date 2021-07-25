@@ -16,7 +16,7 @@ use tui::{
     style::{Color, Style},
     symbols::line::HORIZONTAL,
     text::Span,
-    widgets::{Block, Borders},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -114,7 +114,45 @@ impl DatabasesComponent {
     }
 
     fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) {
-        let tree_height = usize::from(area.height.saturating_sub(4));
+        f.render_widget(
+            Block::default()
+                .title("Databases")
+                .borders(Borders::ALL)
+                .style(if focused {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                }),
+            area,
+        );
+
+        let chunks = Layout::default()
+            .vertical_margin(1)
+            .horizontal_margin(1)
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
+            .split(area);
+
+        let filter = Paragraph::new(Span::styled(
+            format!(
+                "{}{:w$}",
+                if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
+                    "Filter tables".to_string()
+                } else {
+                    self.input_str()
+                },
+                w = area.width as usize
+            ),
+            if let FocusBlock::Filter = self.focus_block {
+                Style::default()
+            } else {
+                Style::default().fg(Color::DarkGray)
+            },
+        ))
+        .block(Block::default().borders(Borders::BOTTOM));
+        f.render_widget(filter, chunks[0]);
+
+        let tree_height = chunks[1].height as usize;
         let tree = if let Some(tree) = self.filterd_tree.as_ref() {
             tree
         } else {
@@ -125,62 +163,20 @@ impl DatabasesComponent {
                 self.scroll.reset();
             },
             |selection| {
-                self.scroll.update(
-                    selection.index,
-                    selection.count.saturating_sub(2),
-                    tree_height,
-                );
+                self.scroll
+                    .update(selection.index, selection.count, tree_height);
             },
         );
 
-        let mut items = tree
+        let items = tree
             .iterate(self.scroll.get_top(), tree_height)
             .map(|(item, selected)| Self::tree_item_to_span(item.clone(), selected, area.width))
             .collect::<Vec<Span>>();
 
-        items.insert(
-            0,
-            Span::styled(
-                (0..area.width as usize)
-                    .map(|_| HORIZONTAL)
-                    .collect::<Vec<&str>>()
-                    .join(""),
-                Style::default(),
-            ),
-        );
-        items.insert(
-            0,
-            Span::styled(
-                format!(
-                    "{}{:w$}",
-                    if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
-                        "Filter tables".to_string()
-                    } else {
-                        self.input_str()
-                    },
-                    w = area.width as usize
-                ),
-                if let FocusBlock::Filter = self.focus_block {
-                    Style::default()
-                } else {
-                    Style::default().fg(Color::DarkGray)
-                },
-            ),
-        );
-
-        let title = "Databases";
         draw_list_block(
             f,
-            area,
-            Block::default()
-                .title(Span::styled(title, Style::default()))
-                .style(if focused {
-                    Style::default()
-                } else {
-                    Style::default().fg(Color::DarkGray)
-                })
-                .borders(Borders::ALL)
-                .border_style(Style::default()),
+            chunks[1],
+            Block::default().borders(Borders::NONE),
             items.into_iter(),
         );
         self.scroll.draw(f, area);
