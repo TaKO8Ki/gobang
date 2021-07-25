@@ -1,4 +1,5 @@
 use super::{compute_character_width, Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -78,6 +79,8 @@ impl DrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
         match key {

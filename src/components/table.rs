@@ -2,6 +2,7 @@ use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
     TableValueComponent,
 };
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use std::convert::From;
@@ -447,6 +448,8 @@ impl DrawableComponent for TableComponent {
 }
 
 impl Component for TableComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
             Key::Char('h') => {

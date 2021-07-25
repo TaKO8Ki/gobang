@@ -33,6 +33,8 @@ database-tree = { path = "./database-tree", version = "0.1" }
 easy-cast = "0.4"
 copypasta = { version = "0.7.0", default-features = false }
 async-trait = "0.1.50"
+itertools = "0.10.0"
+
 
 [target.'cfg(any(target_os = "macos", windows))'.dependencies]
 copypasta = { version = "0.7.0", default-features = false }

@@ -2,6 +2,7 @@ use super::{
     compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
     EventState,
 };
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
@@ -202,6 +203,8 @@ impl DrawableComponent for DatabasesComponent {
 }
 
 impl Component for DatabasesComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
         if tree_nav(

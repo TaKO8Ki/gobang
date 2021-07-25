@@ -2,6 +2,7 @@ pub mod command;
 pub mod connections;
 pub mod databases;
 pub mod error;
+pub mod help;
 pub mod record_table;
 pub mod tab;
 pub mod table;
@@ -14,6 +15,7 @@ pub use command::{CommandInfo, CommandText};
 pub use connections::ConnectionsComponent;
 pub use databases::DatabasesComponent;
 pub use error::ErrorComponent;
+pub use help::HelpComponent;
 pub use record_table::RecordTableComponent;
 pub use tab::TabComponent;
 pub use table::TableComponent;
@@ -72,6 +74,8 @@ pub trait DrawableComponent {
 /// base component trait
 #[async_trait]
 pub trait Component {
+    fn commands(&self, out: &mut Vec<CommandInfo>);
+
     fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
 
     fn focused(&self) -> bool {

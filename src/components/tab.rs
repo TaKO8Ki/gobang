@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use strum::IntoEnumIterator;
@@ -62,6 +63,8 @@ impl DrawableComponent for TabComponent {
 }
 
 impl Component for TabComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
             Key::Char('1') => {

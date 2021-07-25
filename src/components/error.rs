@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -49,6 +50,8 @@ impl DrawableComponent for ErrorComponent {
 }
 
 impl Component for ErrorComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, _key: Key) -> Result<EventState> {
         Ok(EventState::NotConsumed)
     }
