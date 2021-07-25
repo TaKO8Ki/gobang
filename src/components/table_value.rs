@@ -11,7 +11,7 @@ use tui::{
 };
 
 pub struct TableValueComponent {
-    pub value: String,
+    value: String,
 }
 
 impl TableValueComponent {
