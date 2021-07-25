@@ -48,9 +48,9 @@ impl TableComponent {
             selected_row.select(Some(0))
         }
         Self {
-            selected_row,
             headers,
             rows,
+            selected_row,
             ..Self::default()
         }
     }
@@ -169,10 +169,6 @@ impl TableComponent {
         }
     }
 
-    fn is_number_column(&self, row_index: usize, column_index: usize) -> bool {
-        matches!(self.selected_row.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
-    }
-
     pub fn selected_cells(&self) -> Option<String> {
         if let Some((x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
@@ -210,24 +206,31 @@ impl TableComponent {
                 .saturating_add(1)
                 .saturating_sub(self.column_page_start.get());
             return matches!(
-            self.selected_row.selected(),
-            Some(selected_row_index)
+                self.selected_row.selected(),
+                Some(selected_row_index)
                 if (x_in_page.min(selected_column_index).max(1)..x_in_page.max(selected_column_index) + 1)
                     .contains(&column_index)
                     && (y.min(selected_row_index)..y.max(selected_row_index) + 1)
                         .contains(&row_index)
             );
         }
-        matches!(self.selected_row.selected(), Some(selected_row_index) if row_index == selected_row_index &&  column_index == selected_column_index)
+        matches!(
+            self.selected_row.selected(),
+            Some(selected_row_index) if row_index == selected_row_index &&  column_index == selected_column_index
+        )
     }
 
-    fn headers_with_number(&self, left: usize, right: usize) -> Vec<String> {
+    fn is_number_column(&self, row_index: usize, column_index: usize) -> bool {
+        matches!(self.selected_row.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
+    }
+
+    fn headers(&self, left: usize, right: usize) -> Vec<String> {
         let mut headers = self.headers.clone()[left..right].to_vec();
         headers.insert(0, "".to_string());
         headers
     }
 
-    fn rows_with_number(&self, left: usize, right: usize) -> Vec<Vec<String>> {
+    fn rows(&self, left: usize, right: usize) -> Vec<Vec<String>> {
         let rows = self
             .rows
             .iter()
@@ -350,8 +353,8 @@ impl TableComponent {
                             .saturating_add(self.selected_column.saturating_sub(x))
                     }
                 }),
-            self.headers_with_number(left_column_index, right_column_index),
-            self.rows_with_number(left_column_index, right_column_index),
+            self.headers(left_column_index, right_column_index),
+            self.rows(left_column_index, right_column_index),
             constraints,
         )
     }
@@ -504,7 +507,7 @@ mod test {
     fn test_headers() {
         let mut component = TableComponent::default();
         component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
-        assert_eq!(component.headers_with_number(1, 2), vec!["", "b"])
+        assert_eq!(component.headers(1, 2), vec!["", "b"])
     }
 
     #[test]
@@ -514,10 +517,7 @@ mod test {
             vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
             vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
         ];
-        assert_eq!(
-            component.rows_with_number(1, 2),
-            vec![vec!["1", "b"], vec!["2", "e"]],
-        )
+        assert_eq!(component.rows(1, 2), vec![vec!["1", "b"], vec!["2", "e"]],)
     }
 
     #[test]
@@ -616,6 +616,19 @@ mod test {
         component.expand_selected_area_y(true);
         assert_eq!(component.selection_area_corner, Some((1, 1)));
         assert_eq!(component.selected_cells(), Some("b\ne".to_string()));
+    }
+
+    #[test]
+    fn test_is_number_column() {
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.selected_row.select(Some(0));
+        assert!(component.is_number_column(0, 0));
+        assert!(!component.is_number_column(0, 1));
     }
 
     #[test]
