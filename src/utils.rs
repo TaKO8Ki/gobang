@@ -150,7 +150,7 @@ pub async fn get_tables(database: String, pool: &MPool) -> anyhow::Result<Vec<Ta
 pub fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> String {
     let column_name = column.name();
     match column.type_info().clone().name() {
-        "INT" | "DECIMAL" | "SMALLINT" => match row.try_get(column_name) {
+        "INT" | "DECIMAL" | "SMALLINT" | "BIGINT" => match row.try_get(column_name) {
             Ok(value) => {
                 let value: i64 = value;
                 value.to_string()
@@ -164,7 +164,7 @@ pub fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> S
             }
             Err(_) => "".to_string(),
         },
-        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" => {
+        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "LONGTEXT" => {
             row.try_get(column_name).unwrap_or_else(|_| "".to_string())
         }
         "DATE" => match row.try_get(column_name) {
