@@ -16,6 +16,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableComponent {
     pub state: TableState,
+    select_state: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
@@ -30,6 +31,7 @@ impl Default for TableComponent {
     fn default() -> Self {
         Self {
             state: TableState::default(),
+            select_state: TableState::default(),
             headers: vec![],
             rows: vec![],
             selected_left_column_index: 0,
@@ -76,6 +78,20 @@ impl TableComponent {
         self.state.select(i);
     }
 
+    pub fn next_select(&mut self, lines: usize) {
+        let i = match self.select_state.selected() {
+            Some(i) => {
+                if i + lines >= self.rows.len() {
+                    Some(self.rows.len() - 1)
+                } else {
+                    Some(i + lines)
+                }
+            }
+            None => None,
+        };
+        self.select_state.select(i);
+    }
+
     pub fn previous(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
@@ -89,6 +105,20 @@ impl TableComponent {
         };
         self.select_entire_row = false;
         self.state.select(i);
+    }
+
+    pub fn previout_select(&mut self, lines: usize) {
+        let i = match self.select_state.selected() {
+            Some(i) => {
+                if i <= lines {
+                    Some(0)
+                } else {
+                    Some(i - lines)
+                }
+            }
+            None => None,
+        };
+        self.select_state.select(i);
     }
 
     pub fn scroll_top(&mut self) {
@@ -110,7 +140,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        if self.selected_left_column_index >= self.headers().len().saturating_sub(1) {
+        if self.selected_left_column_index >= self.headers.len().saturating_sub(1) {
             return;
         }
         self.select_entire_row = false;
@@ -148,6 +178,16 @@ impl TableComponent {
     }
 
     pub fn expand_selected_area_y(&mut self, positive: bool) {
+        if self.select_state.selected().is_none() {
+            self.select_state = self.state.clone();
+        }
+
+        if positive {
+            self.next_select(1);
+        } else {
+            self.previout_select(1);
+        }
+
         if self.selected_right_cell.is_none() {
             self.selected_right_cell = Some((
                 self.selected_left_column_index,
@@ -192,16 +232,9 @@ impl TableComponent {
             .map(|cell| cell.to_string())
     }
 
-    pub fn right_selected_column_index(&self) -> usize {
-        if let Some((x, y)) = self.selected_right_cell {
-            return x.max(self.selected_left_column_index);
-        }
-        self.selected_left_column_index
-    }
-
-    pub fn left_selected_column_index(&self) -> usize {
-        if let Some((x, y)) = self.selected_right_cell {
-            return x.min(self.selected_left_column_index);
+    pub fn selected_column_index(&self) -> usize {
+        if let Some((x, _)) = self.selected_right_cell {
+            return x;
         }
         self.selected_left_column_index
     }
@@ -213,10 +246,13 @@ impl TableComponent {
         selected_column_index: usize,
     ) -> bool {
         if let Some((x, y)) = self.selected_right_cell {
+            let x_in_page = x
+                .saturating_add(1)
+                .saturating_sub(self.column_page_start.get());
             return matches!(
             self.state.selected(),
             Some(selected_row_index)
-                if ((x.saturating_add(1).saturating_sub(self.column_page_start.get())).min(selected_column_index)..(x.saturating_add(1).saturating_sub(self.column_page_start.get())).max(selected_column_index) + 1)
+                if (x_in_page.min(selected_column_index).max(1)..x_in_page.max(selected_column_index) + 1)
                     .contains(&column_index)
                     && (y.min(selected_row_index)..y.max(selected_row_index) + 1)
                         .contains(&row_index)
@@ -225,18 +261,10 @@ impl TableComponent {
         matches!(self.state.selected(), Some(selected_row_index) if row_index == selected_row_index &&  column_index == selected_column_index)
     }
 
-    pub fn headers(&self) -> Vec<String> {
-        self.headers.clone()
-    }
-
     pub fn headers_with_number(&self, left: usize, right: usize) -> Vec<String> {
         let mut headers = self.headers.clone()[left..right].to_vec();
         headers.insert(0, "".to_string());
         headers
-    }
-
-    pub fn rows(&self) -> Vec<Vec<String>> {
-        self.rows.clone()
     }
 
     pub fn rows_with_number(&self, left: usize, right: usize) -> Vec<Vec<String>> {
@@ -260,22 +288,17 @@ impl TableComponent {
         if self.rows.is_empty() {
             return (0, Vec::new(), Vec::new(), Vec::new());
         }
-        if self.left_selected_column_index() < self.column_page_start.get() {
-            self.column_page_start
-                .set(self.left_selected_column_index());
+        if self.selected_column_index() < self.column_page_start.get() {
+            self.column_page_start.set(self.selected_column_index());
         }
 
-        let gap = self.selected_right_cell.map_or(0, |(x, _)| {
-            x.saturating_sub(self.selected_left_column_index)
-        });
-
-        let right_column_index = self.right_selected_column_index().clone();
-        let mut column_index = self.right_selected_column_index();
+        let right_column_index = self.selected_column_index().clone();
+        let mut column_index = self.selected_column_index();
         let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
         loop {
             let length = self
-                .rows()
+                .rows
                 .iter()
                 .map(|row| {
                     row.get(column_index)
@@ -288,7 +311,7 @@ impl TableComponent {
                 .map_or(3, |v| {
                     *v.max(
                         &self
-                            .headers()
+                            .headers
                             .get(column_index)
                             .map_or(3, |header| header.to_string().width()),
                     )
@@ -314,7 +337,7 @@ impl TableComponent {
             <= area_width.saturating_sub(number_clomn_width) as usize
         {
             let length = self
-                .rows()
+                .rows
                 .iter()
                 .map(|row| {
                     row.get(column_index)
@@ -326,7 +349,7 @@ impl TableComponent {
                 .max()
                 .map_or(3, |v| {
                     *v.max(
-                        self.headers()
+                        self.headers
                             .iter()
                             .map(|header| header.to_string().width())
                             .collect::<Vec<usize>>()
@@ -343,7 +366,7 @@ impl TableComponent {
             }
             column_index += 1
         }
-        if self.right_selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
             widths.pop();
         }
         let right_column_index = column_index;
@@ -351,13 +374,22 @@ impl TableComponent {
             .iter()
             .map(|(_, width)| Constraint::Length(*width as u16))
             .collect::<Vec<Constraint>>();
-        if self.right_selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_clomn_width));
         self.column_page_start.set(left_column_index);
         (
-            (selected_column_index + 1).saturating_sub(gap),
+            self.selected_right_cell
+                .map_or(selected_column_index + 1, |(x, _)| {
+                    if x > self.selected_left_column_index {
+                        (selected_column_index + 1)
+                            .saturating_sub(x.saturating_sub(self.selected_left_column_index))
+                    } else {
+                        (selected_column_index + 1)
+                            .saturating_add(self.selected_left_column_index.saturating_sub(x))
+                    }
+                }),
             self.headers_with_number(left_column_index, right_column_index),
             self.rows_with_number(left_column_index, right_column_index),
             constraints,
@@ -434,7 +466,15 @@ impl DrawableComponent for TableComponent {
                 Style::default().fg(Color::DarkGray)
             })
             .widths(&constraints);
-        f.render_stateful_widget(table, layout[1], &mut self.state);
+        f.render_stateful_widget(
+            table,
+            layout[1],
+            if self.select_state.selected().is_some() {
+                &mut self.select_state
+            } else {
+                &mut self.state
+            },
+        );
 
         self.scroll.draw(f, layout[1]);
         Ok(())
@@ -452,6 +492,7 @@ impl Component for TableComponent {
             Key::Char('j') => {
                 self.next(1);
                 self.selected_right_cell = None;
+                self.select_state.select(None);
                 return Ok(EventState::NotConsumed);
             }
             Key::Ctrl('d') => {
@@ -462,6 +503,7 @@ impl Component for TableComponent {
             Key::Char('k') => {
                 self.previous(1);
                 self.selected_right_cell = None;
+                self.select_state.select(None);
                 return Ok(EventState::Consumed);
             }
             Key::Ctrl('u') => {
@@ -534,6 +576,60 @@ mod test {
             component.rows_with_number(1, 2),
             vec![vec!["1", "b"], vec!["2", "e"]],
         )
+    }
+
+    #[test]
+    fn test_expand_selected_area_x_left() {
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(1));
+        component.selected_left_column_index = 1;
+        component.expand_selected_area_x(false);
+        assert_eq!(component.selected_right_cell, Some((0, 1)));
+    }
+
+    #[test]
+    fn test_expand_selected_area_x_right() {
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(1));
+        component.selected_left_column_index = 1;
+        component.expand_selected_area_x(true);
+        assert_eq!(component.selected_right_cell, Some((2, 1)));
+    }
+
+    #[test]
+    fn test_expand_selected_area_y_up() {
+        let mut component = TableComponent::default();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(1));
+        component.selected_left_column_index = 1;
+        component.expand_selected_area_y(false);
+        assert_eq!(component.selected_right_cell, Some((1, 0)));
+    }
+
+    #[test]
+    fn test_expand_selected_area_y_down() {
+        let mut component = TableComponent::default();
+        component.rows = vec![
+            vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
+        component.state.select(Some(0));
+        component.selected_left_column_index = 1;
+        component.expand_selected_area_y(true);
+        assert_eq!(component.selected_right_cell, Some((1, 1)));
     }
 
     #[test]
@@ -627,7 +723,7 @@ mod test {
                 .collect(),
             vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
         ];
-        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(17);
+        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(10);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2"]);
         assert_eq!(rows, vec![vec!["1", "aaaaa", "bbbbb"], vec!["2", "d", "e"]]);
@@ -640,7 +736,7 @@ mod test {
             ]
         );
 
-        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(27);
+        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(20);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2", "3"]);
         assert_eq!(
