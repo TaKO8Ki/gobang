@@ -237,7 +237,7 @@ impl App {
                             return Ok(EventState::Consumed);
                         }
 
-                        if let Some(index) = self.record_table.table.state.selected() {
+                        if let Some(index) = self.record_table.table.selected_row.selected() {
                             if index.saturating_add(1)
                                 % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
                                 == 0
