@@ -192,6 +192,20 @@ impl TableComponent {
             .map(|cell| cell.to_string())
     }
 
+    pub fn right_selected_column_index(&self) -> usize {
+        if let Some((x, y)) = self.selected_right_cell {
+            return x.max(self.selected_left_column_index);
+        }
+        self.selected_left_column_index
+    }
+
+    pub fn left_selected_column_index(&self) -> usize {
+        if let Some((x, y)) = self.selected_right_cell {
+            return x.min(self.selected_left_column_index);
+        }
+        self.selected_left_column_index
+    }
+
     pub fn is_selected_cell(
         &self,
         row_index: usize,
@@ -246,12 +260,17 @@ impl TableComponent {
         if self.rows.is_empty() {
             return (0, Vec::new(), Vec::new(), Vec::new());
         }
-        if self.selected_left_column_index < self.column_page_start.get() {
-            self.column_page_start.set(self.selected_left_column_index);
+        if self.left_selected_column_index() < self.column_page_start.get() {
+            self.column_page_start
+                .set(self.left_selected_column_index());
         }
 
-        let right_column_index = self.selected_left_column_index.clone();
-        let mut column_index = self.selected_left_column_index;
+        let gap = self.selected_right_cell.map_or(0, |(x, _)| {
+            x.saturating_sub(self.selected_left_column_index)
+        });
+
+        let right_column_index = self.right_selected_column_index().clone();
+        let mut column_index = self.right_selected_column_index();
         let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
         let mut widths = vec![];
         loop {
@@ -328,7 +347,7 @@ impl TableComponent {
             }
             column_index += 1
         }
-        if self.selected_left_column_index != self.headers.len().saturating_sub(1) {
+        if self.right_selected_column_index() != self.headers.len().saturating_sub(1) {
             widths.pop();
         }
         let right_column_index = column_index;
@@ -336,13 +355,13 @@ impl TableComponent {
             .iter()
             .map(|(_, width)| Constraint::Length(*width))
             .collect::<Vec<Constraint>>();
-        if self.selected_left_column_index != self.headers.len().saturating_sub(1) {
+        if self.right_selected_column_index() != self.headers.len().saturating_sub(1) {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_clomn_width));
         self.column_page_start.set(left_column_index);
         (
-            selected_column_index + 1,
+            (selected_column_index + 1).saturating_sub(gap),
             self.headers_with_number(left_column_index, right_column_index),
             self.rows_with_number(left_column_index, right_column_index),
             constraints,
