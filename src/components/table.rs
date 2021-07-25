@@ -221,7 +221,10 @@ impl TableComponent {
     }
 
     fn is_number_column(&self, row_index: usize, column_index: usize) -> bool {
-        matches!(self.selected_row.selected(), Some(selected_row_index) if row_index == selected_row_index && 0 == column_index)
+        matches!(
+            self.selected_row.selected(),
+            Some(selected_row_index) if row_index == selected_row_index && 0 == column_index
+        )
     }
 
     fn headers(&self, left: usize, right: usize) -> Vec<String> {
@@ -244,7 +247,7 @@ impl TableComponent {
         new_rows
     }
 
-    fn calculate_widths(
+    fn calculate_cell_widths(
         &self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<String>>, Vec<Constraint>) {
@@ -255,10 +258,10 @@ impl TableComponent {
             self.column_page_start.set(self.selected_column_index());
         }
 
-        let right_column_index = self.selected_column_index();
+        let far_right_column_index = self.selected_column_index();
         let mut column_index = self.selected_column_index();
-        let number_clomn_width = (self.rows.len() + 1).to_string().width() as u16;
-        let mut widths = vec![];
+        let number_column_width = (self.rows.len() + 1).to_string().width() as u16;
+        let mut widths = Vec::new();
         loop {
             let length = self
                 .rows
@@ -281,7 +284,7 @@ impl TableComponent {
                     .clamp(&3, &20)
                 });
             if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len()
-                > area_width.saturating_sub(number_clomn_width) as usize
+                >= area_width.saturating_sub(number_column_width) as usize
             {
                 column_index += 1;
                 break;
@@ -292,12 +295,13 @@ impl TableComponent {
             }
             column_index -= 1;
         }
-        let left_column_index = column_index;
         widths.reverse();
+
+        let far_left_column_index = column_index;
         let selected_column_index = widths.len().saturating_sub(1);
-        let mut column_index = right_column_index + 1;
+        let mut column_index = far_right_column_index + 1;
         while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len()
-            <= area_width.saturating_sub(number_clomn_width) as usize
+            <= area_width.saturating_sub(number_column_width) as usize
         {
             let length = self
                 .rows
@@ -332,7 +336,7 @@ impl TableComponent {
         if self.selected_column_index() != self.headers.len().saturating_sub(1) {
             widths.pop();
         }
-        let right_column_index = column_index;
+        let far_right_column_index = column_index;
         let mut constraints = widths
             .iter()
             .map(|(_, width)| Constraint::Length(*width as u16))
@@ -340,8 +344,9 @@ impl TableComponent {
         if self.selected_column_index() != self.headers.len().saturating_sub(1) {
             constraints.push(Constraint::Min(10));
         }
-        constraints.insert(0, Constraint::Length(number_clomn_width));
-        self.column_page_start.set(left_column_index);
+        constraints.insert(0, Constraint::Length(number_column_width));
+        self.column_page_start.set(far_left_column_index);
+
         (
             self.selection_area_corner
                 .map_or(selected_column_index + 1, |(x, _)| {
@@ -353,8 +358,8 @@ impl TableComponent {
                             .saturating_add(self.selected_column.saturating_sub(x))
                     }
                 }),
-            self.headers(left_column_index, right_column_index),
-            self.rows(left_column_index, right_column_index),
+            self.headers(far_left_column_index, far_right_column_index),
+            self.rows(far_left_column_index, far_right_column_index),
             constraints,
         )
     }
@@ -385,7 +390,7 @@ impl DrawableComponent for TableComponent {
 
         let block = Block::default().borders(Borders::ALL).title("Records");
         let (selected_column_index, headers, rows, constraints) =
-            self.calculate_widths(block.inner(layout[1]).width);
+            self.calculate_cell_widths(block.inner(layout[1]).width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
                 Style::default().add_modifier(Modifier::BOLD)
@@ -712,7 +717,7 @@ mod test {
     }
 
     #[test]
-    fn test_calculate_widths() {
+    fn test_calculate_cell_widths() {
         let mut component = TableComponent::default();
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
         component.rows = vec![
@@ -722,7 +727,8 @@ mod test {
                 .collect(),
             vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
         ];
-        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(10);
+        let (selected_column_index, headers, rows, constraints) =
+            component.calculate_cell_widths(10);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2"]);
         assert_eq!(rows, vec![vec!["1", "aaaaa", "bbbbb"], vec!["2", "d", "e"]]);
@@ -735,7 +741,8 @@ mod test {
             ]
         );
 
-        let (selected_column_index, headers, rows, constraints) = component.calculate_widths(20);
+        let (selected_column_index, headers, rows, constraints) =
+            component.calculate_cell_widths(20);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2", "3"]);
         assert_eq!(
@@ -750,6 +757,40 @@ mod test {
             vec![
                 Constraint::Length(1),
                 Constraint::Length(5),
+                Constraint::Length(5),
+                Constraint::Min(10),
+            ]
+        );
+
+        let mut component = TableComponent::default();
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["aaaaa", "bbbbb", "ccccc"]
+                .iter()
+                .map(|h| h.to_string())
+                .collect(),
+            vec!["dddddddddd", "e", "f"]
+                .iter()
+                .map(|h| h.to_string())
+                .collect(),
+        ];
+
+        let (selected_column_index, headers, rows, constraints) =
+            component.calculate_cell_widths(20);
+        assert_eq!(selected_column_index, 1);
+        assert_eq!(headers, vec!["", "1", "2", "3"]);
+        assert_eq!(
+            rows,
+            vec![
+                vec!["1", "aaaaa", "bbbbb", "ccccc"],
+                vec!["2", "dddddddddd", "e", "f"]
+            ]
+        );
+        assert_eq!(
+            constraints,
+            vec![
+                Constraint::Length(1),
+                Constraint::Length(10),
                 Constraint::Length(5),
                 Constraint::Min(10),
             ]
