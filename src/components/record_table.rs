@@ -41,16 +41,16 @@ impl RecordTableComponent {
         self.table.rows = rows;
         self.table.headers = headers;
         if !self.table.rows.is_empty() {
-            self.table.state.select(None);
-            self.table.state.select(Some(0));
+            self.table.selected_row.select(None);
+            self.table.selected_row.select(Some(0));
         }
     }
 
     pub fn reset(&mut self) {
         self.table = TableComponent::default();
         if !self.table.rows.is_empty() {
-            self.table.state.select(None);
-            self.table.state.select(Some(0))
+            self.table.selected_row.select(None);
+            self.table.selected_row.select(Some(0))
         }
         self.filter = TableFilterComponent::default();
     }

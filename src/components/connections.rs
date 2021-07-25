@@ -12,8 +12,8 @@ use tui::{
 };
 
 pub struct ConnectionsComponent {
-    pub connections: Vec<Connection>,
-    pub state: ListState,
+    connections: Vec<Connection>,
+    state: ListState,
 }
 
 impl Default for ConnectionsComponent {
@@ -33,7 +33,7 @@ impl ConnectionsComponent {
         }
     }
 
-    pub fn next_connection(&mut self) {
+    fn next_connection(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.connections.len() - 1 {
@@ -47,7 +47,7 @@ impl ConnectionsComponent {
         self.state.select(Some(i));
     }
 
-    pub fn previous_connection(&mut self) {
+    fn previous_connection(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {

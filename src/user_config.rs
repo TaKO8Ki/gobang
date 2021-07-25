@@ -9,10 +9,10 @@ pub struct UserConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
-    pub name: Option<String>,
-    pub user: String,
-    pub host: String,
-    pub port: u64,
+    name: Option<String>,
+    user: String,
+    host: String,
+    port: u64,
     pub database: Option<String>,
 }
 

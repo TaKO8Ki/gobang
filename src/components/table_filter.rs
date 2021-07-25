@@ -14,8 +14,8 @@ use unicode_width::UnicodeWidthStr;
 pub struct TableFilterComponent {
     pub table: Option<String>,
     pub input: Vec<char>,
-    pub input_idx: usize,
-    pub input_cursor_position: u16,
+    input_idx: usize,
+    input_cursor_position: u16,
 }
 
 impl Default for TableFilterComponent {

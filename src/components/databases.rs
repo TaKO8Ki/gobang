@@ -2,7 +2,6 @@ use super::{
     compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
     EventState,
 };
-use crate::components::RecordTableComponent;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
@@ -33,14 +32,13 @@ pub enum FocusBlock {
 }
 
 pub struct DatabasesComponent {
-    pub tree: DatabaseTree,
-    pub filterd_tree: Option<DatabaseTree>,
-    pub scroll: VerticalScroll,
-    pub input: Vec<char>,
-    pub input_idx: usize,
-    pub input_cursor_position: u16,
-    pub record_table: RecordTableComponent,
-    pub focus_block: FocusBlock,
+    tree: DatabaseTree,
+    filterd_tree: Option<DatabaseTree>,
+    scroll: VerticalScroll,
+    input: Vec<char>,
+    input_idx: usize,
+    input_cursor_position: u16,
+    focus_block: FocusBlock,
 }
 
 impl DatabasesComponent {
@@ -52,12 +50,11 @@ impl DatabasesComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            record_table: RecordTableComponent::default(),
             focus_block: FocusBlock::Tree,
         }
     }
 
-    pub fn input_str(&self) -> String {
+    fn input_str(&self) -> String {
         self.input.iter().collect()
     }
 

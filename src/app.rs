@@ -16,7 +16,6 @@ use database_tree::Database;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::ListState,
     Frame,
 };
 
@@ -26,17 +25,16 @@ pub enum Focus {
     ConnectionList,
 }
 pub struct App {
-    pub record_table: RecordTableComponent,
-    pub structure_table: TableComponent,
-    pub focus: Focus,
-    pub tab: TabComponent,
+    record_table: RecordTableComponent,
+    structure_table: TableComponent,
+    focus: Focus,
+    tab: TabComponent,
+    databases: DatabasesComponent,
+    connections: ConnectionsComponent,
+    table_status: TableStatusComponent,
+    clipboard: Clipboard,
+    pool: Option<Box<dyn Pool>>,
     pub user_config: Option<UserConfig>,
-    pub selected_connection: ListState,
-    pub databases: DatabasesComponent,
-    pub connections: ConnectionsComponent,
-    pub table_status: TableStatusComponent,
-    pub clipboard: Clipboard,
-    pub pool: Option<Box<dyn Pool>>,
     pub error: ErrorComponent,
 }
 
@@ -48,7 +46,6 @@ impl Default for App {
             focus: Focus::DabataseList,
             tab: TabComponent::default(),
             user_config: None,
-            selected_connection: ListState::default(),
             databases: DatabasesComponent::new(),
             connections: ConnectionsComponent::default(),
             table_status: TableStatusComponent::default(),
@@ -237,7 +234,7 @@ impl App {
                             return Ok(EventState::Consumed);
                         }
 
-                        if let Some(index) = self.record_table.table.state.selected() {
+                        if let Some(index) = self.record_table.table.selected_row.selected() {
                             if index.saturating_add(1)
                                 % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
                                 == 0

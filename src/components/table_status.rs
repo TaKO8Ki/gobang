@@ -12,8 +12,8 @@ use tui::{
 };
 
 pub struct TableStatusComponent {
-    pub rows_count: u64,
-    pub table: Option<Table>,
+    rows_count: u64,
+    table: Option<Table>,
 }
 
 impl Default for TableStatusComponent {
@@ -31,7 +31,7 @@ impl TableStatusComponent {
         self.table = Some(table);
     }
 
-    pub fn status_str(&self) -> Vec<String> {
+    fn status_str(&self) -> Vec<String> {
         if let Some(table) = self.table.as_ref() {
             return vec![
                 format!(
