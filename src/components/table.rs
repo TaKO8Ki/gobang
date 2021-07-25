@@ -292,12 +292,10 @@ impl TableComponent {
                             .get(column_index)
                             .map_or(3, |header| header.to_string().width()),
                     )
-                    .clamp(&3, &20) as u16
+                    .clamp(&3, &20)
                 });
-            if widths.iter().map(|(_, width)| width).sum::<u16>() + length
-                > area_width
-                    .saturating_sub(7)
-                    .saturating_sub(number_clomn_width)
+            if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len() * 1
+                > area_width.saturating_sub(number_clomn_width) as usize
             {
                 column_index += 1;
                 break;
@@ -312,10 +310,8 @@ impl TableComponent {
         widths.reverse();
         let selected_column_index = widths.len().saturating_sub(1);
         let mut column_index = right_column_index + 1;
-        while widths.iter().map(|(_, width)| width).sum::<u16>()
-            <= area_width
-                .saturating_sub(7)
-                .saturating_sub(number_clomn_width)
+        while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len() * 1
+            <= area_width.saturating_sub(number_clomn_width) as usize
         {
             let length = self
                 .rows()
@@ -337,7 +333,7 @@ impl TableComponent {
                             .get(column_index)
                             .unwrap_or(&3),
                     )
-                    .clamp(&3, &20) as u16
+                    .clamp(&3, &20)
                 });
             match self.headers.get(column_index) {
                 Some(header) => {
@@ -353,7 +349,7 @@ impl TableComponent {
         let right_column_index = column_index;
         let mut constraints = widths
             .iter()
-            .map(|(_, width)| Constraint::Length(*width))
+            .map(|(_, width)| Constraint::Length(*width as u16))
             .collect::<Vec<Constraint>>();
         if self.right_selected_column_index() != self.headers.len().saturating_sub(1) {
             constraints.push(Constraint::Min(10));
