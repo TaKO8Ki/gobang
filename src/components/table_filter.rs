@@ -89,12 +89,10 @@ impl Component for TableFilterComponent {
                 return Ok(EventState::Consumed);
             }
             Key::Delete | Key::Backspace => {
-                if input_str.width() > 0 {
-                    if !self.input.is_empty() && self.input_idx > 0 {
-                        let last_c = self.input.remove(self.input_idx - 1);
-                        self.input_idx -= 1;
-                        self.input_cursor_position -= compute_character_width(last_c);
-                    }
+                if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
+                    let last_c = self.input.remove(self.input_idx - 1);
+                    self.input_idx -= 1;
+                    self.input_cursor_position -= compute_character_width(last_c);
                 }
                 return Ok(EventState::Consumed);
             }

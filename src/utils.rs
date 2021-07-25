@@ -13,15 +13,15 @@ pub trait Pool {
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>>;
     async fn get_records(
         &self,
-        database: &String,
-        table: &String,
+        database: &str,
+        table: &str,
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
     async fn get_columns(
         &self,
-        database: &String,
-        table: &String,
+        database: &str,
+        table: &str,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
     async fn close(&self);
 }
@@ -67,8 +67,8 @@ impl Pool for MySqlPool {
 
     async fn get_records(
         &self,
-        database: &String,
-        table: &String,
+        database: &str,
+        table: &str,
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
@@ -111,8 +111,8 @@ impl Pool for MySqlPool {
 
     async fn get_columns(
         &self,
-        database: &String,
-        table: &String,
+        database: &str,
+        table: &str,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = format!("SHOW FULL COLUMNS FROM `{}`.`{}`", database, table);
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);

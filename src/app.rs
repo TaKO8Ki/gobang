@@ -191,7 +191,6 @@ impl App {
                             .get_columns(&database, &table.name)
                             .await?;
                         self.structure_table = TableComponent::new(records, headers);
-
                         self.table_status
                             .update(self.record_table.len() as u64, table);
                     }
@@ -206,7 +205,7 @@ impl App {
                         };
 
                         if let Key::Char('y') = key {
-                            if let Some(text) = self.record_table.table.selected_cell() {
+                            if let Some(text) = self.record_table.table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         }
@@ -276,7 +275,7 @@ impl App {
                         };
 
                         if let Key::Char('y') = key {
-                            if let Some(text) = self.structure_table.selected_cell() {
+                            if let Some(text) = self.structure_table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         };
@@ -302,20 +301,18 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
             }
-            Focus::DabataseList => match key {
-                Key::Right if self.databases.tree_focused() => {
+            Focus::DabataseList => {
+                if matches!(key, Key::Right) && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
-                _ => (),
-            },
-            Focus::Table => match key {
-                Key::Left => {
+            }
+            Focus::Table => {
+                if let Key::Left = key {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
-                _ => (),
-            },
+            }
         }
         Ok(EventState::NotConsumed)
     }
