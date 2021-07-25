@@ -580,6 +580,16 @@ mod test {
 
     #[test]
     fn test_expand_selected_area_x_left() {
+        // before
+        //    1  2  3
+        // 1  a  b  c
+        // 2  d |e| f
+
+        // after
+        //    1  2  3
+        // 1  a  b  c
+        // 2 |d  e| f
+
         let mut component = TableComponent::default();
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
         component.rows = vec![
@@ -590,10 +600,21 @@ mod test {
         component.selected_left_column_index = 1;
         component.expand_selected_area_x(false);
         assert_eq!(component.selected_right_cell, Some((0, 1)));
+        assert_eq!(component.selected_cells(), Some("d,e".to_string()));
     }
 
     #[test]
     fn test_expand_selected_area_x_right() {
+        // before
+        //    1  2  3
+        // 1  a  b  c
+        // 2  d |e| f
+
+        // after
+        //    1  2  3
+        // 1  a  b  c
+        // 2  d |e  f|
+
         let mut component = TableComponent::default();
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
         component.rows = vec![
@@ -604,10 +625,21 @@ mod test {
         component.selected_left_column_index = 1;
         component.expand_selected_area_x(true);
         assert_eq!(component.selected_right_cell, Some((2, 1)));
+        assert_eq!(component.selected_cells(), Some("e,f".to_string()));
     }
 
     #[test]
     fn test_expand_selected_area_y_up() {
+        // before
+        //    1  2  3
+        // 1  a  b  c
+        // 2  d |e| f
+
+        // after
+        //    1  2  3
+        // 1  a |b| c
+        // 2  d |e| f
+
         let mut component = TableComponent::default();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
@@ -617,10 +649,21 @@ mod test {
         component.selected_left_column_index = 1;
         component.expand_selected_area_y(false);
         assert_eq!(component.selected_right_cell, Some((1, 0)));
+        assert_eq!(component.selected_cells(), Some("b\ne".to_string()));
     }
 
     #[test]
     fn test_expand_selected_area_y_down() {
+        // before
+        //    1  2  3
+        // 1  a |b| c
+        // 2  d  e  f
+
+        // after
+        //    1  2  3
+        // 1  a |b| c
+        // 2  d |e| f
+
         let mut component = TableComponent::default();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect(),
@@ -630,6 +673,7 @@ mod test {
         component.selected_left_column_index = 1;
         component.expand_selected_area_y(true);
         assert_eq!(component.selected_right_cell, Some((1, 1)));
+        assert_eq!(component.selected_cells(), Some("b\ne".to_string()));
     }
 
     #[test]
