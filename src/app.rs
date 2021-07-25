@@ -191,7 +191,6 @@ impl App {
                             .get_columns(&database, &table.name)
                             .await?;
                         self.structure_table = TableComponent::new(records, headers);
-
                         self.table_status
                             .update(self.record_table.len() as u64, table);
                     }

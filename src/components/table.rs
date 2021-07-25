@@ -16,10 +16,10 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableComponent {
     pub state: TableState,
-    select_state: TableState,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
+    select_state: TableState,
     selected_left_column_index: usize,
     selected_right_cell: Option<(usize, usize)>,
     column_page_start: std::cell::Cell<usize>,
@@ -59,6 +59,12 @@ impl TableComponent {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.select_state.select(None);
+        self.selected_right_cell = None;
+        self.select_entire_row = false;
+    }
+
     pub fn end(&mut self) {
         self.eod = true;
     }
@@ -74,7 +80,7 @@ impl TableComponent {
             }
             None => None,
         };
-        self.select_entire_row = false;
+        self.reset();
         self.state.select(i);
     }
 
@@ -103,7 +109,7 @@ impl TableComponent {
             }
             None => None,
         };
-        self.select_entire_row = false;
+        self.reset();
         self.state.select(i);
     }
 
@@ -125,7 +131,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        self.state.select(None);
+        self.reset();
         self.state.select(Some(0));
     }
 
@@ -133,6 +139,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
+        self.reset();
         self.state.select(Some(self.rows.len() - 1));
     }
 
@@ -143,7 +150,7 @@ impl TableComponent {
         if self.selected_left_column_index >= self.headers.len().saturating_sub(1) {
             return;
         }
-        self.select_entire_row = false;
+        self.reset();
         self.selected_left_column_index += 1;
     }
 
@@ -154,7 +161,7 @@ impl TableComponent {
         if self.selected_left_column_index == 0 {
             return;
         }
-        self.select_entire_row = false;
+        self.reset();
         self.selected_left_column_index -= 1;
     }
 
@@ -486,49 +493,38 @@ impl Component for TableComponent {
         match key {
             Key::Char('h') => {
                 self.previous_column();
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('j') => {
                 self.next(1);
-                self.selected_right_cell = None;
-                self.select_state.select(None);
                 return Ok(EventState::NotConsumed);
             }
             Key::Ctrl('d') => {
                 self.next(10);
-                self.selected_right_cell = None;
                 return Ok(EventState::NotConsumed);
             }
             Key::Char('k') => {
                 self.previous(1);
-                self.selected_right_cell = None;
-                self.select_state.select(None);
                 return Ok(EventState::Consumed);
             }
             Key::Ctrl('u') => {
                 self.previous(10);
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('g') => {
                 self.scroll_top();
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('r') => {
                 self.select_entire_row = true;
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('G') => {
                 self.scroll_bottom();
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('l') => {
                 self.next_column();
-                self.selected_right_cell = None;
                 return Ok(EventState::Consumed);
             }
             Key::Char('H') => {
