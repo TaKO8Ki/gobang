@@ -1,9 +1,9 @@
 mod app;
 mod clipboard;
 mod components;
+mod config;
 mod event;
 mod ui;
-mod user_config;
 mod utils;
 
 #[macro_use]
@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
 
     outln!("gobang logger");
 
-    let user_config = user_config::UserConfig::new("sample.toml").ok();
+    let config = config::Config::new("sample.toml")?;
 
     let stdout = stdout();
     setup_terminal()?;
@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
-    let mut app = App::new(user_config.unwrap());
+    let mut app = App::new(config);
 
     terminal.clear()?;
 

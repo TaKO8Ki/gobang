@@ -8,7 +8,7 @@ use crate::{
         ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         RecordTableComponent, TabComponent, TableComponent, TableStatusComponent,
     },
-    user_config::UserConfig,
+    config::Config,
 };
 use database_tree::Database;
 use tui::{
@@ -33,36 +33,25 @@ pub struct App {
     table_status: TableStatusComponent,
     clipboard: Clipboard,
     pool: Option<Box<dyn Pool>>,
-    pub user_config: Option<UserConfig>,
+    pub config: Config,
     pub error: ErrorComponent,
 }
 
-impl Default for App {
-    fn default() -> App {
-        App {
+impl App {
+    pub fn new(config: Config) -> App {
+        Self {
+            focus: Focus::ConnectionList,
+            config: config.clone(),
+            connections: ConnectionsComponent::new(config.conn),
             record_table: RecordTableComponent::default(),
             structure_table: TableComponent::default(),
-            focus: Focus::DabataseList,
             tab: TabComponent::default(),
-            help: HelpComponent::new(),
-            user_config: None,
+            help: HelpComponent::new(config.key_config),
             databases: DatabasesComponent::new(),
-            connections: ConnectionsComponent::default(),
             table_status: TableStatusComponent::default(),
             clipboard: Clipboard::new(),
             pool: None,
             error: ErrorComponent::default(),
-        }
-    }
-}
-
-impl App {
-    pub fn new(user_config: UserConfig) -> App {
-        Self {
-            user_config: Some(user_config.clone()),
-            connections: ConnectionsComponent::new(user_config.conn),
-            focus: Focus::ConnectionList,
-            ..App::default()
         }
     }
 
@@ -140,7 +129,7 @@ impl App {
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         self.update_commands();
 
-        if let Key::Esc = key {
+        if key == self.config.key_config.exit_popup {
             if self.error.error.is_some() {
                 self.error.error = None;
                 return Ok(EventState::Consumed);
@@ -168,7 +157,7 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if let Key::Enter = key {
+                if key == self.config.key_config.enter {
                     self.record_table.reset();
                     if let Some(conn) = self.connections.selected_connection() {
                         if let Some(pool) = self.pool.as_ref() {
@@ -199,7 +188,7 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if matches!(key, Key::Enter) && self.databases.tree_focused() {
+                if key == self.config.key_config.enter && self.databases.tree_focused() {
                     if let Some((table, database)) = self.databases.tree().selected_table() {
                         self.focus = Focus::Table;
                         let (headers, records) = self
@@ -231,13 +220,14 @@ impl App {
                             return Ok(EventState::Consumed);
                         };
 
-                        if let Key::Char('y') = key {
+                        if key == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         }
 
-                        if matches!(key, Key::Enter) && self.record_table.filter_focused() {
+                        if key == self.config.key_config.enter && self.record_table.filter_focused()
+                        {
                             self.record_table.focus = crate::components::record_table::Focus::Table;
                             if let Some((table, database)) = self.databases.tree().selected_table()
                             {
@@ -301,7 +291,7 @@ impl App {
                             return Ok(EventState::Consumed);
                         };
 
-                        if let Key::Char('y') = key {
+                        if key == self.config.key_config.copy {
                             if let Some(text) = self.structure_table.selected_cells() {
                                 self.clipboard.store(text)
                             }
@@ -323,19 +313,19 @@ impl App {
         }
         match self.focus {
             Focus::ConnectionList => {
-                if let Key::Enter = key {
+                if key == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if matches!(key, Key::Right) && self.databases.tree_focused() {
+                if key == self.config.key_config.focus_right && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::Table => {
-                if let Key::Left = key {
+                if key == self.config.key_config.focus_left {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }

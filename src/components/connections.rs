@@ -1,7 +1,7 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
+use crate::config::Connection;
 use crate::event::Key;
-use crate::user_config::Connection;
 use anyhow::Result;
 use tui::{
     backend::Backend,

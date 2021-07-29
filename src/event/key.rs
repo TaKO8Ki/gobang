@@ -1,8 +1,9 @@
 use crossterm::event;
+use serde::Deserialize;
 use std::fmt;
 
 /// Represents a key.
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Deserialize)]
 pub enum Key {
     /// Both Enter (or Return) and numpad Enter
     Enter,
