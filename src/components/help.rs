@@ -7,7 +7,7 @@ use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
@@ -23,6 +23,8 @@ impl DrawableComponent for HelpComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if self.visible {
             const SIZE: (u16, u16) = (65, 24);
+            let scroll_threshold = SIZE.1 / 3;
+            let scroll = self.selection.saturating_sub(scroll_threshold);
 
             let area = Rect::new(
                 (f.size().width.saturating_sub(SIZE.0)) / 2,
@@ -30,8 +32,6 @@ impl DrawableComponent for HelpComponent {
                 SIZE.0.min(f.size().width),
                 SIZE.1.min(f.size().height),
             );
-
-            let scroll = 0;
 
             f.render_widget(Clear, area);
             f.render_widget(
@@ -50,7 +50,7 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(self.get_text()).scroll((scroll, 0)),
+                Paragraph::new(self.get_text(chunks[0])).scroll((scroll, 0)),
                 chunks[0],
             );
 
@@ -73,9 +73,20 @@ impl Component for HelpComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         if self.visible {
-            if let Key::Esc = key {
-                self.hide();
-                return Ok(EventState::Consumed);
+            match key {
+                Key::Esc => {
+                    self.hide();
+                    return Ok(EventState::Consumed);
+                }
+                Key::Char('j') => {
+                    self.move_selection(true);
+                    return Ok(EventState::Consumed);
+                }
+                Key::Char('k') => {
+                    self.move_selection(false);
+                    return Ok(EventState::Consumed);
+                }
+                _ => (),
             }
             return Ok(EventState::NotConsumed);
         } else if let Key::Char('?') = key {
@@ -112,8 +123,23 @@ impl HelpComponent {
             .collect::<Vec<_>>();
     }
 
-    fn get_text(&self) -> Vec<Spans> {
+    fn move_selection(&mut self, inc: bool) {
+        let mut new_selection = self.selection;
+
+        new_selection = if inc {
+            new_selection.saturating_add(1)
+        } else {
+            new_selection.saturating_sub(1)
+        };
+        new_selection = new_selection.max(0);
+
+        self.selection = new_selection.min(self.cmds.len().saturating_sub(1) as u16);
+    }
+
+    fn get_text(&self, area: Rect) -> Vec<Spans> {
         let mut txt: Vec<Spans> = Vec::new();
+
+        let mut processed = 0;
 
         for (key, group) in &self.cmds.iter().group_by(|e| e.text.group) {
             txt.push(Spans::from(Span::styled(
@@ -122,9 +148,16 @@ impl HelpComponent {
             )));
 
             for command_info in group {
+                let is_selected = self.selection == processed;
+                processed += 1;
+
                 txt.push(Spans::from(Span::styled(
-                    command_info.text.name.to_string(),
-                    Style::default(),
+                    format!("{}{:w$},", command_info.text.name, w = area.width as usize),
+                    if is_selected {
+                        Style::default().bg(Color::Blue)
+                    } else {
+                        Style::default()
+                    },
                 )));
             }
         }

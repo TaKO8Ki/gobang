@@ -125,6 +125,13 @@ impl App {
             CommandInfo::new(crate::components::command::move_up("k"), true, true),
             CommandInfo::new(crate::components::command::move_right("l"), true, true),
             CommandInfo::new(crate::components::command::filter("/"), true, true),
+            CommandInfo::new(
+                crate::components::command::move_focus_to_right_widget(
+                    Key::Right.to_string().as_str(),
+                ),
+                true,
+                true,
+            ),
         ];
 
         res
@@ -151,6 +158,10 @@ impl App {
     }
 
     pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if self.help.event(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        }
+
         match self.focus {
             Focus::ConnectionList => {
                 if self.connections.event(key)?.is_consumed() {
@@ -303,9 +314,6 @@ impl App {
     }
 
     pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if self.help.event(key)?.is_consumed() {
-            return Ok(EventState::Consumed);
-        }
         if let Key::Char('c') = key {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);

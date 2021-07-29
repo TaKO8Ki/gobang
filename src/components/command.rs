@@ -80,3 +80,11 @@ pub fn filter(key: &str) -> CommandText {
         CMD_GROUP_GENERAL,
     )
 }
+
+pub fn move_focus_to_right_widget(key: &str) -> CommandText {
+    CommandText::new(
+        format!("Move focus to right [{}]", key),
+        "move focus to right",
+        CMD_GROUP_GENERAL,
+    )
+}
