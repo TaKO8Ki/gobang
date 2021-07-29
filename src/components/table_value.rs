@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -45,6 +46,8 @@ impl DrawableComponent for TableValueComponent {
 }
 
 impl Component for TableValueComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, _key: Key) -> Result<EventState> {
         todo!("scroll");
     }

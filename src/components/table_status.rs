@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -85,6 +86,8 @@ impl DrawableComponent for TableStatusComponent {
 }
 
 impl Component for TableStatusComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, _key: Key) -> Result<EventState> {
         Ok(EventState::NotConsumed)
     }

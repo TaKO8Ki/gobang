@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::event::Key;
 use crate::user_config::Connection;
 use anyhow::Result;
@@ -99,6 +100,8 @@ impl DrawableComponent for ConnectionsComponent {
 }
 
 impl Component for ConnectionsComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
             Key::Char('j') => {

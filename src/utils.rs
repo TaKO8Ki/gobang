@@ -99,12 +99,11 @@ impl Pool for MySqlPool {
                 .iter()
                 .map(|column| column.name().to_string())
                 .collect();
-            records.push(
-                row.columns()
-                    .iter()
-                    .map(|col| convert_column_value_to_string(&row, col))
-                    .collect::<Vec<String>>(),
-            )
+            let mut new_row = vec![];
+            for column in row.columns() {
+                new_row.push(convert_column_value_to_string(&row, column)?)
+            }
+            records.push(new_row)
         }
         Ok((headers, records))
     }
@@ -124,12 +123,11 @@ impl Pool for MySqlPool {
                 .iter()
                 .map(|column| column.name().to_string())
                 .collect();
-            records.push(
-                row.columns()
-                    .iter()
-                    .map(|col| convert_column_value_to_string(&row, col))
-                    .collect::<Vec<String>>(),
-            )
+            let mut new_row = vec![];
+            for column in row.columns() {
+                new_row.push(convert_column_value_to_string(&row, column)?)
+            }
+            records.push(new_row)
         }
         Ok((headers, records))
     }
@@ -147,47 +145,58 @@ pub async fn get_tables(database: String, pool: &MPool) -> anyhow::Result<Vec<Ta
     Ok(tables)
 }
 
-pub fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> String {
+pub fn convert_column_value_to_string(
+    row: &MySqlRow,
+    column: &MySqlColumn,
+) -> anyhow::Result<String> {
     let column_name = column.name();
     match column.type_info().clone().name() {
-        "INT" | "DECIMAL" | "SMALLINT" => match row.try_get(column_name) {
-            Ok(value) => {
-                let value: i64 = value;
-                value.to_string()
+        "INT" | "SMALLINT" | "BIGINT" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<i64> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
-            Err(_) => "".to_string(),
-        },
-        "INT UNSIGNED" => match row.try_get(column_name) {
-            Ok(value) => {
-                let value: u64 = value;
-                value.to_string()
-            }
-            Err(_) => "".to_string(),
-        },
-        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" => {
-            row.try_get(column_name).unwrap_or_else(|_| "".to_string())
         }
-        "DATE" => match row.try_get(column_name) {
-            Ok(value) => {
-                let value: NaiveDate = value;
-                value.to_string()
+        "DECIMAL" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<rust_decimal::Decimal> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
-            Err(_) => "".to_string(),
-        },
-        "TIMESTAMP" => match row.try_get(column_name) {
-            Ok(value) => {
-                let value: chrono::DateTime<chrono::Utc> = value;
-                value.to_string()
+        }
+        "INT UNSIGNED" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<u64> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
-            Err(_) => "".to_string(),
-        },
-        "BOOLEAN" => match row.try_get(column_name) {
-            Ok(value) => {
-                let value: bool = value;
-                value.to_string()
+        }
+        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "LONGTEXT" => {
+            return Ok(row
+                .try_get(column_name)
+                .unwrap_or_else(|_| "NULL".to_string()))
+        }
+        "DATE" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<NaiveDate> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
-            Err(_) => "".to_string(),
-        },
-        column_type => unimplemented!("not implemented column type: {}", column_type),
+        }
+        "TIMESTAMP" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<chrono::DateTime<chrono::Utc>> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "BOOLEAN" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<bool> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        _ => (),
     }
+    Err(anyhow::anyhow!(
+        "column type not implemented: `{}` {}",
+        column_name,
+        column.type_info().clone().name()
+    ))
 }

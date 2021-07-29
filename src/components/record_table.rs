@@ -1,4 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
+use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::event::Key;
 use anyhow::Result;
@@ -85,6 +86,8 @@ impl DrawableComponent for RecordTableComponent {
 }
 
 impl Component for RecordTableComponent {
+    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+
     fn event(&mut self, key: Key) -> Result<EventState> {
         match key {
             Key::Char('/') => {

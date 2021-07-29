@@ -1,14 +1,12 @@
 use crate::clipboard::Clipboard;
-use crate::components::Component as _;
-use crate::components::DrawableComponent as _;
-use crate::components::EventState;
+use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
 use crate::event::Key;
 use crate::utils::{MySqlPool, Pool};
 use crate::{
     components::tab::Tab,
     components::{
-        ConnectionsComponent, DatabasesComponent, ErrorComponent, RecordTableComponent,
-        TabComponent, TableComponent, TableStatusComponent,
+        ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
+        RecordTableComponent, TabComponent, TableComponent, TableStatusComponent,
     },
     user_config::UserConfig,
 };
@@ -29,6 +27,7 @@ pub struct App {
     structure_table: TableComponent,
     focus: Focus,
     tab: TabComponent,
+    help: HelpComponent,
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
     table_status: TableStatusComponent,
@@ -45,6 +44,7 @@ impl Default for App {
             structure_table: TableComponent::default(),
             focus: Focus::DabataseList,
             tab: TabComponent::default(),
+            help: HelpComponent::new(),
             user_config: None,
             databases: DatabasesComponent::new(),
             connections: ConnectionsComponent::default(),
@@ -58,7 +58,7 @@ impl Default for App {
 
 impl App {
     pub fn new(user_config: UserConfig) -> App {
-        App {
+        Self {
             user_config: Some(user_config.clone()),
             connections: ConnectionsComponent::new(user_config.conn),
             focus: Focus::ConnectionList,
@@ -110,10 +110,36 @@ impl App {
             }
         }
         self.error.draw(f, Rect::default(), false)?;
+        self.help.draw(f, Rect::default(), false)?;
         Ok(())
     }
 
+    fn update_commands(&mut self) {
+        self.help.set_cmds(self.commands());
+    }
+
+    fn commands(&self) -> Vec<CommandInfo> {
+        let res = vec![
+            CommandInfo::new(crate::components::command::move_left("h"), true, true),
+            CommandInfo::new(crate::components::command::move_down("j"), true, true),
+            CommandInfo::new(crate::components::command::move_up("k"), true, true),
+            CommandInfo::new(crate::components::command::move_right("l"), true, true),
+            CommandInfo::new(crate::components::command::filter("/"), true, true),
+            CommandInfo::new(
+                crate::components::command::move_focus_to_right_widget(
+                    Key::Right.to_string().as_str(),
+                ),
+                true,
+                true,
+            ),
+        ];
+
+        res
+    }
+
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
+        self.update_commands();
+
         if let Key::Esc = key {
             if self.error.error.is_some() {
                 self.error.error = None;
@@ -132,6 +158,10 @@ impl App {
     }
 
     pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if self.help.event(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        }
+
         match self.focus {
             Focus::ConnectionList => {
                 if self.connections.event(key)?.is_consumed() {
