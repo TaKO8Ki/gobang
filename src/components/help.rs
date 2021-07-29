@@ -50,7 +50,7 @@ impl DrawableComponent for HelpComponent {
                 .split(area);
 
             f.render_widget(
-                Paragraph::new(self.get_text(chunks[0])).scroll((scroll, 0)),
+                Paragraph::new(self.get_text(chunks[0].width as usize)).scroll((scroll, 0)),
                 chunks[0],
             );
 
@@ -136,7 +136,7 @@ impl HelpComponent {
         self.selection = new_selection.min(self.cmds.len().saturating_sub(1) as u16);
     }
 
-    fn get_text(&self, area: Rect) -> Vec<Spans> {
+    fn get_text(&self, width: usize) -> Vec<Spans> {
         let mut txt: Vec<Spans> = Vec::new();
 
         let mut processed = 0;
@@ -152,7 +152,7 @@ impl HelpComponent {
                 processed += 1;
 
                 txt.push(Spans::from(Span::styled(
-                    format!("{}{:w$},", command_info.text.name, w = area.width as usize),
+                    format!("{}{:w$}", command_info.text.name, w = width),
                     if is_selected {
                         Style::default().bg(Color::Blue)
                     } else {
@@ -163,5 +163,34 @@ impl HelpComponent {
         }
 
         txt
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Color, CommandInfo, HelpComponent, Modifier, Span, Spans, Style};
+
+    #[test]
+    fn test_get_text() {
+        let width = 3;
+        let mut component = HelpComponent::new();
+        component.set_cmds(vec![
+            CommandInfo::new(crate::components::command::move_left("h"), true, true),
+            CommandInfo::new(crate::components::command::move_right("l"), true, true),
+        ]);
+        assert_eq!(
+            component.get_text(width),
+            vec![
+                Spans::from(Span::styled(
+                    "-- General --",
+                    Style::default().add_modifier(Modifier::REVERSED)
+                )),
+                Spans::from(Span::styled(
+                    "Move left [h]  3",
+                    Style::default().bg(Color::Blue)
+                )),
+                Spans::from(Span::styled("Move right [l]  3", Style::default()))
+            ]
+        );
     }
 }
