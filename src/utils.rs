@@ -157,12 +157,12 @@ pub fn convert_column_value_to_string(
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
         }
-        // "DECIMAL" => {
-        //     if let Ok(value) = row.try_get(column_name) {
-        //         let value: Option<rust_decimal::Decimal> = value;
-        //         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-        //     }
-        // }
+        "DECIMAL" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<rust_decimal::Decimal> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
         "INT UNSIGNED" => {
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<u64> = value;
