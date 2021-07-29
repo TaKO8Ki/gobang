@@ -170,7 +170,9 @@ pub fn convert_column_value_to_string(
             }
         }
         "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "LONGTEXT" => {
-            return Ok(row.try_get(column_name).unwrap_or("NULL".to_string()))
+            return Ok(row
+                .try_get(column_name)
+                .unwrap_or_else(|_| "NULL".to_string()))
         }
         "DATE" => {
             if let Ok(value) = row.try_get(column_name) {
