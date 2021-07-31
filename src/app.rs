@@ -130,7 +130,7 @@ impl App {
             return Ok(EventState::Consumed);
         };
 
-        if self.scroll_focus(key)?.is_consumed() {
+        if self.move_focus(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         };
         Ok(EventState::NotConsumed)
@@ -302,8 +302,8 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub fn scroll_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if let Key::Char('c') = key {
+    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if key == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
