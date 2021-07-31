@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
                         break;
                     }
                 }
-                Err(err) => app.error.set(err.to_string()),
+                Err(err) => app.error.set(err.to_string())?,
             },
             Event::Tick => (),
         }

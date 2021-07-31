@@ -51,7 +51,7 @@ impl App {
             table_status: TableStatusComponent::default(),
             clipboard: Clipboard::new(),
             pool: None,
-            error: ErrorComponent::default(),
+            error: ErrorComponent::new(config.key_config.clone()),
         }
     }
 
@@ -129,13 +129,6 @@ impl App {
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         self.update_commands();
 
-        if key == self.config.key_config.exit_popup {
-            if self.error.error.is_some() {
-                self.error.error = None;
-                return Ok(EventState::Consumed);
-            }
-        }
-
         if self.components_event(key).await?.is_consumed() {
             return Ok(EventState::Consumed);
         };
@@ -147,6 +140,10 @@ impl App {
     }
 
     pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if self.error.event(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        }
+
         if self.help.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
