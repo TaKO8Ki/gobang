@@ -4,6 +4,7 @@ use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
+use database_tree::{Database, Table as DTable};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -32,16 +33,24 @@ impl RecordTableComponent {
         }
     }
 
-    pub fn update(&mut self, rows: Vec<Vec<String>>, headers: Vec<String>) {
-        self.table.update(rows, headers)
+    pub fn update(
+        &mut self,
+        rows: Vec<Vec<String>>,
+        headers: Vec<String>,
+        database: Database,
+        table: DTable,
+    ) {
+        self.table.update(rows, headers, database, table.clone());
+        self.filter.table = Some(table);
+    }
+
+    pub fn reset(&mut self) {
+        self.table.reset();
+        self.filter.reset();
     }
 
     pub fn len(&self) -> usize {
         self.table.rows.len()
-    }
-
-    pub fn set_table(&mut self, table: String) {
-        self.filter.table = Some(table)
     }
 
     pub fn filter_focused(&self) -> bool {

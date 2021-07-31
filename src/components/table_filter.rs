@@ -2,6 +2,7 @@ use super::{compute_character_width, Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
+use database_tree::Table;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -13,7 +14,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
-    pub table: Option<String>,
+    pub table: Option<Table>,
     pub input: Vec<char>,
     input_idx: usize,
     input_cursor_position: u16,
@@ -34,6 +35,13 @@ impl TableFilterComponent {
     pub fn input_str(&self) -> String {
         self.input.iter().collect()
     }
+
+    pub fn reset(&mut self) {
+        self.table = None;
+        self.input = Vec::new();
+        self.input_idx = 0;
+        self.input_cursor_position = 0;
+    }
 }
 
 impl DrawableComponent for TableFilterComponent {
@@ -42,7 +50,7 @@ impl DrawableComponent for TableFilterComponent {
             Span::styled(
                 self.table
                     .as_ref()
-                    .map_or("-".to_string(), |table| table.to_string()),
+                    .map_or("-".to_string(), |table| table.name.to_string()),
                 Style::default().fg(Color::Blue),
             ),
             Span::from(format!(
@@ -67,7 +75,7 @@ impl DrawableComponent for TableFilterComponent {
                     + (1 + self
                         .table
                         .as_ref()
-                        .map_or(String::new(), |table| table.to_string())
+                        .map_or(String::new(), |table| table.name.to_string())
                         .width()
                         + 1) as u16)
                     .saturating_add(self.input_cursor_position),

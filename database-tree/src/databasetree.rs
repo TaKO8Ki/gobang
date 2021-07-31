@@ -1,8 +1,8 @@
-use crate::Table;
 use crate::{
     databasetreeitems::DatabaseTreeItems, error::Result, item::DatabaseTreeItemKind,
     tree_iter::TreeIterator,
 };
+use crate::{Database, Table};
 use std::{collections::BTreeSet, usize};
 
 ///
@@ -76,13 +76,13 @@ impl DatabaseTree {
             .and_then(|index| self.items.tree_items.get(index))
     }
 
-    pub fn selected_table(&self) -> Option<(Table, String)> {
+    pub fn selected_table(&self) -> Option<(Database, Table)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
             match item.kind() {
                 DatabaseTreeItemKind::Database { .. } => None,
                 DatabaseTreeItemKind::Table { table, database } => {
-                    Some((table.clone(), database.clone()))
+                    Some((database.clone(), table.clone()))
                 }
             }
         })

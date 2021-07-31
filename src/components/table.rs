@@ -6,6 +6,7 @@ use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
+use database_tree::{Database, Table as DTable};
 use std::convert::From;
 use tui::{
     backend::Backend,
@@ -21,6 +22,7 @@ pub struct TableComponent {
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
     pub selected_row: TableState,
+    table: Option<(Database, DTable)>,
     selected_column: usize,
     selection_area_corner: Option<(usize, usize)>,
     column_page_start: std::cell::Cell<usize>,
@@ -34,6 +36,7 @@ impl TableComponent {
             selected_row: TableState::default(),
             headers: vec![],
             rows: vec![],
+            table: None,
             selected_column: 0,
             selection_area_corner: None,
             column_page_start: std::cell::Cell::new(0),
@@ -43,7 +46,19 @@ impl TableComponent {
         }
     }
 
-    pub fn update(&mut self, rows: Vec<Vec<String>>, headers: Vec<String>) {
+    fn title(&self) -> String {
+        self.table.as_ref().map_or(" - ".to_string(), |table| {
+            format!("{}/{}", table.0.name, table.1.name)
+        })
+    }
+
+    pub fn update(
+        &mut self,
+        rows: Vec<Vec<String>>,
+        headers: Vec<String>,
+        database: Database,
+        table: DTable,
+    ) {
         if !rows.is_empty() {
             self.selected_row.select(None);
             self.selected_row.select(Some(0))
@@ -55,9 +70,22 @@ impl TableComponent {
         self.column_page_start = std::cell::Cell::new(0);
         self.scroll = VerticalScroll::new();
         self.eod = false;
+        self.table = Some((database, table));
     }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
+        self.selected_row.select(None);
+        self.headers = Vec::new();
+        self.rows = Vec::new();
+        self.selected_column = 0;
+        self.selection_area_corner = None;
+        self.column_page_start = std::cell::Cell::new(0);
+        self.scroll = VerticalScroll::new();
+        self.eod = false;
+        self.table = None;
+    }
+
+    fn reset_selection(&mut self) {
         self.selection_area_corner = None;
     }
 
@@ -76,7 +104,7 @@ impl TableComponent {
             }
             None => None,
         };
-        self.reset();
+        self.reset_selection();
         self.selected_row.select(i);
     }
 
@@ -91,7 +119,7 @@ impl TableComponent {
             }
             None => None,
         };
-        self.reset();
+        self.reset_selection();
         self.selected_row.select(i);
     }
 
@@ -99,7 +127,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        self.reset();
+        self.reset_selection();
         self.selected_row.select(Some(0));
     }
 
@@ -107,7 +135,7 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
-        self.reset();
+        self.reset_selection();
         self.selected_row.select(Some(self.rows.len() - 1));
     }
 
@@ -118,7 +146,7 @@ impl TableComponent {
         if self.selected_column >= self.headers.len().saturating_sub(1) {
             return;
         }
-        self.reset();
+        self.reset_selection();
         self.selected_column += 1;
     }
 
@@ -129,7 +157,7 @@ impl TableComponent {
         if self.selected_column == 0 {
             return;
         }
-        self.reset();
+        self.reset_selection();
         self.selected_column -= 1;
     }
 
@@ -390,7 +418,7 @@ impl DrawableComponent for TableComponent {
         TableValueComponent::new(self.selected_cells().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
-        let block = Block::default().borders(Borders::ALL).title("Records");
+        let block = Block::default().borders(Borders::ALL).title(self.title());
         let (selected_column_index, headers, rows, constraints) =
             self.calculate_cell_widths(block.inner(layout[1]).width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {

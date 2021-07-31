@@ -170,7 +170,8 @@ impl App {
                             None => self.pool.as_ref().unwrap().get_databases().await?,
                         };
                         self.databases.update(databases.as_slice()).unwrap();
-                        self.focus = Focus::DabataseList
+                        self.focus = Focus::DabataseList;
+                        self.record_table.reset();
                     }
                     return Ok(EventState::Consumed);
                 }
@@ -181,24 +182,29 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((table, database)) = self.databases.tree().selected_table() {
+                    if let Some((database, table)) = self.databases.tree().selected_table() {
                         self.focus = Focus::Table;
                         let (headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table.name, 0, None)
+                            .get_records(&database.name, &table.name, 0, None)
                             .await?;
-                        self.record_table.update(records, headers);
-                        self.record_table.set_table(table.name.to_string());
+                        self.record_table
+                            .update(records, headers, database.clone(), table.clone());
 
                         let (headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_columns(&database, &table.name)
+                            .get_columns(&database.name, &table.name)
                             .await?;
-                        self.structure_table.update(records, headers);
+                        self.structure_table.update(
+                            records,
+                            headers,
+                            database.clone(),
+                            table.clone(),
+                        );
                         self.table_status
                             .update(self.record_table.len() as u64, table);
                     }
@@ -221,14 +227,14 @@ impl App {
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.record_table.focus = crate::components::record_table::Focus::Table;
-                            if let Some((table, database)) = self.databases.tree().selected_table()
+                            if let Some((database, table)) = self.databases.tree().selected_table()
                             {
                                 let (headers, records) = self
                                     .pool
                                     .as_ref()
                                     .unwrap()
                                     .get_records(
-                                        &database.clone(),
+                                        &database.name.clone(),
                                         &table.name,
                                         0,
                                         if self.record_table.filter.input.is_empty() {
@@ -238,7 +244,7 @@ impl App {
                                         },
                                     )
                                     .await?;
-                                self.record_table.update(records, headers);
+                                self.record_table.update(records, headers, database, table);
                             }
                         }
 
@@ -251,7 +257,7 @@ impl App {
                                 % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
                                 == 0
                             {
-                                if let Some((table, database)) =
+                                if let Some((database, table)) =
                                     self.databases.tree().selected_table()
                                 {
                                     let (_, records) = self
@@ -259,7 +265,7 @@ impl App {
                                         .as_ref()
                                         .unwrap()
                                         .get_records(
-                                            &database.clone(),
+                                            &database.name.clone(),
                                             &table.name,
                                             index as u16,
                                             if self.record_table.filter.input.is_empty() {
