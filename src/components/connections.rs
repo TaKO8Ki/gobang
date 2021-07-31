@@ -1,6 +1,6 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
-use crate::config::Connection;
+use crate::config::{Connection, KeyConfig};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -15,22 +15,15 @@ use tui::{
 pub struct ConnectionsComponent {
     connections: Vec<Connection>,
     state: ListState,
-}
-
-impl Default for ConnectionsComponent {
-    fn default() -> Self {
-        Self {
-            connections: Vec::new(),
-            state: ListState::default(),
-        }
-    }
+    key_config: KeyConfig,
 }
 
 impl ConnectionsComponent {
-    pub fn new(connections: Vec<Connection>) -> Self {
+    pub fn new(key_config: KeyConfig, connections: Vec<Connection>) -> Self {
         Self {
             connections,
-            ..Self::default()
+            key_config,
+            state: ListState::default(),
         }
     }
 
@@ -103,16 +96,12 @@ impl Component for ConnectionsComponent {
     fn commands(&self, out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        match key {
-            Key::Char('j') => {
-                self.next_connection();
-                return Ok(EventState::Consumed);
-            }
-            Key::Char('k') => {
-                self.previous_connection();
-                return Ok(EventState::Consumed);
-            }
-            _ => (),
+        if key == self.key_config.move_down {
+            self.next_connection();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.move_up {
+            self.previous_connection();
+            return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
     }

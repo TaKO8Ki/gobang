@@ -42,7 +42,7 @@ impl App {
         Self {
             focus: Focus::ConnectionList,
             config: config.clone(),
-            connections: ConnectionsComponent::new(config.conn),
+            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
             record_table: RecordTableComponent::default(),
             structure_table: TableComponent::default(),
             tab: TabComponent::default(),
