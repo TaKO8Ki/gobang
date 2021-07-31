@@ -14,8 +14,6 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
-    PageDown,
-    PageUp,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -109,7 +107,6 @@ impl DatabaseTree {
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
-                MoveSelection::PageDown | MoveSelection::PageUp => None,
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();

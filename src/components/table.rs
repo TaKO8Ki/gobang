@@ -499,10 +499,10 @@ impl Component for TableComponent {
         } else if key == self.key_config.scroll_up_multiple_lines {
             self.previous_row(10);
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.jump_to_first_row {
+        } else if key == self.key_config.scroll_to_top {
             self.scroll_top();
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.jump_to_last_row {
+        } else if key == self.key_config.scroll_to_bottom {
             self.scroll_bottom();
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_right {

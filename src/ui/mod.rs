@@ -10,14 +10,14 @@ pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
         Some(MoveSelection::Down)
     } else if key == key_config.scroll_up {
         Some(MoveSelection::Up)
-    } else if key == Key::PageUp {
-        Some(MoveSelection::PageUp)
-    } else if key == Key::PageDown {
-        Some(MoveSelection::PageDown)
     } else if key == key_config.scroll_right {
         Some(MoveSelection::Right)
     } else if key == key_config.scroll_left {
         Some(MoveSelection::Left)
+    } else if key == key_config.scroll_to_top {
+        Some(MoveSelection::Top)
+    } else if key == key_config.scroll_to_bottom {
+        Some(MoveSelection::End)
     } else {
         None
     }

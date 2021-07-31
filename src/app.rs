@@ -110,9 +110,10 @@ impl App {
     fn commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
             CommandInfo::new(command::scroll(&self.config.key_config)),
+            CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
+            CommandInfo::new(command::move_focus(&self.config.key_config)),
             CommandInfo::new(command::filter(&self.config.key_config)),
             CommandInfo::new(command::help(&self.config.key_config)),
-            CommandInfo::new(command::move_focus(&self.config.key_config)),
             CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
         ];
 

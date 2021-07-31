@@ -67,16 +67,13 @@ impl Component for TabComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        match key {
-            Key::Char('1') => {
-                self.selected_tab = Tab::Records;
-                Ok(EventState::Consumed)
-            }
-            Key::Char('2') => {
-                self.selected_tab = Tab::Structure;
-                Ok(EventState::Consumed)
-            }
-            _ => Ok(EventState::NotConsumed),
+        if key == self.key_config.tab_records {
+            self.selected_tab = Tab::Records;
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.tab_structure {
+            self.selected_tab = Tab::Structure;
+            return Ok(EventState::Consumed);
         }
+        Ok(EventState::NotConsumed)
     }
 }

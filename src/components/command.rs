@@ -44,6 +44,17 @@ pub fn scroll(key: &KeyConfig) -> CommandText {
     )
 }
 
+pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!(
+            "Scroll to top/bottom [{},{}]",
+            key.scroll_to_top.to_string(),
+            key.scroll_to_bottom.to_string(),
+        ),
+        CMD_GROUP_GENERAL,
+    )
+}
+
 pub fn expand_collapse(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
