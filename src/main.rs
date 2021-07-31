@@ -45,7 +45,9 @@ async fn main() -> anyhow::Result<()> {
         match events.next()? {
             Event::Input(key) => match app.event(key).await {
                 Ok(state) => {
-                    if !state.is_consumed() && (key == Key::Char('q') || key == Key::Ctrl('c')) {
+                    if !state.is_consumed()
+                        && (key == app.config.key_config.quit || key == app.config.key_config.exit)
+                    {
                         break;
                     }
                 }
