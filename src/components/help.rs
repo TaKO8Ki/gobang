@@ -185,10 +185,10 @@ mod test {
                     Style::default().add_modifier(Modifier::REVERSED)
                 )),
                 Spans::from(Span::styled(
-                    "Scroll up/down/left/right [k,j,h,l]  3",
+                    " Scroll up/down/left/right [k,j,h,l]  3",
                     Style::default().bg(Color::Blue)
                 )),
-                Spans::from(Span::styled("Filter [/]  3", Style::default()))
+                Spans::from(Span::styled(" Filter [/]  3", Style::default()))
             ]
         );
     }
