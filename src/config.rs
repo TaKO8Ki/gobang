@@ -48,6 +48,7 @@ pub struct KeyConfig {
     pub focus_right: Key,
     pub focus_left: Key,
     pub open_help: Key,
+    pub filter: Key,
 }
 
 impl Default for KeyConfig {
@@ -65,6 +66,7 @@ impl Default for KeyConfig {
             focus_right: Key::Right,
             focus_left: Key::Left,
             open_help: Key::Char('?'),
+            filter: Key::Char('/'),
         }
     }
 }
