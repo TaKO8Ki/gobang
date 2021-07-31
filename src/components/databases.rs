@@ -2,7 +2,8 @@ use super::{
     compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
     EventState,
 };
-use crate::components::command::CommandInfo;
+use crate::components::command::{self, CommandInfo};
+use crate::config::KeyConfig;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
@@ -26,6 +27,7 @@ const FOLDER_ICON_COLLAPSED: &str = "\u{25b8}";
 const FOLDER_ICON_EXPANDED: &str = "\u{25be}";
 const EMPTY_STR: &str = "";
 
+#[derive(PartialEq)]
 pub enum FocusBlock {
     Filter,
     Tree,
@@ -39,10 +41,11 @@ pub struct DatabasesComponent {
     input_idx: usize,
     input_cursor_position: u16,
     focus_block: FocusBlock,
+    key_config: KeyConfig,
 }
 
 impl DatabasesComponent {
-    pub fn new() -> Self {
+    pub fn new(key_config: KeyConfig) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filterd_tree: None,
@@ -51,6 +54,7 @@ impl DatabasesComponent {
             input_idx: 0,
             input_cursor_position: 0,
             focus_block: FocusBlock::Tree,
+            key_config,
         }
     }
 
@@ -192,7 +196,9 @@ impl DrawableComponent for DatabasesComponent {
 }
 
 impl Component for DatabasesComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, out: &mut Vec<CommandInfo>) {
+        out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
+    }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
@@ -203,15 +209,16 @@ impl Component for DatabasesComponent {
                 &mut self.tree
             },
             key,
+            &self.key_config,
         ) {
             return Ok(EventState::Consumed);
         }
+        if key == self.key_config.filter && self.focus_block == FocusBlock::Tree {
+            self.focus_block = FocusBlock::Filter;
+            return Ok(EventState::Consumed);
+        }
         match key {
-            Key::Char('/') if matches!(self.focus_block, FocusBlock::Tree) => {
-                self.focus_block = FocusBlock::Filter;
-                return Ok(EventState::Consumed);
-            }
-            Key::Char(c) if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Char(c) if self.focus_block == FocusBlock::Filter => {
                 self.input.insert(self.input_idx, c);
                 self.input_idx += 1;
                 self.input_cursor_position += compute_character_width(c);
@@ -276,8 +283,8 @@ impl Component for DatabasesComponent {
     }
 }
 
-fn tree_nav(tree: &mut DatabaseTree, key: Key) -> bool {
-    if let Some(common_nav) = common_nav(key) {
+fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
+    if let Some(common_nav) = common_nav(key, key_config) {
         tree.move_selection(common_nav)
     } else {
         false

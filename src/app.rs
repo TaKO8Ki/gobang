@@ -5,10 +5,10 @@ use crate::utils::{MySqlPool, Pool};
 use crate::{
     components::tab::Tab,
     components::{
-        ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
+        command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         RecordTableComponent, TabComponent, TableComponent, TableStatusComponent,
     },
-    user_config::UserConfig,
+    config::Config,
 };
 use database_tree::Database;
 use tui::{
@@ -33,36 +33,25 @@ pub struct App {
     table_status: TableStatusComponent,
     clipboard: Clipboard,
     pool: Option<Box<dyn Pool>>,
-    pub user_config: Option<UserConfig>,
+    pub config: Config,
     pub error: ErrorComponent,
 }
 
-impl Default for App {
-    fn default() -> App {
-        App {
-            record_table: RecordTableComponent::default(),
-            structure_table: TableComponent::default(),
-            focus: Focus::DabataseList,
-            tab: TabComponent::default(),
-            help: HelpComponent::new(),
-            user_config: None,
-            databases: DatabasesComponent::new(),
-            connections: ConnectionsComponent::default(),
+impl App {
+    pub fn new(config: Config) -> App {
+        Self {
+            config: config.clone(),
+            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
+            record_table: RecordTableComponent::new(config.key_config.clone()),
+            structure_table: TableComponent::new(config.key_config.clone()),
+            tab: TabComponent::new(config.key_config.clone()),
+            help: HelpComponent::new(config.key_config.clone()),
+            databases: DatabasesComponent::new(config.key_config.clone()),
             table_status: TableStatusComponent::default(),
+            error: ErrorComponent::new(config.key_config),
+            focus: Focus::ConnectionList,
             clipboard: Clipboard::new(),
             pool: None,
-            error: ErrorComponent::default(),
-        }
-    }
-}
-
-impl App {
-    pub fn new(user_config: UserConfig) -> App {
-        Self {
-            user_config: Some(user_config.clone()),
-            connections: ConnectionsComponent::new(user_config.conn),
-            focus: Focus::ConnectionList,
-            ..App::default()
         }
     }
 
@@ -119,33 +108,23 @@ impl App {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        let res = vec![
-            CommandInfo::new(crate::components::command::move_left("h"), true, true),
-            CommandInfo::new(crate::components::command::move_down("j"), true, true),
-            CommandInfo::new(crate::components::command::move_up("k"), true, true),
-            CommandInfo::new(crate::components::command::move_right("l"), true, true),
-            CommandInfo::new(crate::components::command::filter("/"), true, true),
-            CommandInfo::new(
-                crate::components::command::move_focus_to_right_widget(
-                    Key::Right.to_string().as_str(),
-                ),
-                true,
-                true,
-            ),
+        let mut res = vec![
+            CommandInfo::new(command::scroll(&self.config.key_config)),
+            CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
+            CommandInfo::new(command::move_focus(&self.config.key_config)),
+            CommandInfo::new(command::filter(&self.config.key_config)),
+            CommandInfo::new(command::help(&self.config.key_config)),
+            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
         ];
+
+        self.databases.commands(&mut res);
+        self.record_table.commands(&mut res);
 
         res
     }
 
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         self.update_commands();
-
-        if let Key::Esc = key {
-            if self.error.error.is_some() {
-                self.error.error = None;
-                return Ok(EventState::Consumed);
-            }
-        }
 
         if self.components_event(key).await?.is_consumed() {
             return Ok(EventState::Consumed);
@@ -158,7 +137,11 @@ impl App {
     }
 
     pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if self.help.event(key)?.is_consumed() {
+        if self.error.event(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        }
+
+        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
@@ -168,8 +151,7 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if let Key::Enter = key {
-                    self.record_table.reset();
+                if key == self.config.key_config.enter {
                     if let Some(conn) = self.connections.selected_connection() {
                         if let Some(pool) = self.pool.as_ref() {
                             pool.close().await;
@@ -189,7 +171,8 @@ impl App {
                             None => self.pool.as_ref().unwrap().get_databases().await?,
                         };
                         self.databases.update(databases.as_slice()).unwrap();
-                        self.focus = Focus::DabataseList
+                        self.focus = Focus::DabataseList;
+                        self.record_table.reset();
                     }
                     return Ok(EventState::Consumed);
                 }
@@ -199,25 +182,30 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if matches!(key, Key::Enter) && self.databases.tree_focused() {
-                    if let Some((table, database)) = self.databases.tree().selected_table() {
+                if key == self.config.key_config.enter && self.databases.tree_focused() {
+                    if let Some((database, table)) = self.databases.tree().selected_table() {
                         self.focus = Focus::Table;
                         let (headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table.name, 0, None)
+                            .get_records(&database.name, &table.name, 0, None)
                             .await?;
-                        self.record_table = RecordTableComponent::new(records, headers);
-                        self.record_table.set_table(table.name.to_string());
+                        self.record_table
+                            .update(records, headers, database.clone(), table.clone());
 
                         let (headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_columns(&database, &table.name)
+                            .get_columns(&database.name, &table.name)
                             .await?;
-                        self.structure_table = TableComponent::new(records, headers);
+                        self.structure_table.update(
+                            records,
+                            headers,
+                            database.clone(),
+                            table.clone(),
+                        );
                         self.table_status
                             .update(self.record_table.len() as u64, table);
                     }
@@ -231,22 +219,23 @@ impl App {
                             return Ok(EventState::Consumed);
                         };
 
-                        if let Key::Char('y') = key {
+                        if key == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 self.clipboard.store(text)
                             }
                         }
 
-                        if matches!(key, Key::Enter) && self.record_table.filter_focused() {
+                        if key == self.config.key_config.enter && self.record_table.filter_focused()
+                        {
                             self.record_table.focus = crate::components::record_table::Focus::Table;
-                            if let Some((table, database)) = self.databases.tree().selected_table()
+                            if let Some((database, table)) = self.databases.tree().selected_table()
                             {
                                 let (headers, records) = self
                                     .pool
                                     .as_ref()
                                     .unwrap()
                                     .get_records(
-                                        &database.clone(),
+                                        &database.name.clone(),
                                         &table.name,
                                         0,
                                         if self.record_table.filter.input.is_empty() {
@@ -256,7 +245,7 @@ impl App {
                                         },
                                     )
                                     .await?;
-                                self.record_table.update(records, headers);
+                                self.record_table.update(records, headers, database, table);
                             }
                         }
 
@@ -269,7 +258,7 @@ impl App {
                                 % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
                                 == 0
                             {
-                                if let Some((table, database)) =
+                                if let Some((database, table)) =
                                     self.databases.tree().selected_table()
                                 {
                                     let (_, records) = self
@@ -277,7 +266,7 @@ impl App {
                                         .as_ref()
                                         .unwrap()
                                         .get_records(
-                                            &database.clone(),
+                                            &database.name.clone(),
                                             &table.name,
                                             index as u16,
                                             if self.record_table.filter.input.is_empty() {
@@ -301,7 +290,7 @@ impl App {
                             return Ok(EventState::Consumed);
                         };
 
-                        if let Key::Char('y') = key {
+                        if key == self.config.key_config.copy {
                             if let Some(text) = self.structure_table.selected_cells() {
                                 self.clipboard.store(text)
                             }
@@ -314,7 +303,7 @@ impl App {
     }
 
     pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if let Key::Char('c') = key {
+        if key == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
@@ -323,19 +312,19 @@ impl App {
         }
         match self.focus {
             Focus::ConnectionList => {
-                if let Key::Enter = key {
+                if key == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if matches!(key, Key::Right) && self.databases.tree_focused() {
+                if key == self.config.key_config.focus_right && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::Table => {
-                if let Key::Left = key {
+                if key == self.config.key_config.focus_left {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }

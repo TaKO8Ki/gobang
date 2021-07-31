@@ -1,8 +1,8 @@
-use crate::Table;
 use crate::{
     databasetreeitems::DatabaseTreeItems, error::Result, item::DatabaseTreeItemKind,
     tree_iter::TreeIterator,
 };
+use crate::{Database, Table};
 use std::{collections::BTreeSet, usize};
 
 ///
@@ -14,8 +14,6 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
-    PageDown,
-    PageUp,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -76,13 +74,13 @@ impl DatabaseTree {
             .and_then(|index| self.items.tree_items.get(index))
     }
 
-    pub fn selected_table(&self) -> Option<(Table, String)> {
+    pub fn selected_table(&self) -> Option<(Database, Table)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
             match item.kind() {
                 DatabaseTreeItemKind::Database { .. } => None,
                 DatabaseTreeItemKind::Table { table, database } => {
-                    Some((table.clone(), database.clone()))
+                    Some((database.clone(), table.clone()))
                 }
             }
         })
@@ -109,7 +107,6 @@ impl DatabaseTree {
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
-                MoveSelection::PageDown | MoveSelection::PageUp => None,
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();

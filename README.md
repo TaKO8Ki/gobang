@@ -31,9 +31,9 @@ $ cargo install --version 0.1.0-alpha.0 gobang
 
 | Key | Description |
 | ---- | ---- |
-| <kbd>h</kbd> | move left |
-| <kbd>j</kbd> | move down |
-| <kbd>k</kbd> | move up |
-| <kbd>l</kbd> | move right |
+| <kbd>h</kbd> | scroll left |
+| <kbd>j</kbd> | scroll down |
+| <kbd>k</kbd> | scroll up |
+| <kbd>l</kbd> | scroll right |
 | <kbd>Ctrl</kbd> + <kbd>d</kbd> | scroll down multiple lines |
 | <kbd>Ctrl</kbd> + <kbd>u</kbd> | scroll up multiple lines |

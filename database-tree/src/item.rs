@@ -34,7 +34,7 @@ impl TreeItemInfo {
 #[derive(PartialEq, Debug, Clone)]
 pub enum DatabaseTreeItemKind {
     Database { name: String, collapsed: bool },
-    Table { database: String, table: Table },
+    Table { database: Database, table: Table },
 }
 
 impl DatabaseTreeItemKind {
@@ -63,7 +63,7 @@ impl DatabaseTreeItemKind {
     pub fn database_name(&self) -> Option<String> {
         match self {
             Self::Database { .. } => None,
-            Self::Table { database, .. } => Some(database.clone()),
+            Self::Table { database, .. } => Some(database.name.clone()),
         }
     }
 }
@@ -82,7 +82,7 @@ impl DatabaseTreeItem {
         Ok(Self {
             info: TreeItemInfo::new(indent, false),
             kind: DatabaseTreeItemKind::Table {
-                database: database.name.clone(),
+                database: database.clone(),
                 table: table.clone(),
             },
         })

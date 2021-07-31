@@ -1,22 +1,23 @@
+use crate::config::KeyConfig;
 use crate::event::Key;
 use database_tree::MoveSelection;
 
 pub mod scrollbar;
 pub mod scrolllist;
 
-pub fn common_nav(key: Key) -> Option<MoveSelection> {
-    if key == Key::Char('j') {
+pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
+    if key == key_config.scroll_down {
         Some(MoveSelection::Down)
-    } else if key == Key::Char('k') {
+    } else if key == key_config.scroll_up {
         Some(MoveSelection::Up)
-    } else if key == Key::PageUp {
-        Some(MoveSelection::PageUp)
-    } else if key == Key::PageDown {
-        Some(MoveSelection::PageDown)
-    } else if key == Key::Char('l') {
+    } else if key == key_config.scroll_right {
         Some(MoveSelection::Right)
-    } else if key == Key::Char('h') {
+    } else if key == key_config.scroll_left {
         Some(MoveSelection::Left)
+    } else if key == key_config.scroll_to_top {
+        Some(MoveSelection::Top)
+    } else if key == key_config.scroll_to_bottom {
+        Some(MoveSelection::End)
     } else {
         None
     }

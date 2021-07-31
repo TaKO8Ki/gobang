@@ -11,7 +11,7 @@ pub use crate::{
     item::{DatabaseTreeItem, TreeItemInfo},
 };
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Database {
     pub name: String,
     pub tables: Vec<Table>,

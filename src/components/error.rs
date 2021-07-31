@@ -1,5 +1,6 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
+use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -11,27 +12,34 @@ use tui::{
 };
 
 pub struct ErrorComponent {
-    pub error: Option<String>,
+    pub error: String,
+    visible: bool,
+    key_config: KeyConfig,
 }
 
-impl Default for ErrorComponent {
-    fn default() -> Self {
-        Self { error: None }
+impl ErrorComponent {
+    pub fn new(key_config: KeyConfig) -> Self {
+        Self {
+            error: String::new(),
+            visible: false,
+            key_config,
+        }
     }
 }
 
 impl ErrorComponent {
-    pub fn set(&mut self, error: String) {
-        self.error = Some(error);
+    pub fn set(&mut self, error: String) -> anyhow::Result<()> {
+        self.error = error;
+        self.show()
     }
 }
 
 impl DrawableComponent for ErrorComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
-        if let Some(error) = self.error.as_ref() {
+        if self.visible {
             let width = 65;
             let height = 10;
-            let error = Paragraph::new(error.to_string())
+            let error = Paragraph::new(self.error.to_string())
                 .block(Block::default().title("Error").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Red))
                 .alignment(Alignment::Left)
@@ -50,9 +58,27 @@ impl DrawableComponent for ErrorComponent {
 }
 
 impl Component for ErrorComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, _key: Key) -> Result<EventState> {
+    fn event(&mut self, key: Key) -> Result<EventState> {
+        if self.visible {
+            if key == self.key_config.exit_popup {
+                self.error = String::new();
+                self.hide();
+                return Ok(EventState::Consumed);
+            }
+            return Ok(EventState::NotConsumed);
+        }
         Ok(EventState::NotConsumed)
+    }
+
+    fn hide(&mut self) {
+        self.visible = false;
+    }
+
+    fn show(&mut self) -> Result<()> {
+        self.visible = true;
+
+        Ok(())
     }
 }

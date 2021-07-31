@@ -1,5 +1,6 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
+use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
 use itertools::Itertools;
@@ -17,6 +18,7 @@ pub struct HelpComponent {
     cmds: Vec<CommandInfo>,
     visible: bool,
     selection: u16,
+    key_config: KeyConfig,
 }
 
 impl DrawableComponent for HelpComponent {
@@ -69,27 +71,22 @@ impl DrawableComponent for HelpComponent {
 }
 
 impl Component for HelpComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         if self.visible {
-            match key {
-                Key::Esc => {
-                    self.hide();
-                    return Ok(EventState::Consumed);
-                }
-                Key::Char('j') => {
-                    self.move_selection(true);
-                    return Ok(EventState::Consumed);
-                }
-                Key::Char('k') => {
-                    self.move_selection(false);
-                    return Ok(EventState::Consumed);
-                }
-                _ => (),
+            if key == self.key_config.exit_popup {
+                self.hide();
+                return Ok(EventState::Consumed);
+            } else if key == self.key_config.scroll_down {
+                self.scroll_selection(true);
+                return Ok(EventState::Consumed);
+            } else if key == self.key_config.scroll_up {
+                self.scroll_selection(false);
+                return Ok(EventState::Consumed);
             }
             return Ok(EventState::NotConsumed);
-        } else if let Key::Char('?') = key {
+        } else if key == self.key_config.open_help {
             self.show()?;
             return Ok(EventState::Consumed);
         }
@@ -108,11 +105,12 @@ impl Component for HelpComponent {
 }
 
 impl HelpComponent {
-    pub const fn new() -> Self {
+    pub const fn new(key_config: KeyConfig) -> Self {
         Self {
             cmds: vec![],
             visible: false,
             selection: 0,
+            key_config,
         }
     }
 
@@ -123,7 +121,7 @@ impl HelpComponent {
             .collect::<Vec<_>>();
     }
 
-    fn move_selection(&mut self, inc: bool) {
+    fn scroll_selection(&mut self, inc: bool) {
         let mut new_selection = self.selection;
 
         new_selection = if inc {
@@ -152,7 +150,7 @@ impl HelpComponent {
                 processed += 1;
 
                 txt.push(Spans::from(Span::styled(
-                    format!("{}{:w$}", command_info.text.name, w = width),
+                    format!(" {}{:w$}", command_info.text.name, w = width),
                     if is_selected {
                         Style::default().bg(Color::Blue)
                     } else {
@@ -168,15 +166,16 @@ impl HelpComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, CommandInfo, HelpComponent, Modifier, Span, Spans, Style};
+    use super::{Color, CommandInfo, HelpComponent, KeyConfig, Modifier, Span, Spans, Style};
 
     #[test]
     fn test_get_text() {
         let width = 3;
-        let mut component = HelpComponent::new();
+        let key_config = KeyConfig::default();
+        let mut component = HelpComponent::new(key_config.clone());
         component.set_cmds(vec![
-            CommandInfo::new(crate::components::command::move_left("h"), true, true),
-            CommandInfo::new(crate::components::command::move_right("l"), true, true),
+            CommandInfo::new(crate::components::command::scroll(&key_config)),
+            CommandInfo::new(crate::components::command::filter(&key_config)),
         ]);
         assert_eq!(
             component.get_text(width),
@@ -186,10 +185,10 @@ mod test {
                     Style::default().add_modifier(Modifier::REVERSED)
                 )),
                 Spans::from(Span::styled(
-                    "Move left [h]  3",
+                    " Scroll up/down/left/right [k,j,h,l]  3",
                     Style::default().bg(Color::Blue)
                 )),
-                Spans::from(Span::styled("Move right [l]  3", Style::default()))
+                Spans::from(Span::styled(" Filter [/]  3", Style::default()))
             ]
         );
     }
