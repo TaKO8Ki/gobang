@@ -5,7 +5,7 @@ use crate::utils::{MySqlPool, Pool};
 use crate::{
     components::tab::Tab,
     components::{
-        ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
+        command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         RecordTableComponent, TabComponent, TableComponent, TableStatusComponent,
     },
     config::Config,
@@ -40,18 +40,18 @@ pub struct App {
 impl App {
     pub fn new(config: Config) -> App {
         Self {
-            focus: Focus::ConnectionList,
             config: config.clone(),
             connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
-            record_table: RecordTableComponent::default(),
-            structure_table: TableComponent::default(),
-            tab: TabComponent::default(),
+            record_table: RecordTableComponent::new(config.key_config.clone()),
+            structure_table: TableComponent::new(config.key_config.clone()),
+            tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone()),
             table_status: TableStatusComponent::default(),
+            error: ErrorComponent::new(config.key_config),
+            focus: Focus::ConnectionList,
             clipboard: Clipboard::new(),
             pool: None,
-            error: ErrorComponent::new(config.key_config.clone()),
         }
     }
 
@@ -108,20 +108,16 @@ impl App {
     }
 
     fn commands(&self) -> Vec<CommandInfo> {
-        let res = vec![
-            CommandInfo::new(crate::components::command::move_left("h"), true, true),
-            CommandInfo::new(crate::components::command::move_down("j"), true, true),
-            CommandInfo::new(crate::components::command::move_up("k"), true, true),
-            CommandInfo::new(crate::components::command::move_right("l"), true, true),
-            CommandInfo::new(crate::components::command::filter("/"), true, true),
-            CommandInfo::new(
-                crate::components::command::move_focus_to_right_widget(
-                    Key::Right.to_string().as_str(),
-                ),
-                true,
-                true,
-            ),
+        let mut res = vec![
+            CommandInfo::new(command::scroll(&self.config.key_config)),
+            CommandInfo::new(command::filter(&self.config.key_config)),
+            CommandInfo::new(command::help(&self.config.key_config)),
+            CommandInfo::new(command::move_focus(&self.config.key_config)),
+            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
         ];
+
+        self.databases.commands(&mut res);
+        self.record_table.commands(&mut res);
 
         res
     }
@@ -133,7 +129,7 @@ impl App {
             return Ok(EventState::Consumed);
         };
 
-        if self.move_focus(key)?.is_consumed() {
+        if self.scroll_focus(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         };
         Ok(EventState::NotConsumed)
@@ -144,7 +140,7 @@ impl App {
             return Ok(EventState::Consumed);
         }
 
-        if self.help.event(key)?.is_consumed() {
+        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
@@ -155,7 +151,6 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter {
-                    self.record_table.reset();
                     if let Some(conn) = self.connections.selected_connection() {
                         if let Some(pool) = self.pool.as_ref() {
                             pool.close().await;
@@ -194,7 +189,7 @@ impl App {
                             .unwrap()
                             .get_records(&database, &table.name, 0, None)
                             .await?;
-                        self.record_table = RecordTableComponent::new(records, headers);
+                        self.record_table.update(records, headers);
                         self.record_table.set_table(table.name.to_string());
 
                         let (headers, records) = self
@@ -203,7 +198,7 @@ impl App {
                             .unwrap()
                             .get_columns(&database, &table.name)
                             .await?;
-                        self.structure_table = TableComponent::new(records, headers);
+                        self.structure_table.update(records, headers);
                         self.table_status
                             .update(self.record_table.len() as u64, table);
                     }
@@ -300,7 +295,7 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
+    pub fn scroll_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
         if let Key::Char('c') = key {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);

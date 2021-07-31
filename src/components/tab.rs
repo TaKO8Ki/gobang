@@ -1,8 +1,8 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::command::{self, CommandInfo};
+use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
-use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use tui::{
     backend::Backend,
@@ -25,29 +25,30 @@ impl std::fmt::Display for Tab {
     }
 }
 
-impl Tab {
-    pub fn names() -> Vec<String> {
-        Self::iter()
-            .map(|tab| format!("{} [{}]", tab, tab as u8 + 1))
-            .collect()
-    }
-}
-
 pub struct TabComponent {
     pub selected_tab: Tab,
+    key_config: KeyConfig,
 }
 
-impl Default for TabComponent {
-    fn default() -> Self {
+impl TabComponent {
+    pub fn new(key_config: KeyConfig) -> Self {
         Self {
             selected_tab: Tab::Records,
+            key_config,
         }
+    }
+
+    fn names(&self) -> Vec<String> {
+        vec![
+            command::tab_records(&self.key_config).name,
+            command::tab_structure(&self.key_config).name,
+        ]
     }
 }
 
 impl DrawableComponent for TabComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _focused: bool) -> Result<()> {
-        let titles = Tab::names().iter().cloned().map(Spans::from).collect();
+        let titles = self.names().iter().cloned().map(Spans::from).collect();
         let tabs = Tabs::new(titles)
             .block(Block::default().borders(Borders::ALL))
             .select(self.selected_tab as usize)
@@ -63,7 +64,7 @@ impl DrawableComponent for TabComponent {
 }
 
 impl Component for TabComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         match key {

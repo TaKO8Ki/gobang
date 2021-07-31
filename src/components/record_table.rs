@@ -1,6 +1,7 @@
 use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
+use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
@@ -18,42 +19,21 @@ pub struct RecordTableComponent {
     pub filter: TableFilterComponent,
     pub table: TableComponent,
     pub focus: Focus,
-}
-
-impl Default for RecordTableComponent {
-    fn default() -> Self {
-        Self {
-            filter: TableFilterComponent::default(),
-            table: TableComponent::default(),
-            focus: Focus::Table,
-        }
-    }
+    key_config: KeyConfig,
 }
 
 impl RecordTableComponent {
-    pub fn new(rows: Vec<Vec<String>>, headers: Vec<String>) -> Self {
+    pub fn new(key_config: KeyConfig) -> Self {
         Self {
-            table: TableComponent::new(rows, headers),
-            ..Self::default()
+            filter: TableFilterComponent::default(),
+            table: TableComponent::new(key_config.clone()),
+            focus: Focus::Table,
+            key_config,
         }
     }
 
     pub fn update(&mut self, rows: Vec<Vec<String>>, headers: Vec<String>) {
-        self.table.rows = rows;
-        self.table.headers = headers;
-        if !self.table.rows.is_empty() {
-            self.table.selected_row.select(None);
-            self.table.selected_row.select(Some(0));
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.table = TableComponent::default();
-        if !self.table.rows.is_empty() {
-            self.table.selected_row.select(None);
-            self.table.selected_row.select(Some(0))
-        }
-        self.filter = TableFilterComponent::default();
+        self.table.update(rows, headers)
     }
 
     pub fn len(&self) -> usize {
@@ -86,14 +66,16 @@ impl DrawableComponent for RecordTableComponent {
 }
 
 impl Component for RecordTableComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, out: &mut Vec<CommandInfo>) {
+        self.table.commands(out)
+    }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
+        if key == self.key_config.filter {
+            self.focus = Focus::Filter;
+            return Ok(EventState::Consumed);
+        }
         match key {
-            Key::Char('/') => {
-                self.focus = Focus::Filter;
-                return Ok(EventState::Consumed);
-            }
             key if matches!(self.focus, Focus::Filter) => return self.filter.event(key),
             key if matches!(self.focus, Focus::Table) => return self.table.event(key),
             _ => (),

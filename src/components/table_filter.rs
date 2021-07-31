@@ -79,7 +79,7 @@ impl DrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

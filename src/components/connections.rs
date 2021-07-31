@@ -93,13 +93,13 @@ impl DrawableComponent for ConnectionsComponent {
 }
 
 impl Component for ConnectionsComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.move_down {
+        if key == self.key_config.scroll_down {
             self.next_connection();
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.move_up {
+        } else if key == self.key_config.scroll_up {
             self.previous_connection();
             return Ok(EventState::Consumed);
         }

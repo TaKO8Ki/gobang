@@ -36,10 +36,10 @@ pub struct Connection {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct KeyConfig {
-    pub move_up: Key,
-    pub move_down: Key,
-    pub move_right: Key,
-    pub move_left: Key,
+    pub scroll_up: Key,
+    pub scroll_down: Key,
+    pub scroll_right: Key,
+    pub scroll_left: Key,
     pub copy: Key,
     pub enter: Key,
     pub exit: Key,
@@ -49,15 +49,25 @@ pub struct KeyConfig {
     pub focus_left: Key,
     pub open_help: Key,
     pub filter: Key,
+    pub scroll_down_multiple_lines: Key,
+    pub scroll_up_multiple_lines: Key,
+    pub jump_to_first_row: Key,
+    pub jump_to_last_row: Key,
+    pub extend_selection_by_one_cell_left: Key,
+    pub extend_selection_by_one_cell_right: Key,
+    pub extend_selection_by_one_cell_up: Key,
+    pub extend_selection_by_one_cell_down: Key,
+    pub tab_records: Key,
+    pub tab_structure: Key,
 }
 
 impl Default for KeyConfig {
     fn default() -> Self {
         Self {
-            move_up: Key::Char('k'),
-            move_down: Key::Char('j'),
-            move_right: Key::Char('l'),
-            move_left: Key::Char('h'),
+            scroll_up: Key::Char('k'),
+            scroll_down: Key::Char('j'),
+            scroll_right: Key::Char('l'),
+            scroll_left: Key::Char('h'),
             copy: Key::Char('y'),
             enter: Key::Enter,
             exit: Key::Ctrl('c'),
@@ -67,6 +77,16 @@ impl Default for KeyConfig {
             focus_left: Key::Left,
             open_help: Key::Char('?'),
             filter: Key::Char('/'),
+            scroll_down_multiple_lines: Key::Ctrl('d'),
+            scroll_up_multiple_lines: Key::Ctrl('u'),
+            jump_to_first_row: Key::Char('g'),
+            jump_to_last_row: Key::Char('G'),
+            extend_selection_by_one_cell_left: Key::Char('H'),
+            extend_selection_by_one_cell_right: Key::Char('L'),
+            extend_selection_by_one_cell_down: Key::Char('J'),
+            extend_selection_by_one_cell_up: Key::Char('K'),
+            tab_records: Key::Char('1'),
+            tab_structure: Key::Char('2'),
         }
     }
 }

@@ -58,7 +58,7 @@ impl DrawableComponent for ErrorComponent {
 }
 
 impl Component for ErrorComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         if self.visible {

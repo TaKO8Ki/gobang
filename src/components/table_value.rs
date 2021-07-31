@@ -46,7 +46,7 @@ impl DrawableComponent for TableValueComponent {
 }
 
 impl Component for TableValueComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, _key: Key) -> Result<EventState> {
         todo!("scroll");

@@ -105,7 +105,10 @@ impl fmt::Display for Key {
             Key::Alt(c) => write!(f, "<Alt+{}>", c),
             Key::Ctrl(c) => write!(f, "<Ctrl+{}>", c),
             Key::Char(c) => write!(f, "{}", c),
-            Key::Left | Key::Right | Key::Up | Key::Down => write!(f, "<{:?} Arrow Key>", self),
+            Key::Left => write!(f, "\u{2190}"),  //←
+            Key::Right => write!(f, "\u{2192}"), //→
+            Key::Up => write!(f, "\u{2191}"),    //↑
+            Key::Down => write!(f, "\u{2193}"),  //↓
             Key::Enter
             | Key::Tab
             | Key::Backspace
