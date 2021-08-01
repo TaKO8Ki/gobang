@@ -15,7 +15,7 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::Span,
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -67,6 +67,7 @@ impl DatabasesComponent {
         self.filterd_tree = None;
         self.input = Vec::new();
         self.input_idx = 0;
+        self.input_cursor_position = 0;
         Ok(())
     }
 
@@ -78,7 +79,12 @@ impl DatabasesComponent {
         self.filterd_tree.as_ref().unwrap_or(&self.tree)
     }
 
-    fn tree_item_to_span(item: DatabaseTreeItem, selected: bool, width: u16) -> Span<'static> {
+    fn tree_item_to_span(
+        item: DatabaseTreeItem,
+        selected: bool,
+        width: u16,
+        filter: Option<String>,
+    ) -> Spans<'static> {
         let name = item.kind().name();
         let indent = item.info().indent();
 
@@ -99,21 +105,53 @@ impl DatabasesComponent {
             EMPTY_STR
         };
 
-        let name = format!(
-            "{}{}{:w$}",
-            indent_str,
-            path_arrow,
-            name,
-            w = width as usize
-        );
-        Span::styled(
-            name,
+        if let Some(filter) = filter {
+            if item.kind().is_table() {
+                let (first, second) = &name.split_at(name.find(filter.as_str()).unwrap_or(0));
+                let (filter, third) = &second.split_at(filter.len());
+                return Spans::from(vec![
+                    Span::styled(
+                        format!("{}{}{}", indent_str, path_arrow, first),
+                        if selected {
+                            Style::default().bg(Color::Blue)
+                        } else {
+                            Style::default()
+                        },
+                    ),
+                    Span::styled(
+                        filter.to_string(),
+                        if selected {
+                            Style::default().bg(Color::Blue).fg(Color::Blue)
+                        } else {
+                            Style::default().fg(Color::Blue)
+                        },
+                    ),
+                    Span::styled(
+                        format!("{}{:w$}", third.to_string(), w = width as usize),
+                        if selected {
+                            Style::default().bg(Color::Blue)
+                        } else {
+                            Style::default()
+                        },
+                    ),
+                ]);
+            }
+        }
+
+        Spans::from(Span::styled(
+            format!(
+                "{}{}{:w$}",
+                indent_str,
+                path_arrow,
+                name,
+                w = width as usize
+            ),
             if selected {
                 Style::default().bg(Color::Blue)
             } else {
                 Style::default()
             },
-        )
+        ))
     }
 
     fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) {
@@ -173,7 +211,18 @@ impl DatabasesComponent {
 
         let items = tree
             .iterate(self.scroll.get_top(), tree_height)
-            .map(|(item, selected)| Self::tree_item_to_span(item.clone(), selected, area.width));
+            .map(|(item, selected)| {
+                Self::tree_item_to_span(
+                    item.clone(),
+                    selected,
+                    area.width,
+                    if self.input.is_empty() {
+                        None
+                    } else {
+                        Some(self.input_str())
+                    },
+                )
+            });
 
         draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
         self.scroll.draw(f, area);
