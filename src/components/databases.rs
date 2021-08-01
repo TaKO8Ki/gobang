@@ -127,7 +127,7 @@ impl DatabasesComponent {
                         },
                     ),
                     Span::styled(
-                        format!("{}{:w$}", third.to_string(), w = width as usize),
+                        format!("{:w$}", third.to_string(), w = width as usize),
                         if selected {
                             Style::default().bg(Color::Blue)
                         } else {
@@ -260,7 +260,6 @@ impl Component for DatabasesComponent {
                 self.input.insert(self.input_idx, c);
                 self.input_idx += 1;
                 self.input_cursor_position += compute_character_width(c);
-
                 self.filterd_tree = Some(self.tree.filter(self.input_str()));
                 return Ok(EventState::Consumed);
             }
