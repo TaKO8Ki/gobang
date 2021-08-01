@@ -28,7 +28,7 @@ const FOLDER_ICON_EXPANDED: &str = "\u{25be}";
 const EMPTY_STR: &str = "";
 
 #[derive(PartialEq)]
-pub enum FocusBlock {
+pub enum Focus {
     Filter,
     Tree,
 }
@@ -40,7 +40,7 @@ pub struct DatabasesComponent {
     input: Vec<char>,
     input_idx: usize,
     input_cursor_position: u16,
-    focus_block: FocusBlock,
+    focus: Focus,
     key_config: KeyConfig,
 }
 
@@ -53,7 +53,7 @@ impl DatabasesComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            focus_block: FocusBlock::Tree,
+            focus: Focus::Tree,
             key_config,
         }
     }
@@ -72,7 +72,7 @@ impl DatabasesComponent {
     }
 
     pub fn tree_focused(&self) -> bool {
-        matches!(self.focus_block, FocusBlock::Tree)
+        matches!(self.focus, Focus::Tree)
     }
 
     pub fn tree(&self) -> &DatabaseTree {
@@ -94,8 +94,7 @@ impl DatabasesComponent {
             format!("{:w$}", " ", w = (indent as usize) * 2)
         };
 
-        let is_database = item.kind().is_database();
-        let path_arrow = if is_database {
+        let path_arrow = if item.kind().is_database() {
             if item.kind().is_database_collapsed() {
                 FOLDER_ICON_COLLAPSED
             } else {
@@ -177,14 +176,14 @@ impl DatabasesComponent {
         let filter = Paragraph::new(Span::styled(
             format!(
                 "{}{:w$}",
-                if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
+                if self.input.is_empty() && matches!(self.focus, Focus::Tree) {
                     "Filter tables".to_string()
                 } else {
                     self.input_str()
                 },
                 w = area.width as usize
             ),
-            if let FocusBlock::Filter = self.focus_block {
+            if let Focus::Filter = self.focus {
                 Style::default()
             } else {
                 Style::default().fg(Color::DarkGray)
@@ -226,7 +225,7 @@ impl DatabasesComponent {
 
         draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
         self.scroll.draw(f, area);
-        if let FocusBlock::Filter = self.focus_block {
+        if let Focus::Filter = self.focus {
             f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
         }
     }
@@ -251,19 +250,19 @@ impl Component for DatabasesComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
-        if key == self.key_config.filter && self.focus_block == FocusBlock::Tree {
-            self.focus_block = FocusBlock::Filter;
+        if key == self.key_config.filter && self.focus == Focus::Tree {
+            self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }
         match key {
-            Key::Char(c) if self.focus_block == FocusBlock::Filter => {
+            Key::Char(c) if self.focus == Focus::Filter => {
                 self.input.insert(self.input_idx, c);
                 self.input_idx += 1;
                 self.input_cursor_position += compute_character_width(c);
                 self.filterd_tree = Some(self.tree.filter(self.input_str()));
                 return Ok(EventState::Consumed);
             }
-            Key::Delete | Key::Backspace if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Delete | Key::Backspace if matches!(self.focus, Focus::Filter) => {
                 if input_str.width() > 0 {
                     if !self.input.is_empty() && self.input_idx > 0 {
                         let last_c = self.input.remove(self.input_idx - 1);
@@ -279,7 +278,7 @@ impl Component for DatabasesComponent {
                     return Ok(EventState::Consumed);
                 }
             }
-            Key::Left if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Left if matches!(self.focus, Focus::Filter) => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position = self
@@ -295,7 +294,7 @@ impl Component for DatabasesComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Right if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Right if matches!(self.focus, Focus::Filter) => {
                 if self.input_idx < self.input.len() {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
@@ -310,8 +309,8 @@ impl Component for DatabasesComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.focus_block = FocusBlock::Tree;
+            Key::Enter if matches!(self.focus, Focus::Filter) => {
+                self.focus = Focus::Tree;
                 return Ok(EventState::Consumed);
             }
             key => {

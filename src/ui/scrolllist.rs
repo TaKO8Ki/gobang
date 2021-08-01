@@ -4,20 +4,17 @@ use tui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    text::{Span, Spans},
+    text::Spans,
     widgets::{Block, List, ListItem, Widget},
     Frame,
 };
 
-///
 struct ScrollableList<'b, L>
 where
     L: Iterator<Item = Spans<'b>>,
 {
     block: Option<Block<'b>>,
-    /// Items to be displayed
     items: L,
-    /// Base style of the widget
     style: Style,
 }
 
@@ -44,7 +41,6 @@ where
     L: Iterator<Item = Spans<'b>>,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Render items
         List::new(self.items.map(ListItem::new).collect::<Vec<ListItem>>())
             .block(self.block.unwrap_or_default())
             .style(self.style)
