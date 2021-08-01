@@ -251,17 +251,6 @@ impl Component for DatabasesComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
-        if tree_nav(
-            if let Some(tree) = self.filterd_tree.as_mut() {
-                tree
-            } else {
-                &mut self.tree
-            },
-            key,
-            &self.key_config,
-        ) {
-            return Ok(EventState::Consumed);
-        }
         if key == self.key_config.filter && self.focus_block == FocusBlock::Tree {
             self.focus_block = FocusBlock::Filter;
             return Ok(EventState::Consumed);
@@ -326,7 +315,19 @@ impl Component for DatabasesComponent {
                 self.focus_block = FocusBlock::Tree;
                 return Ok(EventState::Consumed);
             }
-            _ => (),
+            key => {
+                if tree_nav(
+                    if let Some(tree) = self.filterd_tree.as_mut() {
+                        tree
+                    } else {
+                        &mut self.tree
+                    },
+                    key,
+                    &self.key_config,
+                ) {
+                    return Ok(EventState::Consumed);
+                }
+            }
         }
         Ok(EventState::NotConsumed)
     }
