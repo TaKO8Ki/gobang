@@ -94,7 +94,7 @@ impl DatabasesComponent {
             format!("{:w$}", " ", w = (indent as usize) * 2)
         };
 
-        let path_arrow = if item.kind().is_database() {
+        let arrow = if item.kind().is_database() {
             if item.kind().is_database_collapsed() {
                 FOLDER_ICON_COLLAPSED
             } else {
@@ -105,12 +105,12 @@ impl DatabasesComponent {
         };
 
         if let Some(filter) = filter {
-            if item.kind().is_table() {
-                let (first, second) = &name.split_at(name.find(filter.as_str()).unwrap_or(0));
-                let (filter, third) = &second.split_at(filter.len());
+            if item.kind().is_table() && name.contains(&filter) {
+                let (first, rest) = &name.split_at(name.find(filter.as_str()).unwrap_or(0));
+                let (middle, last) = &rest.split_at(filter.len().clamp(0, rest.len()));
                 return Spans::from(vec![
                     Span::styled(
-                        format!("{}{}{}", indent_str, path_arrow, first),
+                        format!("{}{}{}", indent_str, arrow, first),
                         if selected {
                             Style::default().bg(Color::Blue)
                         } else {
@@ -118,7 +118,7 @@ impl DatabasesComponent {
                         },
                     ),
                     Span::styled(
-                        filter.to_string(),
+                        middle.to_string(),
                         if selected {
                             Style::default().bg(Color::Blue).fg(Color::Blue)
                         } else {
@@ -126,7 +126,7 @@ impl DatabasesComponent {
                         },
                     ),
                     Span::styled(
-                        format!("{:w$}", third.to_string(), w = width as usize),
+                        format!("{:w$}", last.to_string(), w = width as usize),
                         if selected {
                             Style::default().bg(Color::Blue)
                         } else {
@@ -138,13 +138,7 @@ impl DatabasesComponent {
         }
 
         Spans::from(Span::styled(
-            format!(
-                "{}{}{:w$}",
-                indent_str,
-                path_arrow,
-                name,
-                w = width as usize
-            ),
+            format!("{}{}{:w$}", indent_str, arrow, name, w = width as usize),
             if selected {
                 Style::default().bg(Color::Blue)
             } else {
