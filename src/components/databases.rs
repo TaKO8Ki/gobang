@@ -332,3 +332,162 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
         false
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
+    use database_tree::Table;
+
+    #[test]
+    fn test_tree_database_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_database(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    false,
+                ),
+                false,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::raw(format!(
+                "\u{25b8}{:w$}",
+                "foo",
+                w = WIDTH as usize
+            ))])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_database(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    false,
+                ),
+                true,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::styled(
+                format!("\u{25b8}{:w$}", "foo", w = WIDTH as usize),
+                Style::default().bg(Color::Blue)
+            )])
+        );
+    }
+
+    #[test]
+    fn test_tree_table_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "bar".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                false,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::raw(format!(
+                "  {:w$}",
+                "bar",
+                w = WIDTH as usize
+            ))])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "bar".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                true,
+                WIDTH,
+                None,
+            ),
+            Spans::from(Span::styled(
+                format!("  {:w$}", "bar", w = WIDTH as usize),
+                Style::default().bg(Color::Blue),
+            ))
+        );
+    }
+
+    #[test]
+    fn test_filterd_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "barbaz".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                false,
+                WIDTH,
+                Some("rb".to_string()),
+            ),
+            Spans::from(vec![
+                Span::raw(format!("  {}", "ba")),
+                Span::styled("rb", Style::default().fg(Color::Blue)),
+                Span::raw(format!("{:w$}", "az", w = WIDTH as usize))
+            ])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "barbaz".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                true,
+                WIDTH,
+                Some("rb".to_string()),
+            ),
+            Spans::from(vec![
+                Span::styled(format!("  {}", "ba"), Style::default().bg(Color::Blue)),
+                Span::styled("rb", Style::default().bg(Color::Blue).fg(Color::Blue)),
+                Span::styled(
+                    format!("{:w$}", "az", w = WIDTH as usize),
+                    Style::default().bg(Color::Blue)
+                )
+            ])
+        );
+    }
+}

@@ -52,7 +52,7 @@ impl DatabaseTreeItems {
                 Self::push_databases(e, &mut items, &mut items_added, collapsed)?;
             }
             for table in &e.tables {
-                items.push(DatabaseTreeItem::new_table(e, table)?);
+                items.push(DatabaseTreeItem::new_table(e, table));
             }
         }
 
@@ -84,7 +84,7 @@ impl DatabaseTreeItems {
             *items_added.entry(database.name.clone()).or_insert(0) += 1;
 
             let is_collapsed = collapsed.contains(&c);
-            nodes.push(DatabaseTreeItem::new_database(database, is_collapsed)?);
+            nodes.push(DatabaseTreeItem::new_database(database, is_collapsed));
         }
 
         // increase child count in parent node (the above ancenstor ignores the leaf component)
