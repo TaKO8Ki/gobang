@@ -35,10 +35,17 @@ pub fn scroll(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
             "Scroll up/down/left/right [{},{},{},{}]",
-            key.scroll_up.to_string(),
-            key.scroll_down.to_string(),
-            key.scroll_left.to_string(),
-            key.scroll_right.to_string()
+            key.scroll_up, key.scroll_down, key.scroll_left, key.scroll_right
+        ),
+        CMD_GROUP_GENERAL,
+    )
+}
+
+pub fn scroll_up_down_multiple_lines(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!(
+            "Scroll up/down multiple lines [{},{}]",
+            key.scroll_up_multiple_lines, key.scroll_down_multiple_lines,
         ),
         CMD_GROUP_GENERAL,
     )
@@ -48,8 +55,7 @@ pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
             "Scroll to top/bottom [{},{}]",
-            key.scroll_to_top.to_string(),
-            key.scroll_to_bottom.to_string(),
+            key.scroll_to_top, key.scroll_to_bottom,
         ),
         CMD_GROUP_GENERAL,
     )
@@ -57,20 +63,13 @@ pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
 
 pub fn expand_collapse(key: &KeyConfig) -> CommandText {
     CommandText::new(
-        format!(
-            "Expand/Collapse [{},{}]",
-            key.scroll_right.to_string(),
-            key.scroll_left.to_string(),
-        ),
+        format!("Expand/Collapse [{},{}]", key.scroll_right, key.scroll_left,),
         CMD_GROUP_DATABASES,
     )
 }
 
 pub fn filter(key: &KeyConfig) -> CommandText {
-    CommandText::new(
-        format!("Filter [{}]", key.filter.to_string()),
-        CMD_GROUP_GENERAL,
-    )
+    CommandText::new(format!("Filter [{}]", key.filter), CMD_GROUP_GENERAL)
 }
 
 pub fn move_focus(key: &KeyConfig) -> CommandText {
