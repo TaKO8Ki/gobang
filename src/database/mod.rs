@@ -1,6 +1,8 @@
 pub mod mysql;
+pub mod postgres;
 
 pub use mysql::MySqlPool;
+pub use postgres::PostgresPool;
 
 use async_trait::async_trait;
 use database_tree::{Database, Table};

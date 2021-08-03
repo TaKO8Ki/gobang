@@ -303,6 +303,7 @@ mod test {
                 create_time: None,
                 update_time: None,
                 engine: None,
+                table_schema: None,
             }
         }
     }

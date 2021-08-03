@@ -36,4 +36,6 @@ pub struct Table {
     pub update_time: Option<chrono::DateTime<chrono::Utc>>,
     #[sqlx(rename = "Engine")]
     pub engine: Option<String>,
+    #[sqlx(default)]
+    pub table_schema: Option<String>,
 }

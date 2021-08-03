@@ -3,25 +3,25 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Database, Table};
 use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPool as MPool, MySqlRow};
+use sqlx::postgres::{PgColumn, PgPool, PgRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
 
-pub struct MySqlPool {
-    pool: MPool,
+pub struct PostgresPool {
+    pool: PgPool,
 }
 
-impl MySqlPool {
+impl PostgresPool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: MPool::connect(database_url).await?,
+            pool: PgPool::connect(database_url).await?,
         })
     }
 }
 
 #[async_trait]
-impl Pool for MySqlPool {
+impl Pool for PostgresPool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
-        let databases = sqlx::query("SHOW DATABASES")
+        let databases = sqlx::query("SELECT datname FROM pg_database")
             .fetch_all(&self.pool)
             .await?
             .iter()
@@ -38,10 +38,21 @@ impl Pool for MySqlPool {
     }
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>> {
-        let tables =
-            sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
-                .fetch_all(&self.pool)
-                .await?;
+        let mut rows = sqlx::query(
+            "SELECT * FROM information_schema.tables WHERE table_schema='public' and table_catalog = $1",
+        )
+        .bind(database)
+        .fetch(&self.pool);
+        let mut tables = Vec::new();
+        while let Some(row) = rows.try_next().await? {
+            tables.push(Table {
+                name: row.get("table_name"),
+                create_time: None,
+                update_time: None,
+                engine: None,
+                table_schema: row.get("table_name"),
+            })
+        }
         Ok(tables)
     }
 
@@ -54,18 +65,20 @@ impl Pool for MySqlPool {
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter {
             format!(
-                "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
+                r#"SELECT * FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
                 database = database,
                 table = table,
                 filter = filter,
+                table_schema = "public",
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
         } else {
             format!(
-                "SELECT * FROM `{}`.`{}` limit {page}, {limit}",
-                database,
-                table,
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
+                database = database,
+                table = table,
+                table_schema = "public",
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -93,8 +106,11 @@ impl Pool for MySqlPool {
         database: &str,
         table: &str,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = format!("SHOW FULL COLUMNS FROM `{}`.`{}`", database, table);
-        let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
+        let mut rows = sqlx::query(
+            "SELECT * FROM information_schema.columns WHERE table_catalog = $1 AND table_schema = 'public' AND table_name = $2"
+        )
+        .bind(database).bind(table)
+        .fetch(&self.pool);
         let mut headers = vec![];
         let mut records = vec![];
         while let Some(row) = rows.try_next().await? {
@@ -117,7 +133,7 @@ impl Pool for MySqlPool {
     }
 }
 
-pub async fn get_tables(database: String, pool: &MPool) -> anyhow::Result<Vec<Table>> {
+pub async fn get_tables(database: String, pool: &PgPool) -> anyhow::Result<Vec<Table>> {
     let tables =
         sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
             .fetch_all(pool)
@@ -125,28 +141,34 @@ pub async fn get_tables(database: String, pool: &MPool) -> anyhow::Result<Vec<Ta
     Ok(tables)
 }
 
-fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
+fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<String> {
     let column_name = column.name();
     match column.type_info().clone().name() {
-        "INT" | "SMALLINT" | "BIGINT" => {
+        "INT2" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<i16> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "INT4" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<i32> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "BIGINT" | "BIGSERIAL" | "INT8" => {
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<i64> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
         }
-        "DECIMAL" => {
+        "NUMERIC" => {
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<rust_decimal::Decimal> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
         }
-        "INT UNSIGNED" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<u64> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "LONGTEXT" => {
+        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "NAME" => {
             return Ok(row
                 .try_get(column_name)
                 .unwrap_or_else(|_| "NULL".to_string()))
@@ -157,13 +179,19 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
         }
-        "TIMESTAMP" => {
+        "TIMESTAMPZ" => {
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<chrono::DateTime<chrono::Utc>> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
             }
         }
-        "BOOLEAN" => {
+        "TIMESTAMP" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<chrono::NaiveDateTime> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "BOOL" => {
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<bool> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
