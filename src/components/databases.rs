@@ -15,7 +15,7 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::Span,
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -28,7 +28,7 @@ const FOLDER_ICON_EXPANDED: &str = "\u{25be}";
 const EMPTY_STR: &str = "";
 
 #[derive(PartialEq)]
-pub enum FocusBlock {
+pub enum Focus {
     Filter,
     Tree,
 }
@@ -40,7 +40,7 @@ pub struct DatabasesComponent {
     input: Vec<char>,
     input_idx: usize,
     input_cursor_position: u16,
-    focus_block: FocusBlock,
+    focus: Focus,
     key_config: KeyConfig,
 }
 
@@ -53,7 +53,7 @@ impl DatabasesComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            focus_block: FocusBlock::Tree,
+            focus: Focus::Tree,
             key_config,
         }
     }
@@ -67,18 +67,24 @@ impl DatabasesComponent {
         self.filterd_tree = None;
         self.input = Vec::new();
         self.input_idx = 0;
+        self.input_cursor_position = 0;
         Ok(())
     }
 
     pub fn tree_focused(&self) -> bool {
-        matches!(self.focus_block, FocusBlock::Tree)
+        matches!(self.focus, Focus::Tree)
     }
 
     pub fn tree(&self) -> &DatabaseTree {
         self.filterd_tree.as_ref().unwrap_or(&self.tree)
     }
 
-    fn tree_item_to_span(item: DatabaseTreeItem, selected: bool, width: u16) -> Span<'static> {
+    fn tree_item_to_span(
+        item: DatabaseTreeItem,
+        selected: bool,
+        width: u16,
+        filter: Option<String>,
+    ) -> Spans<'static> {
         let name = item.kind().name();
         let indent = item.info().indent();
 
@@ -88,8 +94,7 @@ impl DatabasesComponent {
             format!("{:w$}", " ", w = (indent as usize) * 2)
         };
 
-        let is_database = item.kind().is_database();
-        let path_arrow = if is_database {
+        let arrow = if item.kind().is_database() {
             if item.kind().is_database_collapsed() {
                 FOLDER_ICON_COLLAPSED
             } else {
@@ -99,21 +104,47 @@ impl DatabasesComponent {
             EMPTY_STR
         };
 
-        let name = format!(
-            "{}{}{:w$}",
-            indent_str,
-            path_arrow,
-            name,
-            w = width as usize
-        );
-        Span::styled(
-            name,
+        if let Some(filter) = filter {
+            if item.kind().is_table() && name.contains(&filter) {
+                let (first, rest) = &name.split_at(name.find(filter.as_str()).unwrap_or(0));
+                let (middle, last) = &rest.split_at(filter.len().clamp(0, rest.len()));
+                return Spans::from(vec![
+                    Span::styled(
+                        format!("{}{}{}", indent_str, arrow, first),
+                        if selected {
+                            Style::default().bg(Color::Blue)
+                        } else {
+                            Style::default()
+                        },
+                    ),
+                    Span::styled(
+                        middle.to_string(),
+                        if selected {
+                            Style::default().bg(Color::Blue).fg(Color::Blue)
+                        } else {
+                            Style::default().fg(Color::Blue)
+                        },
+                    ),
+                    Span::styled(
+                        format!("{:w$}", last.to_string(), w = width as usize),
+                        if selected {
+                            Style::default().bg(Color::Blue)
+                        } else {
+                            Style::default()
+                        },
+                    ),
+                ]);
+            }
+        }
+
+        Spans::from(Span::styled(
+            format!("{}{}{:w$}", indent_str, arrow, name, w = width as usize),
             if selected {
                 Style::default().bg(Color::Blue)
             } else {
                 Style::default()
             },
-        )
+        ))
     }
 
     fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) {
@@ -139,14 +170,14 @@ impl DatabasesComponent {
         let filter = Paragraph::new(Span::styled(
             format!(
                 "{}{:w$}",
-                if self.input.is_empty() && matches!(self.focus_block, FocusBlock::Tree) {
+                if self.input.is_empty() && matches!(self.focus, Focus::Tree) {
                     "Filter tables".to_string()
                 } else {
                     self.input_str()
                 },
                 w = area.width as usize
             ),
-            if let FocusBlock::Filter = self.focus_block {
+            if let Focus::Filter = self.focus {
                 Style::default()
             } else {
                 Style::default().fg(Color::DarkGray)
@@ -173,11 +204,22 @@ impl DatabasesComponent {
 
         let items = tree
             .iterate(self.scroll.get_top(), tree_height)
-            .map(|(item, selected)| Self::tree_item_to_span(item.clone(), selected, area.width));
+            .map(|(item, selected)| {
+                Self::tree_item_to_span(
+                    item.clone(),
+                    selected,
+                    area.width,
+                    if self.input.is_empty() {
+                        None
+                    } else {
+                        Some(self.input_str())
+                    },
+                )
+            });
 
         draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
         self.scroll.draw(f, area);
-        if let FocusBlock::Filter = self.focus_block {
+        if let Focus::Filter = self.focus {
             f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
         }
     }
@@ -202,31 +244,19 @@ impl Component for DatabasesComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
-        if tree_nav(
-            if let Some(tree) = self.filterd_tree.as_mut() {
-                tree
-            } else {
-                &mut self.tree
-            },
-            key,
-            &self.key_config,
-        ) {
-            return Ok(EventState::Consumed);
-        }
-        if key == self.key_config.filter && self.focus_block == FocusBlock::Tree {
-            self.focus_block = FocusBlock::Filter;
+        if key == self.key_config.filter && self.focus == Focus::Tree {
+            self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }
         match key {
-            Key::Char(c) if self.focus_block == FocusBlock::Filter => {
+            Key::Char(c) if self.focus == Focus::Filter => {
                 self.input.insert(self.input_idx, c);
                 self.input_idx += 1;
                 self.input_cursor_position += compute_character_width(c);
-
                 self.filterd_tree = Some(self.tree.filter(self.input_str()));
                 return Ok(EventState::Consumed);
             }
-            Key::Delete | Key::Backspace if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Delete | Key::Backspace if matches!(self.focus, Focus::Filter) => {
                 if input_str.width() > 0 {
                     if !self.input.is_empty() && self.input_idx > 0 {
                         let last_c = self.input.remove(self.input_idx - 1);
@@ -242,7 +272,7 @@ impl Component for DatabasesComponent {
                     return Ok(EventState::Consumed);
                 }
             }
-            Key::Left if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Left if matches!(self.focus, Focus::Filter) => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position = self
@@ -258,7 +288,7 @@ impl Component for DatabasesComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Right if matches!(self.focus_block, FocusBlock::Filter) => {
+            Key::Right if matches!(self.focus, Focus::Filter) => {
                 if self.input_idx < self.input.len() {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
@@ -273,11 +303,23 @@ impl Component for DatabasesComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Enter if matches!(self.focus_block, FocusBlock::Filter) => {
-                self.focus_block = FocusBlock::Tree;
+            Key::Enter if matches!(self.focus, Focus::Filter) => {
+                self.focus = Focus::Tree;
                 return Ok(EventState::Consumed);
             }
-            _ => (),
+            key => {
+                if tree_nav(
+                    if let Some(tree) = self.filterd_tree.as_mut() {
+                        tree
+                    } else {
+                        &mut self.tree
+                    },
+                    key,
+                    &self.key_config,
+                ) {
+                    return Ok(EventState::Consumed);
+                }
+            }
         }
         Ok(EventState::NotConsumed)
     }
@@ -288,5 +330,164 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
         tree.move_selection(common_nav)
     } else {
         false
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
+    use database_tree::Table;
+
+    #[test]
+    fn test_tree_database_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_database(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    false,
+                ),
+                false,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::raw(format!(
+                "\u{25b8}{:w$}",
+                "foo",
+                w = WIDTH as usize
+            ))])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_database(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    false,
+                ),
+                true,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::styled(
+                format!("\u{25b8}{:w$}", "foo", w = WIDTH as usize),
+                Style::default().bg(Color::Blue)
+            )])
+        );
+    }
+
+    #[test]
+    fn test_tree_table_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "bar".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                false,
+                WIDTH,
+                None,
+            ),
+            Spans::from(vec![Span::raw(format!(
+                "  {:w$}",
+                "bar",
+                w = WIDTH as usize
+            ))])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "bar".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                true,
+                WIDTH,
+                None,
+            ),
+            Spans::from(Span::styled(
+                format!("  {:w$}", "bar", w = WIDTH as usize),
+                Style::default().bg(Color::Blue),
+            ))
+        );
+    }
+
+    #[test]
+    fn test_filterd_tree_item_to_span() {
+        const WIDTH: u16 = 10;
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "barbaz".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                false,
+                WIDTH,
+                Some("rb".to_string()),
+            ),
+            Spans::from(vec![
+                Span::raw(format!("  {}", "ba")),
+                Span::styled("rb", Style::default().fg(Color::Blue)),
+                Span::raw(format!("{:w$}", "az", w = WIDTH as usize))
+            ])
+        );
+
+        assert_eq!(
+            DatabasesComponent::tree_item_to_span(
+                DatabaseTreeItem::new_table(
+                    &Database {
+                        name: "foo".to_string(),
+                        tables: Vec::new(),
+                    },
+                    &Table {
+                        name: "barbaz".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                    },
+                ),
+                true,
+                WIDTH,
+                Some("rb".to_string()),
+            ),
+            Spans::from(vec![
+                Span::styled(format!("  {}", "ba"), Style::default().bg(Color::Blue)),
+                Span::styled("rb", Style::default().bg(Color::Blue).fg(Color::Blue)),
+                Span::styled(
+                    format!("{:w$}", "az", w = WIDTH as usize),
+                    Style::default().bg(Color::Blue)
+                )
+            ])
+        );
     }
 }

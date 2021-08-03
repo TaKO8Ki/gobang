@@ -4,26 +4,23 @@ use tui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    text::Span,
+    text::Spans,
     widgets::{Block, List, ListItem, Widget},
     Frame,
 };
 
-///
 struct ScrollableList<'b, L>
 where
-    L: Iterator<Item = Span<'b>>,
+    L: Iterator<Item = Spans<'b>>,
 {
     block: Option<Block<'b>>,
-    /// Items to be displayed
     items: L,
-    /// Base style of the widget
     style: Style,
 }
 
 impl<'b, L> ScrollableList<'b, L>
 where
-    L: Iterator<Item = Span<'b>>,
+    L: Iterator<Item = Spans<'b>>,
 {
     fn new(items: L) -> Self {
         Self {
@@ -41,10 +38,9 @@ where
 
 impl<'b, L> Widget for ScrollableList<'b, L>
 where
-    L: Iterator<Item = Span<'b>>,
+    L: Iterator<Item = Spans<'b>>,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Render items
         List::new(self.items.map(ListItem::new).collect::<Vec<ListItem>>())
             .block(self.block.unwrap_or_default())
             .style(self.style)
@@ -54,7 +50,7 @@ where
 
 pub fn draw_list_block<'b, B: Backend, L>(f: &mut Frame<B>, r: Rect, block: Block<'b>, items: L)
 where
-    L: Iterator<Item = Span<'b>>,
+    L: Iterator<Item = Spans<'b>>,
 {
     let list = ScrollableList::new(items).block(block);
     f.render_widget(list, r);

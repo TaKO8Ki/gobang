@@ -111,6 +111,9 @@ impl App {
         let mut res = vec![
             CommandInfo::new(command::scroll(&self.config.key_config)),
             CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
+            CommandInfo::new(command::scroll_up_down_multiple_lines(
+                &self.config.key_config,
+            )),
             CommandInfo::new(command::move_focus(&self.config.key_config)),
             CommandInfo::new(command::filter(&self.config.key_config)),
             CommandInfo::new(command::help(&self.config.key_config)),
@@ -121,6 +124,81 @@ impl App {
         self.record_table.commands(&mut res);
 
         res
+    }
+
+    async fn update_databases(&mut self) -> anyhow::Result<()> {
+        if let Some(conn) = self.connections.selected_connection() {
+            if let Some(pool) = self.pool.as_ref() {
+                pool.close().await;
+            }
+            self.pool = Some(Box::new(
+                MySqlPool::new(conn.database_url().as_str()).await?,
+            ));
+            let databases = match &conn.database {
+                Some(database) => vec![Database::new(
+                    database.clone(),
+                    self.pool
+                        .as_ref()
+                        .unwrap()
+                        .get_tables(database.clone())
+                        .await?,
+                )],
+                None => self.pool.as_ref().unwrap().get_databases().await?,
+            };
+            self.databases.update(databases.as_slice()).unwrap();
+            self.focus = Focus::DabataseList;
+            self.record_table.reset();
+        }
+        Ok(())
+    }
+
+    async fn update_table(&mut self) -> anyhow::Result<()> {
+        if let Some((database, table)) = self.databases.tree().selected_table() {
+            self.focus = Focus::Table;
+            let (headers, records) = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_records(&database.name, &table.name, 0, None)
+                .await?;
+            self.record_table
+                .update(records, headers, database.clone(), table.clone());
+
+            let (headers, records) = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_columns(&database.name, &table.name)
+                .await?;
+            self.structure_table
+                .update(records, headers, database.clone(), table.clone());
+            self.table_status
+                .update(self.record_table.len() as u64, table);
+        }
+        Ok(())
+    }
+
+    async fn update_record_table(&mut self) -> anyhow::Result<()> {
+        if let Some((database, table)) = self.databases.tree().selected_table() {
+            let (headers, records) = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_records(
+                    &database.name,
+                    &table.name,
+                    0,
+                    if self.record_table.filter.input.is_empty() {
+                        None
+                    } else {
+                        Some(self.record_table.filter.input_str())
+                    },
+                )
+                .await?;
+            self.record_table
+                .update(records, headers, database.clone(), table.clone());
+        }
+        Ok(())
     }
 
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
@@ -152,28 +230,7 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter {
-                    if let Some(conn) = self.connections.selected_connection() {
-                        if let Some(pool) = self.pool.as_ref() {
-                            pool.close().await;
-                        }
-                        self.pool = Some(Box::new(
-                            MySqlPool::new(conn.database_url().as_str()).await?,
-                        ));
-                        let databases = match &conn.database {
-                            Some(database) => vec![Database::new(
-                                database.clone(),
-                                self.pool
-                                    .as_ref()
-                                    .unwrap()
-                                    .get_tables(database.clone())
-                                    .await?,
-                            )],
-                            None => self.pool.as_ref().unwrap().get_databases().await?,
-                        };
-                        self.databases.update(databases.as_slice()).unwrap();
-                        self.focus = Focus::DabataseList;
-                        self.record_table.reset();
-                    }
+                    self.update_databases().await?;
                     return Ok(EventState::Consumed);
                 }
             }
@@ -183,32 +240,7 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((database, table)) = self.databases.tree().selected_table() {
-                        self.focus = Focus::Table;
-                        let (headers, records) = self
-                            .pool
-                            .as_ref()
-                            .unwrap()
-                            .get_records(&database.name, &table.name, 0, None)
-                            .await?;
-                        self.record_table
-                            .update(records, headers, database.clone(), table.clone());
-
-                        let (headers, records) = self
-                            .pool
-                            .as_ref()
-                            .unwrap()
-                            .get_columns(&database.name, &table.name)
-                            .await?;
-                        self.structure_table.update(
-                            records,
-                            headers,
-                            database.clone(),
-                            table.clone(),
-                        );
-                        self.table_status
-                            .update(self.record_table.len() as u64, table);
-                    }
+                    self.update_table().await?;
                     return Ok(EventState::Consumed);
                 }
             }
@@ -228,25 +260,7 @@ impl App {
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.record_table.focus = crate::components::record_table::Focus::Table;
-                            if let Some((database, table)) = self.databases.tree().selected_table()
-                            {
-                                let (headers, records) = self
-                                    .pool
-                                    .as_ref()
-                                    .unwrap()
-                                    .get_records(
-                                        &database.name.clone(),
-                                        &table.name,
-                                        0,
-                                        if self.record_table.filter.input.is_empty() {
-                                            None
-                                        } else {
-                                            Some(self.record_table.filter.input_str())
-                                        },
-                                    )
-                                    .await?;
-                                self.record_table.update(records, headers, database, table);
-                            }
+                            self.update_record_table().await?;
                         }
 
                         if self.record_table.table.eod {
