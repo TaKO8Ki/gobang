@@ -1,6 +1,6 @@
 use crate::clipboard::Clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
-use crate::database::{MySqlPool, Pool, RECORDS_LIMIT_PER_PAGE};
+use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
 use crate::{
     components::tab::Tab,
@@ -64,6 +64,8 @@ impl App {
                     .split(f.size())[0],
                 false,
             )?;
+            self.error.draw(f, Rect::default(), false)?;
+            self.help.draw(f, Rect::default(), false)?;
             return Ok(());
         }
 
@@ -131,9 +133,15 @@ impl App {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            self.pool = Some(Box::new(
-                MySqlPool::new(conn.database_url().as_str()).await?,
-            ));
+            self.pool = if conn.is_mysql() {
+                Some(Box::new(
+                    MySqlPool::new(conn.database_url().as_str()).await?,
+                ))
+            } else {
+                Some(Box::new(
+                    PostgresPool::new(conn.database_url().as_str()).await?,
+                ))
+            };
             let databases = match &conn.database {
                 Some(database) => vec![Database::new(
                     database.clone(),
