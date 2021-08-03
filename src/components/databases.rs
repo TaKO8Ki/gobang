@@ -396,6 +396,7 @@ mod test {
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        table_schema: None
                     },
                 ),
                 false,
@@ -421,6 +422,7 @@ mod test {
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        table_schema: None
                     },
                 ),
                 true,
@@ -449,6 +451,7 @@ mod test {
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        table_schema: None
                     },
                 ),
                 false,
@@ -474,6 +477,7 @@ mod test {
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        table_schema: None
                     },
                 ),
                 true,
