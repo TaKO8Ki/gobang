@@ -2,9 +2,9 @@ mod app;
 mod clipboard;
 mod components;
 mod config;
+mod database;
 mod event;
 mod ui;
-mod utils;
 
 #[macro_use]
 mod log;

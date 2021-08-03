@@ -1,7 +1,7 @@
 use crate::clipboard::Clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
+use crate::database::{MySqlPool, Pool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
-use crate::utils::{MySqlPool, Pool};
 use crate::{
     components::tab::Tab,
     components::{
@@ -268,10 +268,7 @@ impl App {
                         }
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
-                            if index.saturating_add(1)
-                                % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
-                                == 0
-                            {
+                            if index.saturating_add(1) % RECORDS_LIMIT_PER_PAGE as usize == 0 {
                                 if let Some((database, table)) =
                                     self.databases.tree().selected_table()
                                 {

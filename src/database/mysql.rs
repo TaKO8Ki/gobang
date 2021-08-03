@@ -1,30 +1,10 @@
+use super::{Pool, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Database, Table};
 use futures::TryStreamExt;
 use sqlx::mysql::{MySqlColumn, MySqlPool as MPool, MySqlRow};
-use sqlx::{Column as _, Row, TypeInfo};
-
-pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
-
-#[async_trait]
-pub trait Pool {
-    async fn get_databases(&self) -> anyhow::Result<Vec<Database>>;
-    async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>>;
-    async fn get_records(
-        &self,
-        database: &str,
-        table: &str,
-        page: u16,
-        filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
-    async fn get_columns(
-        &self,
-        database: &str,
-        table: &str,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
-    async fn close(&self);
-}
+use sqlx::{Column as _, Row as _, TypeInfo as _};
 
 pub struct MySqlPool {
     pool: MPool,
