@@ -156,6 +156,7 @@ impl App {
             self.databases.update(databases.as_slice()).unwrap();
             self.focus = Focus::DabataseList;
             self.record_table.reset();
+            self.tab.reset();
         }
         Ok(())
     }
@@ -167,7 +168,7 @@ impl App {
                 .pool
                 .as_ref()
                 .unwrap()
-                .get_records(&database.name, &table.name, 0, None)
+                .get_records(&database, &table, 0, None)
                 .await?;
             self.record_table
                 .update(records, headers, database.clone(), table.clone());
@@ -176,7 +177,7 @@ impl App {
                 .pool
                 .as_ref()
                 .unwrap()
-                .get_columns(&database.name, &table.name)
+                .get_columns(&database, &table)
                 .await?;
             self.structure_table
                 .update(records, headers, database.clone(), table.clone());
@@ -193,8 +194,8 @@ impl App {
                 .as_ref()
                 .unwrap()
                 .get_records(
-                    &database.name,
-                    &table.name,
+                    &database,
+                    &table,
                     0,
                     if self.record_table.filter.input.is_empty() {
                         None
@@ -285,8 +286,8 @@ impl App {
                                         .as_ref()
                                         .unwrap()
                                         .get_records(
-                                            &database.name.clone(),
-                                            &table.name,
+                                            &database,
+                                            &table,
                                             index as u16,
                                             if self.record_table.filter.input.is_empty() {
                                                 None

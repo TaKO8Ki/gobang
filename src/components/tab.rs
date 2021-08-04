@@ -38,6 +38,10 @@ impl TabComponent {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.selected_tab = Tab::Records;
+    }
+
     fn names(&self) -> Vec<String> {
         vec![
             command::tab_records(&self.key_config).name,

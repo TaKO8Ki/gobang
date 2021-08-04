@@ -15,15 +15,15 @@ pub trait Pool {
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>>;
     async fn get_records(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
     async fn get_columns(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
     async fn close(&self);
 }

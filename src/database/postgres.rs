@@ -50,7 +50,7 @@ impl Pool for PostgresPool {
                 create_time: None,
                 update_time: None,
                 engine: None,
-                table_schema: row.get("table_name"),
+                schema: row.get("table_name"),
             })
         }
         Ok(tables)
@@ -58,16 +58,16 @@ impl Pool for PostgresPool {
 
     async fn get_records(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter {
             format!(
                 r#"SELECT * FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
-                database = database,
-                table = table,
+                database = database.name,
+                table = table.name,
                 filter = filter,
                 table_schema = "public",
                 page = page,
@@ -76,8 +76,8 @@ impl Pool for PostgresPool {
         } else {
             format!(
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
-                database = database,
-                table = table,
+                database = database.name,
+                table = table.name,
                 table_schema = "public",
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
@@ -103,13 +103,17 @@ impl Pool for PostgresPool {
 
     async fn get_columns(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+        let table_schema = table
+            .schema
+            .as_ref()
+            .map_or("public", |schema| schema.as_str());
         let mut rows = sqlx::query(
-            "SELECT * FROM information_schema.columns WHERE table_catalog = $1 AND table_schema = 'public' AND table_name = $2"
+            "SELECT * FROM information_schema.columns WHERE table_catalog = $1 AND table_schema = $2 AND table_name = $3"
         )
-        .bind(database).bind(table)
+        .bind(&database.name).bind(table_schema).bind(&table.name)
         .fetch(&self.pool);
         let mut headers = vec![];
         let mut records = vec![];
@@ -166,6 +170,20 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
             if let Ok(value) = row.try_get(column_name) {
                 let value: Option<rust_decimal::Decimal> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "BYTEA" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<&[u8]> = value;
+                return Ok(value.map_or("NULL".to_string(), |values| {
+                    format!(
+                        "\\x{}",
+                        values
+                            .iter()
+                            .map(|v| format!("{:02x}", v))
+                            .collect::<String>()
+                    )
+                }));
             }
         }
         "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "NAME" => {

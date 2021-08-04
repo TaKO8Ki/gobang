@@ -47,16 +47,16 @@ impl Pool for MySqlPool {
 
     async fn get_records(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
-                database = database,
-                table = table,
+                database = database.name,
+                table = table.name,
                 filter = filter,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
@@ -64,8 +64,8 @@ impl Pool for MySqlPool {
         } else {
             format!(
                 "SELECT * FROM `{}`.`{}` limit {page}, {limit}",
-                database,
-                table,
+                database.name,
+                table.name,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -90,10 +90,13 @@ impl Pool for MySqlPool {
 
     async fn get_columns(
         &self,
-        database: &str,
-        table: &str,
+        database: &Database,
+        table: &Table,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = format!("SHOW FULL COLUMNS FROM `{}`.`{}`", database, table);
+        let query = format!(
+            "SHOW FULL COLUMNS FROM `{}`.`{}`",
+            database.name, table.name
+        );
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
         let mut headers = vec![];
         let mut records = vec![];
