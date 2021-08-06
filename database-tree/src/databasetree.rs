@@ -666,4 +666,102 @@ mod test {
         assert_eq!(s.count, 4);
         assert_eq!(s.index, 1);
     }
+
+    #[test]
+    fn test_selection_top() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![
+                Table::new("b".to_string()).into(),
+                Table::new("c".to_string()).into(),
+                Table::new("d".to_string()).into(),
+            ],
+        )];
+
+        // a
+        //   b
+        //   c
+        //   d
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(3);
+        tree.items.expand(0, false);
+
+        assert!(tree.move_selection(MoveSelection::Top));
+        assert_eq!(tree.selection, Some(0));
+
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Schema {
+                name: "b".to_string(),
+                tables: vec![
+                    Table::new("c".to_string()).into(),
+                    Table::new("d".to_string()).into(),
+                ],
+            }
+            .into()],
+        )];
+
+        // a
+        //   b
+        //     c
+        //     d
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(3);
+        tree.items.expand(0, false);
+        tree.items.expand(1, false);
+
+        assert!(tree.move_selection(MoveSelection::Top));
+        assert_eq!(tree.selection, Some(0));
+    }
+
+    #[test]
+    fn test_selection_bottom() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![
+                Table::new("b".to_string()).into(),
+                Table::new("c".to_string()).into(),
+                Table::new("d".to_string()).into(),
+            ],
+        )];
+
+        // a
+        //   b
+        //   c
+        //   d
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(0);
+        tree.items.expand(0, false);
+
+        assert!(tree.move_selection(MoveSelection::End));
+        assert_eq!(tree.selection, Some(3));
+
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Schema {
+                name: "b".to_string(),
+                tables: vec![
+                    Table::new("c".to_string()).into(),
+                    Table::new("d".to_string()).into(),
+                ],
+            }
+            .into()],
+        )];
+
+        // a
+        //   b
+        //     c
+        //     d
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+        tree.selection = Some(0);
+        tree.items.expand(0, false);
+        tree.items.expand(1, false);
+
+        assert!(tree.move_selection(MoveSelection::End));
+        assert_eq!(tree.selection, Some(3));
+    }
 }
