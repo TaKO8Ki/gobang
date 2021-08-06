@@ -32,33 +32,17 @@ impl Pool for PostgresPool {
         for db in databases {
             list.push(Database::new(
                 db.clone(),
-                vec![Schema {
-                    name: "schema".to_string(),
-                    tables: vec![Table {
-                        name: "table".to_string(),
-                        create_time: None,
-                        update_time: None,
-                        engine: None,
-                        schema: Some("schema".to_string()),
-                    }],
-                }
-                .into()],
-                // get_tables(db.clone(), &self.pool)
-                //     .await?
-                //     .into_iter()
-                //     .map(|table| table.into())
-                //     .collect(),
+                self.get_tables(db.clone()).await?,
             ))
         }
         Ok(list)
     }
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
-        let mut rows = sqlx::query(
-            "SELECT * FROM information_schema.tables WHERE table_schema='public' and table_catalog = $1",
-        )
-        .bind(database)
-        .fetch(&self.pool);
+        let mut rows =
+            sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1")
+                .bind(database)
+                .fetch(&self.pool);
         let mut tables = Vec::new();
         while let Some(row) = rows.try_next().await? {
             tables.push(Table {
@@ -70,19 +54,20 @@ impl Pool for PostgresPool {
             })
         }
         let mut schemas = vec![];
-        for (key, group) in &tables.iter().group_by(|t| {
-            t.schema
-                .as_ref()
-                .map(|schema| schema.to_string())
-                .unwrap_or_else(|| "".to_string())
-        }) {
-            schemas.push(
-                Schema {
-                    name: key,
-                    tables: group.cloned().collect(),
-                }
-                .into(),
-            )
+        for (key, group) in &tables
+            .iter()
+            .sorted_by(|a, b| Ord::cmp(&b.schema, &a.schema))
+            .group_by(|t| t.schema.as_ref())
+        {
+            if let Some(key) = key {
+                schemas.push(
+                    Schema {
+                        name: key.to_string(),
+                        tables: group.cloned().collect(),
+                    }
+                    .into(),
+                )
+            }
         }
         Ok(schemas)
     }
@@ -100,7 +85,7 @@ impl Pool for PostgresPool {
                 database = database.name,
                 table = table.name,
                 filter = filter,
-                table_schema = "public",
+                table_schema = table.schema.clone().unwrap_or("public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -109,7 +94,7 @@ impl Pool for PostgresPool {
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
                 database = database.name,
                 table = table.name,
-                table_schema = "public",
+                table_schema = table.schema.clone().unwrap_or("public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
