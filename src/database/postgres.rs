@@ -85,7 +85,7 @@ impl Pool for PostgresPool {
                 database = database.name,
                 table = table.name,
                 filter = filter,
-                table_schema = table.schema.clone().unwrap_or("public".to_string()),
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -94,7 +94,7 @@ impl Pool for PostgresPool {
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
                 database = database.name,
                 table = table.name,
-                table_schema = table.schema.clone().unwrap_or("public".to_string()),
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )

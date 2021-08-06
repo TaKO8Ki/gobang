@@ -31,11 +31,7 @@ impl Pool for MySqlPool {
         for db in databases {
             list.push(Database::new(
                 db.clone(),
-                self.get_tables(db.clone())
-                    .await?
-                    .into_iter()
-                    .map(|table| table.into())
-                    .collect(),
+                self.get_tables(db.clone()).await?,
             ))
         }
         Ok(list)
