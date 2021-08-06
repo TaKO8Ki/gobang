@@ -74,12 +74,12 @@ impl Pool for PostgresPool {
             t.schema
                 .as_ref()
                 .map(|schema| schema.to_string())
-                .unwrap_or("".to_string())
+                .unwrap_or_else(|| "".to_string())
         }) {
             schemas.push(
                 Schema {
                     name: key,
-                    tables: group.map(|g| g.clone()).collect(),
+                    tables: group.cloned().collect(),
                 }
                 .into(),
             )

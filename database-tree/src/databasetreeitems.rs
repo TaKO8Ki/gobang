@@ -26,8 +26,8 @@ impl DatabaseTreeItems {
                 .iter()
                 .filter(|item| item.is_database() || item.is_match(&filter_text))
                 .map(|item| {
+                    let mut item = item.clone();
                     if item.is_database() {
-                        let mut item = item.clone();
                         item.set_collapsed(false);
                         item
                     } else {
@@ -240,9 +240,8 @@ impl DatabaseTreeItems {
 
             let item_kind = self.tree_items[i].kind().clone();
 
-            if matches!(item_kind, DatabaseTreeItemKind::Database{ collapsed, .. } if collapsed) {
-                inner_collapsed = Some(item_kind.clone());
-            } else if matches!(item_kind, DatabaseTreeItemKind::Schema{ collapsed, .. } if collapsed)
+            if matches!(item_kind, DatabaseTreeItemKind::Database{ collapsed, .. } if collapsed)
+                || matches!(item_kind, DatabaseTreeItemKind::Schema{ collapsed, .. } if collapsed)
             {
                 inner_collapsed = Some(item_kind.clone());
             }
