@@ -1,8 +1,9 @@
 use super::{Pool, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use database_tree::{Database, Table};
+use database_tree::{Child, Database, Schema, Table};
 use futures::TryStreamExt;
+use itertools::Itertools;
 use sqlx::postgres::{PgColumn, PgPool, PgRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
 
@@ -31,13 +32,28 @@ impl Pool for PostgresPool {
         for db in databases {
             list.push(Database::new(
                 db.clone(),
-                get_tables(db.clone(), &self.pool).await?,
+                vec![Schema {
+                    name: "schema".to_string(),
+                    tables: vec![Table {
+                        name: "table".to_string(),
+                        create_time: None,
+                        update_time: None,
+                        engine: None,
+                        schema: Some("schema".to_string()),
+                    }],
+                }
+                .into()],
+                // get_tables(db.clone(), &self.pool)
+                //     .await?
+                //     .into_iter()
+                //     .map(|table| table.into())
+                //     .collect(),
             ))
         }
         Ok(list)
     }
 
-    async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>> {
+    async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
         let mut rows = sqlx::query(
             "SELECT * FROM information_schema.tables WHERE table_schema='public' and table_catalog = $1",
         )
@@ -50,10 +66,25 @@ impl Pool for PostgresPool {
                 create_time: None,
                 update_time: None,
                 engine: None,
-                schema: row.get("table_name"),
+                schema: row.get("table_schema"),
             })
         }
-        Ok(tables)
+        let mut schemas = vec![];
+        for (key, group) in &tables.iter().group_by(|t| {
+            t.schema
+                .as_ref()
+                .map(|schema| schema.to_string())
+                .unwrap_or("".to_string())
+        }) {
+            schemas.push(
+                Schema {
+                    name: key,
+                    tables: group.map(|g| g.clone()).collect(),
+                }
+                .into(),
+            )
+        }
+        Ok(schemas)
     }
 
     async fn get_records(
@@ -135,14 +166,6 @@ impl Pool for PostgresPool {
     async fn close(&self) {
         self.pool.close().await;
     }
-}
-
-pub async fn get_tables(database: String, pool: &PgPool) -> anyhow::Result<Vec<Table>> {
-    let tables =
-        sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
-            .fetch_all(pool)
-            .await?;
-    Ok(tables)
 }
 
 fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<String> {

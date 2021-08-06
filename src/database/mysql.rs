@@ -1,7 +1,7 @@
 use super::{Pool, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use database_tree::{Database, Table};
+use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
 use sqlx::mysql::{MySqlColumn, MySqlPool as MPool, MySqlRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
@@ -31,18 +31,22 @@ impl Pool for MySqlPool {
         for db in databases {
             list.push(Database::new(
                 db.clone(),
-                get_tables(db.clone(), &self.pool).await?,
+                get_tables(db.clone(), &self.pool)
+                    .await?
+                    .into_iter()
+                    .map(|table| table.into())
+                    .collect(),
             ))
         }
         Ok(list)
     }
 
-    async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Table>> {
+    async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
         let tables =
             sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
                 .fetch_all(&self.pool)
                 .await?;
-        Ok(tables)
+        Ok(tables.into_iter().map(|table| table.into()).collect())
     }
 
     async fn get_records(

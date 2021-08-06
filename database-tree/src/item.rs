@@ -1,4 +1,4 @@
-use crate::{Database, Table};
+use crate::{Database, Schema, Table};
 
 #[derive(Debug, Clone)]
 pub struct TreeItemInfo {
@@ -31,8 +31,19 @@ impl TreeItemInfo {
 /// `DatabaseTreeItem` can be of two kinds
 #[derive(PartialEq, Debug, Clone)]
 pub enum DatabaseTreeItemKind {
-    Database { name: String, collapsed: bool },
-    Table { database: Database, table: Table },
+    Database {
+        name: String,
+        collapsed: bool,
+    },
+    Table {
+        database: Database,
+        table: Table,
+    },
+    Schema {
+        database: Database,
+        schema: Schema,
+        collapsed: bool,
+    },
 }
 
 impl DatabaseTreeItemKind {
@@ -44,10 +55,23 @@ impl DatabaseTreeItemKind {
         matches!(self, Self::Table { .. })
     }
 
+    pub const fn is_schema(&self) -> bool {
+        matches!(self, Self::Schema { .. })
+    }
+
     pub const fn is_database_collapsed(&self) -> bool {
         match self {
             Self::Database { collapsed, .. } => *collapsed,
             Self::Table { .. } => false,
+            Self::Schema { .. } => false,
+        }
+    }
+
+    pub const fn is_schema_collapsed(&self) -> bool {
+        match self {
+            Self::Database { .. } => false,
+            Self::Table { .. } => false,
+            Self::Schema { collapsed, .. } => *collapsed,
         }
     }
 
@@ -55,6 +79,7 @@ impl DatabaseTreeItemKind {
         match self {
             Self::Database { name, .. } => name.to_string(),
             Self::Table { table, .. } => table.name.clone(),
+            Self::Schema { schema, .. } => schema.name.clone(),
         }
     }
 
@@ -62,6 +87,15 @@ impl DatabaseTreeItemKind {
         match self {
             Self::Database { .. } => None,
             Self::Table { database, .. } => Some(database.name.clone()),
+            Self::Schema { database, .. } => Some(database.name.clone()),
+        }
+    }
+
+    pub fn schema_name(&self) -> Option<String> {
+        match self {
+            Self::Database { .. } => None,
+            Self::Table { table, .. } => table.schema.clone(),
+            Self::Schema { .. } => None,
         }
     }
 }
@@ -76,10 +110,21 @@ pub struct DatabaseTreeItem {
 impl DatabaseTreeItem {
     pub fn new_table(database: &Database, table: &Table) -> Self {
         Self {
-            info: TreeItemInfo::new(1, false),
+            info: TreeItemInfo::new(if table.schema.is_some() { 2 } else { 1 }, false),
             kind: DatabaseTreeItemKind::Table {
                 database: database.clone(),
                 table: table.clone(),
+            },
+        }
+    }
+
+    pub fn new_schema(database: &Database, schema: &Schema, _collapsed: bool) -> Self {
+        Self {
+            info: TreeItemInfo::new(1, false),
+            kind: DatabaseTreeItemKind::Schema {
+                database: database.clone(),
+                schema: schema.clone(),
+                collapsed: true,
             },
         }
     }
@@ -133,6 +178,32 @@ impl DatabaseTreeItem {
         }
     }
 
+    pub fn collapse_schema(&mut self) {
+        if let DatabaseTreeItemKind::Schema {
+            schema, database, ..
+        } = &self.kind
+        {
+            self.kind = DatabaseTreeItemKind::Schema {
+                database: database.clone(),
+                schema: schema.clone(),
+                collapsed: true,
+            }
+        }
+    }
+
+    pub fn expand_schema(&mut self) {
+        if let DatabaseTreeItemKind::Schema {
+            schema, database, ..
+        } = &self.kind
+        {
+            self.kind = DatabaseTreeItemKind::Schema {
+                database: database.clone(),
+                schema: schema.clone(),
+                collapsed: false,
+            };
+        }
+    }
+
     pub fn show(&mut self) {
         self.info.visible = true;
     }
@@ -145,6 +216,7 @@ impl DatabaseTreeItem {
         match self.kind.clone() {
             DatabaseTreeItemKind::Database { name, .. } => name.contains(filter_text),
             DatabaseTreeItemKind::Table { table, .. } => table.name.contains(filter_text),
+            DatabaseTreeItemKind::Schema { schema, .. } => schema.name.contains(filter_text),
         }
     }
 

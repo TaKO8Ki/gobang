@@ -1,6 +1,6 @@
-use crate::Database;
 use crate::{error::Result, treeitems_iter::TreeItemsIterator};
 use crate::{item::DatabaseTreeItemKind, DatabaseTreeItem};
+use crate::{Child, Database};
 use std::{
     collections::{BTreeSet, HashMap},
     usize,
@@ -51,8 +51,16 @@ impl DatabaseTreeItems {
             {
                 Self::push_databases(e, &mut items, &mut items_added, collapsed)?;
             }
-            for table in &e.tables {
-                items.push(DatabaseTreeItem::new_table(e, table));
+            for child in &e.children {
+                match child {
+                    Child::Table(table) => items.push(DatabaseTreeItem::new_table(e, table)),
+                    Child::Schema(schema) => {
+                        items.push(DatabaseTreeItem::new_schema(e, schema, true));
+                        for table in &schema.tables {
+                            items.push(DatabaseTreeItem::new_table(e, table))
+                        }
+                    }
+                }
             }
         }
 
@@ -115,13 +123,37 @@ impl DatabaseTreeItems {
                 }
             }
         }
+
+        if self.tree_items[index].kind().is_schema() {
+            self.tree_items[index].collapse_schema();
+
+            let name = self.tree_items[index].kind().name();
+
+            for i in index + 1..self.tree_items.len() {
+                let item = &mut self.tree_items[i];
+
+                if recursive && item.kind().is_schema() {
+                    item.collapse_schema();
+                }
+
+                if let Some(schema) = item.kind().schema_name() {
+                    if schema == name {
+                        item.hide();
+                    }
+                } else {
+                    return;
+                }
+            }
+        }
     }
 
     pub fn expand(&mut self, index: usize, recursive: bool) {
         if self.tree_items[index].kind().is_database() {
             self.tree_items[index].expand_database();
 
+            let tree_item = self.tree_items[index].clone();
             let name = self.tree_items[index].kind().name();
+            let kind = tree_item.kind();
 
             if recursive {
                 for i in index + 1..self.tree_items.len() {
@@ -139,22 +171,69 @@ impl DatabaseTreeItems {
                 }
             }
 
-            self.update_visibility(&Some(name), index + 1, false);
+            self.update_visibility(kind, index + 1);
+        }
+
+        if self.tree_items[index].kind().is_schema() {
+            self.tree_items[index].expand_schema();
+
+            let tree_item = self.tree_items[index].clone();
+            let name = self.tree_items[index].kind().name();
+            let kind = tree_item.kind();
+
+            if recursive {
+                for i in index + 1..self.tree_items.len() {
+                    let item = &mut self.tree_items[i];
+
+                    if let Some(schema) = item.kind().schema_name() {
+                        if *schema != name {
+                            break;
+                        }
+                    }
+
+                    if item.kind().is_schema() && item.kind().is_schema_collapsed() {
+                        item.expand_schema();
+                    }
+                }
+            }
+
+            self.update_visibility(kind, index + 1);
         }
     }
 
-    fn update_visibility(&mut self, prefix: &Option<String>, start_idx: usize, set_defaults: bool) {
-        let mut inner_collapsed: Option<String> = None;
+    fn update_visibility(&mut self, prefix: &DatabaseTreeItemKind, start_idx: usize) {
+        let mut inner_collapsed: Option<DatabaseTreeItemKind> = None;
 
         for i in start_idx..self.tree_items.len() {
             if let Some(ref collapsed_item) = inner_collapsed {
-                if let Some(db) = self.tree_items[i].kind().database_name().clone() {
-                    if db == *collapsed_item {
-                        if set_defaults {
-                            self.tree_items[i].info_mut().set_visible(false);
+                match collapsed_item {
+                    DatabaseTreeItemKind::Database { name, .. } => {
+                        if let DatabaseTreeItemKind::Schema { database, .. } =
+                            self.tree_items[i].kind().clone()
+                        {
+                            if database.name == *name {
+                                continue;
+                            }
                         }
-                        continue;
+                        if let DatabaseTreeItemKind::Table { database, .. } =
+                            self.tree_items[i].kind().clone()
+                        {
+                            if database.name == *name {
+                                continue;
+                            }
+                        }
                     }
+                    DatabaseTreeItemKind::Schema { schema, .. } => {
+                        if let DatabaseTreeItemKind::Table { table, .. } =
+                            self.tree_items[i].kind().clone()
+                        {
+                            if matches!(table.schema, Some(table_schema) if schema.name == table_schema)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    _ => (),
                 }
                 inner_collapsed = None;
             }
@@ -162,20 +241,35 @@ impl DatabaseTreeItems {
             let item_kind = self.tree_items[i].kind().clone();
 
             if matches!(item_kind, DatabaseTreeItemKind::Database{ collapsed, .. } if collapsed) {
-                inner_collapsed = item_kind.database_name().clone();
+                inner_collapsed = Some(item_kind.clone());
+            } else if matches!(item_kind, DatabaseTreeItemKind::Schema{ collapsed, .. } if collapsed)
+            {
+                inner_collapsed = Some(item_kind.clone());
             }
 
-            if let Some(db) = item_kind.database_name() {
-                if prefix.as_ref().map_or(true, |prefix| *prefix == *db) {
-                    self.tree_items[i].info_mut().set_visible(true);
+            match prefix {
+                DatabaseTreeItemKind::Database { name, .. } => {
+                    if let DatabaseTreeItemKind::Schema { database, .. } = item_kind.clone() {
+                        if *name == database.name {
+                            self.tree_items[i].info_mut().set_visible(true);
+                        }
+                    }
+
+                    if let DatabaseTreeItemKind::Table { database, .. } = item_kind {
+                        if *name == database.name {
+                            self.tree_items[i].info_mut().set_visible(true);
+                        }
+                    }
                 }
-            } else {
-                // if we do not set defaults we can early out
-                if set_defaults {
-                    self.tree_items[i].info_mut().set_visible(false);
-                } else {
-                    return;
+                DatabaseTreeItemKind::Schema { schema, .. } => {
+                    if let DatabaseTreeItemKind::Table { table, .. } = item_kind {
+                        if matches!(table.schema, Some(table_schema) if schema.name == table_schema)
+                        {
+                            self.tree_items[i].info_mut().set_visible(true);
+                        }
+                    }
                 }
+                _ => (),
             }
         }
     }
