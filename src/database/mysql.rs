@@ -31,7 +31,7 @@ impl Pool for MySqlPool {
         for db in databases {
             list.push(Database::new(
                 db.clone(),
-                get_tables(db.clone(), &self.pool)
+                self.get_tables(db.clone())
                     .await?
                     .into_iter()
                     .map(|table| table.into())
@@ -122,14 +122,6 @@ impl Pool for MySqlPool {
     async fn close(&self) {
         self.pool.close().await;
     }
-}
-
-pub async fn get_tables(database: String, pool: &MPool) -> anyhow::Result<Vec<Table>> {
-    let tables =
-        sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
-            .fetch_all(pool)
-            .await?;
-    Ok(tables)
 }
 
 fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
