@@ -79,7 +79,7 @@ impl Pool for PostgresPool {
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = if let Some(filter) = filter {
+        let query = if let Some(filter) = filter.as_ref() {
             format!(
                 r#"SELECT * FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
                 database = database.name,
@@ -102,6 +102,7 @@ impl Pool for PostgresPool {
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
         let mut headers = vec![];
         let mut records = vec![];
+        let mut json_records = None;
         while let Some(row) = rows.try_next().await? {
             headers = row
                 .columns()
@@ -110,7 +111,29 @@ impl Pool for PostgresPool {
                 .collect();
             let mut new_row = vec![];
             for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
+                match convert_column_value_to_string(&row, column) {
+                    Ok(v) => new_row.push(v),
+                    Err(_) => {
+                        if json_records.is_none() {
+                            json_records = Some(
+                                self.get_json_records(database, table, page, filter.clone())
+                                    .await?,
+                            );
+                        }
+                        if let Some(json_records) = &json_records {
+                            match json_records
+                                .get(records.len())
+                                .unwrap()
+                                .get(column.name())
+                                .unwrap()
+                            {
+                                serde_json::Value::String(v) => new_row.push(v.to_string()),
+                                serde_json::Value::Null => new_row.push("NULL".to_string()),
+                                _ => (),
+                            }
+                        }
+                    }
+                }
             }
             records.push(new_row)
         }
@@ -150,6 +173,40 @@ impl Pool for PostgresPool {
 
     async fn close(&self) {
         self.pool.close().await;
+    }
+}
+
+impl PostgresPool {
+    async fn get_json_records(
+        &self,
+        database: &Database,
+        table: &Table,
+        page: u16,
+        filter: Option<String>,
+    ) -> anyhow::Result<Vec<serde_json::Value>> {
+        let query = if let Some(filter) = filter {
+            format!(
+                r#"SELECT to_json({table}.*) FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
+                database = database.name,
+                table = table.name,
+                filter = filter,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        } else {
+            format!(
+                r#"SELECT to_json({table}.*) FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
+                database = database.name,
+                table = table.name,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        };
+        let json: Vec<(serde_json::Value,)> =
+            sqlx::query_as(query.as_str()).fetch_all(&self.pool).await?;
+        Ok(json.iter().map(|v| v.clone().0).collect())
     }
 }
 
