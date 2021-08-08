@@ -40,7 +40,7 @@ fn gen_command(path: impl AsRef<OsStr>, xclip_syntax: bool) -> Command {
 }
 
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
-pub fn copy_string(string: &str) -> Result<()> {
+pub fn copy_to_clipboard(string: &str) -> Result<()> {
     use std::path::PathBuf;
     use which::which;
     let (path, xclip_syntax) = which("xclip").ok().map_or_else(
@@ -58,11 +58,11 @@ pub fn copy_string(string: &str) -> Result<()> {
 }
 
 #[cfg(target_os = "macos")]
-pub fn copy_string(string: &str) -> Result<()> {
+pub fn copy_to_clipboard(string: &str) -> Result<()> {
     execute_copy_command(Command::new("pbcopy"), string)
 }
 
 #[cfg(windows)]
-pub fn copy_string(string: &str) -> Result<()> {
+pub fn copy_to_clipboard(string: &str) -> Result<()> {
     execute_copy_command(Command::new("clip"), string)
 }

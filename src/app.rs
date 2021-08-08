@@ -1,4 +1,4 @@
-use crate::clipboard::copy_string;
+use crate::clipboard::copy_to_clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
 use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
@@ -260,7 +260,7 @@ impl App {
 
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
-                                copy_string(text.as_str())?
+                                copy_to_clipboard(text.as_str())?
                             }
                         }
 
@@ -310,7 +310,7 @@ impl App {
 
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.structure_table.selected_cells() {
-                                copy_string(text.as_str())?
+                                copy_to_clipboard(text.as_str())?
                             }
                         };
                     }
