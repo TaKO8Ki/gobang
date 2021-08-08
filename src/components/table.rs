@@ -363,7 +363,9 @@ impl TableComponent {
             }
             column_index += 1
         }
-        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1)
+            && column_index.saturating_sub(1) != self.headers.len().saturating_sub(1)
+        {
             widths.pop();
         }
         let far_right_column_index = column_index;
@@ -371,7 +373,9 @@ impl TableComponent {
             .iter()
             .map(|(_, width)| Constraint::Length(*width as u16))
             .collect::<Vec<Constraint>>();
-        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1)
+            && column_index.saturating_sub(1) != self.headers.len().saturating_sub(1)
+        {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_column_width));
