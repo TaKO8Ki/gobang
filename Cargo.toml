@@ -36,8 +36,5 @@ async-trait = "0.1.50"
 itertools = "0.10.0"
 rust_decimal = "1.15"
 
-[target.'cfg(any(target_os = "macos", windows))'.dependencies]
-copypasta = { version = "0.7.0", default-features = false }
-
-[target.'cfg(not(any(target_os = "macos", windows)))'.dependencies]
-copypasta = { version = "0.7.0", features = ["x11"], default-features = false }
+[target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
+which = "4.1"

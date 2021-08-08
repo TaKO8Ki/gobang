@@ -1,4 +1,4 @@
-use crate::clipboard::Clipboard;
+use crate::clipboard::copy_to_clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
 use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
@@ -31,7 +31,6 @@ pub struct App {
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
     table_status: TableStatusComponent,
-    clipboard: Clipboard,
     pool: Option<Box<dyn Pool>>,
     pub config: Config,
     pub error: ErrorComponent,
@@ -50,7 +49,6 @@ impl App {
             table_status: TableStatusComponent::default(),
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
-            clipboard: Clipboard::new(),
             pool: None,
         }
     }
@@ -262,7 +260,7 @@ impl App {
 
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
-                                self.clipboard.store(text)
+                                copy_to_clipboard(text.as_str())?
                             }
                         }
 
@@ -312,7 +310,7 @@ impl App {
 
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.structure_table.selected_cells() {
-                                self.clipboard.store(text)
+                                copy_to_clipboard(text.as_str())?
                             }
                         };
                     }
