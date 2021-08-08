@@ -215,81 +215,57 @@ impl PostgresPool {
 
 fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<String> {
     let column_name = column.name();
-    match column.type_info().clone().name() {
-        "INT2" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<i16> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "INT4" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<i32> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "BIGINT" | "BIGSERIAL" | "INT8" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<i64> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "NUMERIC" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<rust_decimal::Decimal> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "BYTEA" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<&[u8]> = value;
-                return Ok(value.map_or("NULL".to_string(), |values| {
-                    format!(
-                        "\\x{}",
-                        values
-                            .iter()
-                            .map(|v| format!("{:02x}", v))
-                            .collect::<String>()
-                    )
-                }));
-            }
-        }
-        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "NAME" => {
-            return Ok(row
-                .try_get(column_name)
-                .unwrap_or_else(|_| "NULL".to_string()))
-        }
-        "DATE" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<NaiveDate> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "TIMESTAMPZ" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<chrono::DateTime<chrono::Utc>> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "TIMESTAMP" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<chrono::NaiveDateTime> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "BOOL" => {
-            if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
-                let value: Option<bool> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "TEXT[]" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<Vec<String>> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.join(",").to_string()));
-            }
-        }
-        _ => (),
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i16> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i32> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i64> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<rust_decimal::Decimal> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<&[u8]> = value;
+        return Ok(value.map_or("NULL".to_string(), |values| {
+            format!(
+                "\\x{}",
+                values
+                    .iter()
+                    .map(|v| format!("{:02x}", v))
+                    .collect::<String>()
+            )
+        }));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveDate> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: String = value;
+        return Ok(value);
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<chrono::DateTime<chrono::Utc>> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<chrono::NaiveDateTime> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
+        let value: Option<bool> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<Vec<String>> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.join(",").to_string()));
     }
     Err(anyhow::anyhow!(
         "column type not implemented: `{}` {}",
