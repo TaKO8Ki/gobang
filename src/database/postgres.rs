@@ -113,7 +113,7 @@ impl Pool for PostgresPool {
             for column in row.columns() {
                 match convert_column_value_to_string(&row, column) {
                     Ok(v) => new_row.push(v),
-                    Err(_) => {
+                    Err(err) => {
                         if json_records.is_none() {
                             json_records = Some(
                                 self.get_json_records(database, table, page, filter.clone())
@@ -129,6 +129,9 @@ impl Pool for PostgresPool {
                             {
                                 serde_json::Value::String(v) => new_row.push(v.to_string()),
                                 serde_json::Value::Null => new_row.push("NULL".to_string()),
+                                serde_json::Value::Array(v) => {
+                                    new_row.push(v.iter().map(|v| v.to_string()).join(","))
+                                }
                                 _ => (),
                             }
                         }
@@ -275,9 +278,15 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
             }
         }
         "BOOL" => {
-            if let Ok(value) = row.try_get(column_name) {
+            if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
                 let value: Option<bool> = value;
                 return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+            }
+        }
+        "TEXT[]" => {
+            if let Ok(value) = row.try_get(column_name) {
+                let value: Option<Vec<String>> = value;
+                return Ok(value.map_or("NULL".to_string(), |v| v.join(",").to_string()));
             }
         }
         _ => (),
