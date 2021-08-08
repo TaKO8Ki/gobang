@@ -363,7 +363,9 @@ impl TableComponent {
             }
             column_index += 1
         }
-        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1)
+            && column_index.saturating_sub(1) != self.headers.len().saturating_sub(1)
+        {
             widths.pop();
         }
         let far_right_column_index = column_index;
@@ -371,7 +373,9 @@ impl TableComponent {
             .iter()
             .map(|(_, width)| Constraint::Length(*width as u16))
             .collect::<Vec<Constraint>>();
-        if self.selected_column_index() != self.headers.len().saturating_sub(1) {
+        if self.selected_column_index() != self.headers.len().saturating_sub(1)
+            && column_index.saturating_sub(1) != self.headers.len().saturating_sub(1)
+        {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_column_width));
@@ -739,7 +743,7 @@ mod test {
     }
 
     #[test]
-    fn test_calculate_cell_widths() {
+    fn test_calculate_cell_widths_when_sum_of_cell_widths_is_greater_than_table_width() {
         let mut component = TableComponent::new(KeyConfig::default());
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
         component.rows = vec![
@@ -762,6 +766,19 @@ mod test {
                 Constraint::Min(10),
             ]
         );
+    }
+
+    #[test]
+    fn test_calculate_cell_widths_when_sum_of_cell_widths_is_less_than_table_width() {
+        let mut component = TableComponent::new(KeyConfig::default());
+        component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["aaaaa", "bbbbb", "ccccc"]
+                .iter()
+                .map(|h| h.to_string())
+                .collect(),
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+        ];
 
         let (selected_column_index, headers, rows, constraints) =
             component.calculate_cell_widths(20);
@@ -780,10 +797,13 @@ mod test {
                 Constraint::Length(1),
                 Constraint::Length(5),
                 Constraint::Length(5),
-                Constraint::Min(10),
+                Constraint::Length(5),
             ]
         );
+    }
 
+    #[test]
+    fn test_calculate_cell_widths_when_component_has_multiple_rows() {
         let mut component = TableComponent::new(KeyConfig::default());
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
         component.rows = vec![
@@ -814,7 +834,7 @@ mod test {
                 Constraint::Length(1),
                 Constraint::Length(10),
                 Constraint::Length(5),
-                Constraint::Min(10),
+                Constraint::Length(5),
             ]
         );
     }

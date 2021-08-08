@@ -1,7 +1,7 @@
 use crate::clipboard::Clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
+use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
-use crate::utils::{MySqlPool, Pool};
 use crate::{
     components::tab::Tab,
     components::{
@@ -64,6 +64,8 @@ impl App {
                     .split(f.size())[0],
                 false,
             )?;
+            self.error.draw(f, Rect::default(), false)?;
+            self.help.draw(f, Rect::default(), false)?;
             return Ok(());
         }
 
@@ -131,9 +133,15 @@ impl App {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            self.pool = Some(Box::new(
-                MySqlPool::new(conn.database_url().as_str()).await?,
-            ));
+            self.pool = if conn.is_mysql() {
+                Some(Box::new(
+                    MySqlPool::new(conn.database_url().as_str()).await?,
+                ))
+            } else {
+                Some(Box::new(
+                    PostgresPool::new(conn.database_url().as_str()).await?,
+                ))
+            };
             let databases = match &conn.database {
                 Some(database) => vec![Database::new(
                     database.clone(),
@@ -148,6 +156,7 @@ impl App {
             self.databases.update(databases.as_slice()).unwrap();
             self.focus = Focus::DabataseList;
             self.record_table.reset();
+            self.tab.reset();
         }
         Ok(())
     }
@@ -159,7 +168,7 @@ impl App {
                 .pool
                 .as_ref()
                 .unwrap()
-                .get_records(&database.name, &table.name, 0, None)
+                .get_records(&database, &table, 0, None)
                 .await?;
             self.record_table
                 .update(records, headers, database.clone(), table.clone());
@@ -168,7 +177,7 @@ impl App {
                 .pool
                 .as_ref()
                 .unwrap()
-                .get_columns(&database.name, &table.name)
+                .get_columns(&database, &table)
                 .await?;
             self.structure_table
                 .update(records, headers, database.clone(), table.clone());
@@ -185,8 +194,8 @@ impl App {
                 .as_ref()
                 .unwrap()
                 .get_records(
-                    &database.name,
-                    &table.name,
+                    &database,
+                    &table,
                     0,
                     if self.record_table.filter.input.is_empty() {
                         None
@@ -268,10 +277,7 @@ impl App {
                         }
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
-                            if index.saturating_add(1)
-                                % crate::utils::RECORDS_LIMIT_PER_PAGE as usize
-                                == 0
-                            {
+                            if index.saturating_add(1) % RECORDS_LIMIT_PER_PAGE as usize == 0 {
                                 if let Some((database, table)) =
                                     self.databases.tree().selected_table()
                                 {
@@ -280,8 +286,8 @@ impl App {
                                         .as_ref()
                                         .unwrap()
                                         .get_records(
-                                            &database.name.clone(),
-                                            &table.name,
+                                            &database,
+                                            &table,
                                             index as u16,
                                             if self.record_table.filter.input.is_empty() {
                                                 None

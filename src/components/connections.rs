@@ -20,10 +20,14 @@ pub struct ConnectionsComponent {
 
 impl ConnectionsComponent {
     pub fn new(key_config: KeyConfig, connections: Vec<Connection>) -> Self {
+        let mut state = ListState::default();
+        if !connections.is_empty() {
+            state.select(Some(0));
+        }
         Self {
             connections,
             key_config,
-            state: ListState::default(),
+            state,
         }
     }
 
@@ -31,7 +35,7 @@ impl ConnectionsComponent {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.connections.len() - 1 {
-                    0
+                    self.connections.len() - 1
                 } else {
                     i + 1
                 }
@@ -45,7 +49,7 @@ impl ConnectionsComponent {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.connections.len() - 1
+                    0
                 } else {
                     i - 1
                 }

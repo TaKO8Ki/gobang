@@ -94,8 +94,8 @@ impl DatabasesComponent {
             format!("{:w$}", " ", w = (indent as usize) * 2)
         };
 
-        let arrow = if item.kind().is_database() {
-            if item.kind().is_database_collapsed() {
+        let arrow = if item.kind().is_database() || item.kind().is_schema() {
+            if item.kind().is_database_collapsed() || item.kind().is_schema_collapsed() {
                 FOLDER_ICON_COLLAPSED
             } else {
                 FOLDER_ICON_EXPANDED
@@ -346,7 +346,7 @@ mod test {
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     false,
                 ),
@@ -366,7 +366,7 @@ mod test {
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     false,
                 ),
@@ -389,13 +389,14 @@ mod test {
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     &Table {
                         name: "bar".to_string(),
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        schema: None
                     },
                 ),
                 false,
@@ -414,13 +415,14 @@ mod test {
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     &Table {
                         name: "bar".to_string(),
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        schema: None
                     },
                 ),
                 true,
@@ -442,13 +444,14 @@ mod test {
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     &Table {
                         name: "barbaz".to_string(),
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        schema: None
                     },
                 ),
                 false,
@@ -467,13 +470,14 @@ mod test {
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
-                        tables: Vec::new(),
+                        children: Vec::new(),
                     },
                     &Table {
                         name: "barbaz".to_string(),
                         create_time: None,
                         update_time: None,
                         engine: None,
+                        schema: None
                     },
                 ),
                 true,

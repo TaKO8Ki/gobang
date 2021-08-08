@@ -1,5 +1,6 @@
 use crate::Key;
 use serde::Deserialize;
+use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
@@ -10,10 +11,28 @@ pub struct Config {
     pub key_config: KeyConfig,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+enum DatabaseType {
+    #[serde(rename = "mysql")]
+    MySql,
+    #[serde(rename = "postgres")]
+    Postgres,
+}
+
+impl fmt::Display for DatabaseType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::MySql => write!(f, "mysql"),
+            Self::Postgres => write!(f, "postgres"),
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             conn: vec![Connection {
+                r#type: DatabaseType::MySql,
                 name: None,
                 user: "root".to_string(),
                 host: "localhost".to_string(),
@@ -27,6 +46,7 @@ impl Default for Config {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
+    r#type: DatabaseType,
     name: Option<String>,
     user: String,
     host: String,
@@ -113,19 +133,42 @@ impl Config {
 impl Connection {
     pub fn database_url(&self) -> String {
         match &self.database {
-            Some(database) => format!(
-                "mysql://{user}:@{host}:{port}/{database}",
-                user = self.user,
-                host = self.host,
-                port = self.port,
-                database = database
-            ),
-            None => format!(
-                "mysql://{user}:@{host}:{port}",
-                user = self.user,
-                host = self.host,
-                port = self.port,
-            ),
+            Some(database) => match self.r#type {
+                DatabaseType::MySql => format!(
+                    "mysql://{user}:@{host}:{port}/{database}",
+                    user = self.user,
+                    host = self.host,
+                    port = self.port,
+                    database = database
+                ),
+                DatabaseType::Postgres => {
+                    format!(
+                        "postgres://{user}@{host}:{port}/{database}",
+                        user = self.user,
+                        host = self.host,
+                        port = self.port,
+                        database = database
+                    )
+                }
+            },
+            None => match self.r#type {
+                DatabaseType::MySql => format!(
+                    "mysql://{user}:@{host}:{port}",
+                    user = self.user,
+                    host = self.host,
+                    port = self.port,
+                ),
+                DatabaseType::Postgres => format!(
+                    "postgres://{user}@{host}:{port}",
+                    user = self.user,
+                    host = self.host,
+                    port = self.port,
+                ),
+            },
         }
+    }
+
+    pub fn is_mysql(&self) -> bool {
+        matches!(self.r#type, DatabaseType::MySql)
     }
 }
