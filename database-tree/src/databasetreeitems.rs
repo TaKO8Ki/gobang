@@ -31,7 +31,7 @@ impl DatabaseTreeItems {
                         item.set_collapsed(false);
                         item
                     } else {
-                        let mut item = item.clone();
+                        let mut item = item;
                         item.show();
                         item
                     }

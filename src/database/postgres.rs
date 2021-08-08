@@ -265,7 +265,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<Vec<String>> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.join(",").to_string()));
+        return Ok(value.map_or("NULL".to_string(), |v| v.join(",")));
     }
     Err(anyhow::anyhow!(
         "column type not implemented: `{}` {}",
