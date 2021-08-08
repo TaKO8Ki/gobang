@@ -113,7 +113,7 @@ impl Pool for PostgresPool {
             for column in row.columns() {
                 match convert_column_value_to_string(&row, column) {
                     Ok(v) => new_row.push(v),
-                    Err(err) => {
+                    Err(_) => {
                         if json_records.is_none() {
                             json_records = Some(
                                 self.get_json_records(database, table, page, filter.clone())
