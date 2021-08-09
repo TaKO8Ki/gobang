@@ -24,7 +24,9 @@ impl DatabaseTreeItems {
             tree_items: self
                 .tree_items
                 .iter()
-                .filter(|item| item.is_database() || item.is_match(&filter_text))
+                .filter(|item| {
+                    item.is_database() || item.kind().is_schema() || item.is_match(&filter_text)
+                })
                 .map(|item| {
                     let mut item = item.clone();
                     if item.is_database() {

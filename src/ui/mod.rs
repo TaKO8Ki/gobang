@@ -10,6 +10,10 @@ pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
         Some(MoveSelection::Down)
     } else if key == key_config.scroll_up {
         Some(MoveSelection::Up)
+    } else if key == key_config.scroll_down_multiple_lines {
+        Some(MoveSelection::MultipleDown)
+    } else if key == key_config.scroll_up_multiple_lines {
+        Some(MoveSelection::MultipleUp)
     } else if key == key_config.scroll_right {
         Some(MoveSelection::Right)
     } else if key == key_config.scroll_left {

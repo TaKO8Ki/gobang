@@ -123,7 +123,7 @@ impl TableComponent {
         self.selected_row.select(i);
     }
 
-    fn scroll_top(&mut self) {
+    fn scroll_to_top(&mut self) {
         if self.rows.is_empty() {
             return;
         }
@@ -131,7 +131,7 @@ impl TableComponent {
         self.selected_row.select(Some(0));
     }
 
-    fn scroll_bottom(&mut self) {
+    fn scroll_to_bottom(&mut self) {
         if self.rows.is_empty() {
             return;
         }
@@ -504,10 +504,10 @@ impl Component for TableComponent {
             self.previous_row(10);
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_to_top {
-            self.scroll_top();
+            self.scroll_to_top();
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_to_bottom {
-            self.scroll_bottom();
+            self.scroll_to_bottom();
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_right {
             self.next_column();

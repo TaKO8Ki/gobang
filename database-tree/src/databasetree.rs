@@ -10,6 +10,8 @@ use std::{collections::BTreeSet, usize};
 pub enum MoveSelection {
     Up,
     Down,
+    MultipleUp,
+    MultipleDown,
     Left,
     Right,
     Top,
@@ -102,8 +104,10 @@ impl DatabaseTree {
     pub fn move_selection(&mut self, dir: MoveSelection) -> bool {
         self.selection.map_or(false, |selection| {
             let new_index = match dir {
-                MoveSelection::Up => self.selection_updown(selection, true),
-                MoveSelection::Down => self.selection_updown(selection, false),
+                MoveSelection::Up => self.selection_updown(selection, true, 1),
+                MoveSelection::Down => self.selection_updown(selection, false, 1),
+                MoveSelection::MultipleUp => self.selection_updown(selection, true, 10),
+                MoveSelection::MultipleDown => self.selection_updown(selection, false, 10),
                 MoveSelection::Left => self.selection_left(selection),
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
@@ -188,15 +192,19 @@ impl DatabaseTree {
         }
     }
 
-    fn selection_updown(&self, current_index: usize, up: bool) -> Option<usize> {
+    fn selection_updown(&self, current_index: usize, up: bool, lines: usize) -> Option<usize> {
         let mut index = current_index;
 
         loop {
             index = {
                 let new_index = if up {
-                    index.saturating_sub(1)
+                    index
+                        .saturating_sub(lines)
+                        .clamp(0, self.items.len().saturating_sub(1))
                 } else {
-                    index.saturating_add(1)
+                    index
+                        .saturating_add(lines)
+                        .clamp(0, self.items.len().saturating_sub(1))
                 };
 
                 if new_index == index {
@@ -243,7 +251,7 @@ impl DatabaseTree {
 
         let mut index = current_index;
 
-        while let Some(selection) = self.selection_updown(index, true) {
+        while let Some(selection) = self.selection_updown(index, true, 1) {
             index = selection;
 
             if self.items.tree_items[index].info().indent() < indent {
@@ -282,7 +290,7 @@ impl DatabaseTree {
                 self.items.expand(current_selection, false);
                 return Some(current_selection);
             }
-            return self.selection_updown(current_selection, false);
+            return self.selection_updown(current_selection, false, 1);
         }
 
         if item.kind().is_schema() {
@@ -290,7 +298,7 @@ impl DatabaseTree {
                 self.items.expand(current_selection, false);
                 return Some(current_selection);
             }
-            return self.selection_updown(current_selection, false);
+            return self.selection_updown(current_selection, false, 1);
         }
 
         None
