@@ -10,6 +10,8 @@ use std::{collections::BTreeSet, usize};
 pub enum MoveSelection {
     Up,
     Down,
+    MultipleUp,
+    MultipleDown,
     Left,
     Right,
     Top,
@@ -102,8 +104,10 @@ impl DatabaseTree {
     pub fn move_selection(&mut self, dir: MoveSelection) -> bool {
         self.selection.map_or(false, |selection| {
             let new_index = match dir {
-                MoveSelection::Up => self.selection_updown(selection, true),
-                MoveSelection::Down => self.selection_updown(selection, false),
+                MoveSelection::Up => self.selection_up(selection, 1),
+                MoveSelection::Down => self.selection_down(selection, 1),
+                MoveSelection::MultipleUp => self.selection_up(selection, 10),
+                MoveSelection::MultipleDown => self.selection_down(selection, 10),
                 MoveSelection::Left => self.selection_left(selection),
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
@@ -188,6 +192,59 @@ impl DatabaseTree {
         }
     }
 
+    fn selection_up(&self, current_index: usize, lines: usize) -> Option<usize> {
+        let mut index = current_index;
+
+        'a: for _ in 0..lines {
+            loop {
+                if index == 0 {
+                    break 'a;
+                }
+
+                index = index.saturating_sub(1);
+
+                if self.is_visible_index(index) {
+                    break;
+                }
+            }
+        }
+
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+    }
+
+    fn selection_down(&self, current_index: usize, lines: usize) -> Option<usize> {
+        let mut index = current_index;
+        let last_visible_item_index = self
+            .items
+            .tree_items
+            .iter()
+            .rposition(|x| x.info().is_visible())?;
+
+        'a: for _ in 0..lines {
+            loop {
+                if index >= last_visible_item_index {
+                    break 'a;
+                }
+
+                index = index.saturating_add(1);
+
+                if self.is_visible_index(index) {
+                    break;
+                }
+            }
+        }
+
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+    }
+
     fn selection_updown(&self, current_index: usize, up: bool) -> Option<usize> {
         let mut index = current_index;
 
@@ -204,22 +261,6 @@ impl DatabaseTree {
                 }
 
                 if new_index >= self.items.len() {
-                    break;
-                }
-
-                let item = self
-                    .items
-                    .tree_items
-                    .iter()
-                    .filter(|item| item.info().is_visible())
-                    .last()
-                    .unwrap();
-
-                if !up
-                    && (self.selected_item().unwrap().kind().is_database()
-                        || self.selected_item().unwrap().kind().is_schema())
-                    && self.selected_item().unwrap() == item
-                {
                     break;
                 }
 
@@ -372,6 +413,62 @@ mod test {
         assert_eq!(tree.selection, Some(1));
         assert!(tree.move_selection(MoveSelection::Down));
         assert_eq!(tree.selection, Some(2));
+    }
+
+    #[test]
+    fn test_selection_multiple_up_down() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec!["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
+                .iter()
+                .map(|x| Table::new(x.to_string()).into())
+                .collect(),
+        )];
+
+        // a
+        //   b
+        //   ...
+        //   j
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(0));
+        assert!(tree.move_selection(MoveSelection::MultipleDown));
+        assert_eq!(tree.selection, Some(10));
+
+        tree.selection = Some(11);
+        assert!(tree.move_selection(MoveSelection::MultipleUp));
+        assert_eq!(tree.selection, Some(1));
+
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Schema {
+                name: "b".to_string(),
+                tables: vec!["c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
+                    .iter()
+                    .map(|x| Table::new(x.to_string()).into())
+                    .collect(),
+            }
+            .into()],
+        )];
+
+        // a
+        //   b
+        //     c
+        //     ...
+        //     l
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        assert!(tree.move_selection(MoveSelection::Right));
+        assert_eq!(tree.selection, Some(0));
+        assert!(tree.move_selection(MoveSelection::MultipleDown));
+        assert_eq!(tree.selection, Some(10));
+
+        tree.selection = Some(11);
+        assert!(tree.move_selection(MoveSelection::MultipleUp));
+        assert_eq!(tree.selection, Some(1));
     }
 
     #[test]

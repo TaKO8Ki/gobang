@@ -31,32 +31,46 @@ impl ConnectionsComponent {
         }
     }
 
-    fn next_connection(&mut self) {
+    fn next_connection(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.connections.len() - 1 {
-                    self.connections.len() - 1
+                if i + lines >= self.connections.len() {
+                    Some(self.connections.len() - 1)
                 } else {
-                    i + 1
+                    Some(i + lines)
                 }
             }
-            None => 0,
+            None => None,
         };
-        self.state.select(Some(i));
+        self.state.select(i);
     }
 
-    fn previous_connection(&mut self) {
+    fn previous_connection(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i == 0 {
-                    0
+                if i <= lines {
+                    Some(0)
                 } else {
-                    i - 1
+                    Some(i - lines)
                 }
             }
-            None => 0,
+            None => None,
         };
-        self.state.select(Some(i));
+        self.state.select(i);
+    }
+
+    fn scroll_to_top(&mut self) {
+        if self.connections.is_empty() {
+            return;
+        }
+        self.state.select(Some(0));
+    }
+
+    fn scroll_to_bottom(&mut self) {
+        if self.connections.is_empty() {
+            return;
+        }
+        self.state.select(Some(self.connections.len() - 1));
     }
 
     pub fn selected_connection(&self) -> Option<&Connection> {
@@ -101,10 +115,22 @@ impl Component for ConnectionsComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         if key == self.key_config.scroll_down {
-            self.next_connection();
+            self.next_connection(1);
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_up {
-            self.previous_connection();
+            self.previous_connection(1);
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.scroll_down_multiple_lines {
+            self.next_connection(10);
+            return Ok(EventState::NotConsumed);
+        } else if key == self.key_config.scroll_up_multiple_lines {
+            self.previous_connection(10);
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.scroll_to_top {
+            self.scroll_to_top();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.scroll_to_bottom {
+            self.scroll_to_bottom();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
