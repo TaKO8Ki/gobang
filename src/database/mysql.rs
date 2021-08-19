@@ -122,49 +122,61 @@ impl Pool for MySqlPool {
 
 fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
     let column_name = column.name();
-    match column.type_info().clone().name() {
-        "INT" | "SMALLINT" | "BIGINT" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<i64> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "DECIMAL" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<rust_decimal::Decimal> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "INT UNSIGNED" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<u64> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "VARCHAR" | "CHAR" | "ENUM" | "TEXT" | "LONGTEXT" => {
-            return Ok(row
-                .try_get(column_name)
-                .unwrap_or_else(|_| "NULL".to_string()))
-        }
-        "DATE" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<NaiveDate> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "TIMESTAMP" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<chrono::DateTime<chrono::Utc>> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        "BOOLEAN" => {
-            if let Ok(value) = row.try_get(column_name) {
-                let value: Option<bool> = value;
-                return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-            }
-        }
-        _ => (),
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<String> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<&str> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i8> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i32> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<i64> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<f32> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<rust_decimal::Decimal> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<u8> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<u16> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<u32> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<u64> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveDate> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<chrono::DateTime<chrono::Utc>> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<bool> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     Err(anyhow::anyhow!(
         "column type not implemented: `{}` {}",
