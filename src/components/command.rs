@@ -99,9 +99,13 @@ pub fn tab_records(key: &KeyConfig) -> CommandText {
     CommandText::new(format!("Records [{}]", key.tab_records), CMD_GROUP_TABLE)
 }
 
-pub fn tab_structure(key: &KeyConfig) -> CommandText {
+pub fn tab_columns(key: &KeyConfig) -> CommandText {
+    CommandText::new(format!("Columns [{}]", key.tab_columns), CMD_GROUP_TABLE)
+}
+
+pub fn tab_constraints(key: &KeyConfig) -> CommandText {
     CommandText::new(
-        format!("Structure [{}]", key.tab_structure),
+        format!("Constraints [{}]", key.tab_constraints),
         CMD_GROUP_TABLE,
     )
 }
@@ -109,8 +113,8 @@ pub fn tab_structure(key: &KeyConfig) -> CommandText {
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
-            "Tab [{},{}]",
-            key_config.tab_records, key_config.tab_structure
+            "Tab [{},{},{}]",
+            key_config.tab_records, key_config.tab_columns, key_config.tab_constraints
         ),
         CMD_GROUP_GENERAL,
     )

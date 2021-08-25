@@ -1,6 +1,8 @@
 use crate::clipboard::copy_to_clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
-use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
+use crate::database::{
+    Column, Constraint as TConstraint, MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE,
+};
 use crate::event::Key;
 use crate::{
     components::tab::Tab,
@@ -24,7 +26,8 @@ pub enum Focus {
 }
 pub struct App {
     record_table: RecordTableComponent,
-    structure_table: TableComponent,
+    column_table: TableComponent,
+    constraint_table: TableComponent,
     focus: Focus,
     tab: TabComponent,
     help: HelpComponent,
@@ -42,7 +45,8 @@ impl App {
             config: config.clone(),
             connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
             record_table: RecordTableComponent::new(config.key_config.clone()),
-            structure_table: TableComponent::new(config.key_config.clone()),
+            column_table: TableComponent::new(config.key_config.clone()),
+            constraint_table: TableComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone()),
@@ -93,10 +97,15 @@ impl App {
                 self.record_table
                     .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
             }
-            Tab::Structure => {
-                self.structure_table
+            Tab::Columns => {
+                self.column_table
                     .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
             }
+            Tab::Constraints => self.constraint_table.draw(
+                f,
+                right_chunks[1],
+                matches!(self.focus, Focus::Table),
+            )?,
         }
         self.error.draw(f, Rect::default(), false)?;
         self.help.draw(f, Rect::default(), false)?;
@@ -162,6 +171,7 @@ impl App {
     async fn update_table(&mut self) -> anyhow::Result<()> {
         if let Some((database, table)) = self.databases.tree().selected_table() {
             self.focus = Focus::Table;
+            self.record_table.reset();
             let (headers, records) = self
                 .pool
                 .as_ref()
@@ -171,14 +181,39 @@ impl App {
             self.record_table
                 .update(records, headers, database.clone(), table.clone());
 
-            let (headers, records) = self
+            self.column_table.reset();
+            let columns = self
                 .pool
                 .as_ref()
                 .unwrap()
                 .get_columns(&database, &table)
                 .await?;
-            self.structure_table
-                .update(records, headers, database.clone(), table.clone());
+            self.column_table.update(
+                columns
+                    .iter()
+                    .map(|c| c.columns())
+                    .collect::<Vec<Vec<String>>>(),
+                Column::headers(),
+                database.clone(),
+                table.clone(),
+            );
+
+            self.constraint_table.reset();
+            let constraints = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_constraints(&database, &table)
+                .await?;
+            self.constraint_table.update(
+                constraints
+                    .iter()
+                    .map(|c| c.columns())
+                    .collect::<Vec<Vec<String>>>(),
+                TConstraint::headers(),
+                database.clone(),
+                table.clone(),
+            );
             self.table_status
                 .update(self.record_table.len() as u64, table);
         }
@@ -303,13 +338,24 @@ impl App {
                             }
                         };
                     }
-                    Tab::Structure => {
-                        if self.structure_table.event(key)?.is_consumed() {
+                    Tab::Columns => {
+                        if self.column_table.event(key)?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
 
                         if key == self.config.key_config.copy {
-                            if let Some(text) = self.structure_table.selected_cells() {
+                            if let Some(text) = self.column_table.selected_cells() {
+                                copy_to_clipboard(text.as_str())?
+                            }
+                        };
+                    }
+                    Tab::Constraints => {
+                        if self.constraint_table.event(key)?.is_consumed() {
+                            return Ok(EventState::Consumed);
+                        };
+
+                        if key == self.config.key_config.copy {
+                            if let Some(text) = self.column_table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
                         };

@@ -16,7 +16,8 @@ use tui::{
 #[derive(Debug, Clone, Copy, EnumIter)]
 pub enum Tab {
     Records,
-    Structure,
+    Columns,
+    Constraints,
 }
 
 impl std::fmt::Display for Tab {
@@ -45,7 +46,8 @@ impl TabComponent {
     fn names(&self) -> Vec<String> {
         vec![
             command::tab_records(&self.key_config).name,
-            command::tab_structure(&self.key_config).name,
+            command::tab_columns(&self.key_config).name,
+            command::tab_constraints(&self.key_config).name,
         ]
     }
 }
@@ -74,8 +76,11 @@ impl Component for TabComponent {
         if key == self.key_config.tab_records {
             self.selected_tab = Tab::Records;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_structure {
-            self.selected_tab = Tab::Structure;
+        } else if key == self.key_config.tab_columns {
+            self.selected_tab = Tab::Columns;
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.tab_constraints {
+            self.selected_tab = Tab::Constraints;
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
