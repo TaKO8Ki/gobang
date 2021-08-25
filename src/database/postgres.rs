@@ -1,4 +1,4 @@
-use super::{Pool, RECORDS_LIMIT_PER_PAGE};
+use super::{Column, Constraint, Pool, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Child, Database, Schema, Table};
@@ -46,11 +46,11 @@ impl Pool for PostgresPool {
         let mut tables = Vec::new();
         while let Some(row) = rows.try_next().await? {
             tables.push(Table {
-                name: row.get("table_name"),
+                name: row.try_get("table_name")?,
                 create_time: None,
                 update_time: None,
                 engine: None,
-                schema: row.get("table_schema"),
+                schema: row.try_get("table_schema")?,
             })
         }
         let mut schemas = vec![];
@@ -143,11 +143,7 @@ impl Pool for PostgresPool {
         Ok((headers, records))
     }
 
-    async fn get_columns(
-        &self,
-        database: &Database,
-        table: &Table,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    async fn get_columns(&self, database: &Database, table: &Table) -> anyhow::Result<Vec<Column>> {
         let table_schema = table
             .schema
             .as_ref()
@@ -157,21 +153,49 @@ impl Pool for PostgresPool {
         )
         .bind(&database.name).bind(table_schema).bind(&table.name)
         .fetch(&self.pool);
-        let mut headers = vec![];
-        let mut records = vec![];
+        let mut columns = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
-            let mut new_row = vec![];
-            for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
-            }
-            records.push(new_row)
+            columns.push(Column {
+                name: row.try_get("column_name")?,
+                r#type: row.try_get("data_type")?,
+                null: row.try_get("is_nullable")?,
+                default: row.try_get("column_default")?,
+                comment: row.try_get("Comment")?,
+            })
         }
-        Ok((headers, records))
+        Ok(columns)
+    }
+
+    async fn get_constraints(
+        &self,
+        _database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Constraint>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            tc.constraint_name, tc.table_name, kcu.column_name,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
+        FROM
+            information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+        JOIN information_schema.constraint_column_usage AS ccu
+            ON ccu.constraint_name = tc.constraint_name
+        WHERE ccu.table_name = $1
+        ",
+        )
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut constraints = vec![];
+        while let Some(row) = rows.try_next().await? {
+            constraints.push(Constraint {
+                name: row.try_get("constraint_name")?,
+                column_name: row.try_get("column_name")?,
+            })
+        }
+        Ok(constraints)
     }
 
     async fn close(&self) {

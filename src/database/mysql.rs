@@ -1,4 +1,4 @@
-use super::{Pool, RECORDS_LIMIT_PER_PAGE};
+use super::{Column, Constraint, Pool, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Child, Database, Table};
@@ -88,31 +88,53 @@ impl Pool for MySqlPool {
         Ok((headers, records))
     }
 
-    async fn get_columns(
-        &self,
-        database: &Database,
-        table: &Table,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    async fn get_columns(&self, database: &Database, table: &Table) -> anyhow::Result<Vec<Column>> {
         let query = format!(
             "SHOW FULL COLUMNS FROM `{}`.`{}`",
             database.name, table.name
         );
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
-        let mut headers = vec![];
-        let mut records = vec![];
+        let mut columns = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
-            let mut new_row = vec![];
-            for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
-            }
-            records.push(new_row)
+            columns.push(Column {
+                name: row.try_get("Field")?,
+                r#type: row.try_get("Type")?,
+                null: row.try_get("Null")?,
+                default: row.try_get("Default")?,
+                comment: row.try_get("Comment")?,
+            })
         }
-        Ok((headers, records))
+        Ok(columns)
+    }
+
+    async fn get_constraints(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Constraint>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            COLUMN_NAME,
+            CONSTRAINT_NAME
+        FROM
+            information_schema.KEY_COLUMN_USAGE
+        WHERE
+            TABLE_SCHEMA = ?
+            AND TABLE_NAME = ?
+        ",
+        )
+        .bind(&database.name)
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut constraints = vec![];
+        while let Some(row) = rows.try_next().await? {
+            constraints.push(Constraint {
+                name: row.try_get("CONSTRAINT_NAME")?,
+                column_name: row.try_get("COLUMN_NAME")?,
+            })
+        }
+        Ok(constraints)
     }
 
     async fn close(&self) {
