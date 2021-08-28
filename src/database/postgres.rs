@@ -1,4 +1,4 @@
-use super::{Column, Constraint, Pool, RECORDS_LIMIT_PER_PAGE};
+use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Child, Database, Schema, Table};
@@ -16,6 +16,61 @@ impl PostgresPool {
         Ok(Self {
             pool: PgPool::connect(database_url).await?,
         })
+    }
+}
+
+pub struct Constraint {
+    name: String,
+    column_name: String,
+}
+
+impl TableRow for Constraint {
+    fn fields(&self) -> Vec<String> {
+        vec!["name".to_string(), "column_name".to_string()]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![self.name.to_string(), self.column_name.to_string()]
+    }
+}
+
+pub struct Column {
+    name: Option<String>,
+    r#type: Option<String>,
+    null: Option<String>,
+    default: Option<String>,
+    comment: Option<String>,
+}
+
+impl TableRow for Column {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "type".to_string(),
+            "null".to_string(),
+            "default".to_string(),
+            "comment".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.r#type
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.null
+                .as_ref()
+                .map_or(String::new(), |null| null.to_string()),
+            self.default
+                .as_ref()
+                .map_or(String::new(), |default| default.to_string()),
+            self.comment
+                .as_ref()
+                .map_or(String::new(), |comment| comment.to_string()),
+        ]
     }
 }
 
@@ -143,7 +198,11 @@ impl Pool for PostgresPool {
         Ok((headers, records))
     }
 
-    async fn get_columns(&self, database: &Database, table: &Table) -> anyhow::Result<Vec<Column>> {
+    async fn get_columns(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let table_schema = table
             .schema
             .as_ref()
@@ -153,15 +212,15 @@ impl Pool for PostgresPool {
         )
         .bind(&database.name).bind(table_schema).bind(&table.name)
         .fetch(&self.pool);
-        let mut columns = vec![];
+        let mut columns: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            columns.push(Column {
+            columns.push(Box::new(Column {
                 name: row.try_get("column_name")?,
                 r#type: row.try_get("data_type")?,
                 null: row.try_get("is_nullable")?,
                 default: row.try_get("column_default")?,
                 comment: row.try_get("Comment")?,
-            })
+            }))
         }
         Ok(columns)
     }
@@ -170,7 +229,7 @@ impl Pool for PostgresPool {
         &self,
         _database: &Database,
         table: &Table,
-    ) -> anyhow::Result<Vec<Constraint>> {
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let mut rows = sqlx::query(
             "
         SELECT
@@ -188,12 +247,12 @@ impl Pool for PostgresPool {
         )
         .bind(&table.name)
         .fetch(&self.pool);
-        let mut constraints = vec![];
+        let mut constraints: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            constraints.push(Constraint {
+            constraints.push(Box::new(Constraint {
                 name: row.try_get("constraint_name")?,
                 column_name: row.try_get("column_name")?,
-            })
+            }))
         }
         Ok(constraints)
     }

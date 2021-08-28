@@ -1,4 +1,4 @@
-use super::{Column, Constraint, Pool, RECORDS_LIMIT_PER_PAGE};
+use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Child, Database, Table};
@@ -15,6 +15,61 @@ impl MySqlPool {
         Ok(Self {
             pool: MPool::connect(database_url).await?,
         })
+    }
+}
+
+pub struct Constraint {
+    name: String,
+    column_name: String,
+}
+
+impl TableRow for Constraint {
+    fn fields(&self) -> Vec<String> {
+        vec!["name".to_string(), "column_name".to_string()]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![self.name.to_string(), self.column_name.to_string()]
+    }
+}
+
+pub struct Column {
+    name: Option<String>,
+    r#type: Option<String>,
+    null: Option<String>,
+    default: Option<String>,
+    comment: Option<String>,
+}
+
+impl TableRow for Column {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "type".to_string(),
+            "null".to_string(),
+            "default".to_string(),
+            "comment".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.r#type
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.null
+                .as_ref()
+                .map_or(String::new(), |null| null.to_string()),
+            self.default
+                .as_ref()
+                .map_or(String::new(), |default| default.to_string()),
+            self.comment
+                .as_ref()
+                .map_or(String::new(), |comment| comment.to_string()),
+        ]
     }
 }
 
@@ -88,21 +143,25 @@ impl Pool for MySqlPool {
         Ok((headers, records))
     }
 
-    async fn get_columns(&self, database: &Database, table: &Table) -> anyhow::Result<Vec<Column>> {
+    async fn get_columns(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let query = format!(
             "SHOW FULL COLUMNS FROM `{}`.`{}`",
             database.name, table.name
         );
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
-        let mut columns = vec![];
+        let mut columns: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            columns.push(Column {
+            columns.push(Box::new(Column {
                 name: row.try_get("Field")?,
                 r#type: row.try_get("Type")?,
                 null: row.try_get("Null")?,
                 default: row.try_get("Default")?,
                 comment: row.try_get("Comment")?,
-            })
+            }))
         }
         Ok(columns)
     }
@@ -111,7 +170,7 @@ impl Pool for MySqlPool {
         &self,
         database: &Database,
         table: &Table,
-    ) -> anyhow::Result<Vec<Constraint>> {
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let mut rows = sqlx::query(
             "
         SELECT
@@ -127,12 +186,12 @@ impl Pool for MySqlPool {
         .bind(&database.name)
         .bind(&table.name)
         .fetch(&self.pool);
-        let mut constraints = vec![];
+        let mut constraints: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            constraints.push(Constraint {
+            constraints.push(Box::new(Constraint {
                 name: row.try_get("CONSTRAINT_NAME")?,
                 column_name: row.try_get("COLUMN_NAME")?,
-            })
+            }))
         }
         Ok(constraints)
     }

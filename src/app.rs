@@ -1,8 +1,6 @@
 use crate::clipboard::copy_to_clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
-use crate::database::{
-    Column, Constraint as TConstraint, MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE,
-};
+use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
 use crate::{
     components::tab::Tab,
@@ -188,16 +186,17 @@ impl App {
                 .unwrap()
                 .get_columns(&database, &table)
                 .await?;
-            self.column_table.update(
-                columns
-                    .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                Column::headers(),
-                database.clone(),
-                table.clone(),
-            );
-
+            if !columns.is_empty() {
+                self.column_table.update(
+                    columns
+                        .iter()
+                        .map(|c| c.columns())
+                        .collect::<Vec<Vec<String>>>(),
+                    columns.get(0).unwrap().fields(),
+                    database.clone(),
+                    table.clone(),
+                );
+            }
             self.constraint_table.reset();
             let constraints = self
                 .pool
@@ -205,15 +204,17 @@ impl App {
                 .unwrap()
                 .get_constraints(&database, &table)
                 .await?;
-            self.constraint_table.update(
-                constraints
-                    .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                TConstraint::headers(),
-                database.clone(),
-                table.clone(),
-            );
+            if !constraints.is_empty() {
+                self.constraint_table.update(
+                    constraints
+                        .iter()
+                        .map(|c| c.columns())
+                        .collect::<Vec<Vec<String>>>(),
+                    constraints.get(0).unwrap().fields(),
+                    database.clone(),
+                    table.clone(),
+                );
+            }
             self.table_status
                 .update(self.record_table.len() as u64, table);
         }
