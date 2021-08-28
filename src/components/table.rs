@@ -48,7 +48,7 @@ impl TableComponent {
 
     fn title(&self) -> String {
         self.table.as_ref().map_or(" - ".to_string(), |table| {
-            format!("{}/{}", table.0.name, table.1.name)
+            format!("{}.{}", table.0.name, table.1.name)
         })
     }
 

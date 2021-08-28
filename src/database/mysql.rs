@@ -1,4 +1,4 @@
-use super::{Pool, RECORDS_LIMIT_PER_PAGE};
+use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use database_tree::{Child, Database, Table};
@@ -15,6 +15,61 @@ impl MySqlPool {
         Ok(Self {
             pool: MPool::connect(database_url).await?,
         })
+    }
+}
+
+pub struct Constraint {
+    name: String,
+    column_name: String,
+}
+
+impl TableRow for Constraint {
+    fn fields(&self) -> Vec<String> {
+        vec!["name".to_string(), "column_name".to_string()]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![self.name.to_string(), self.column_name.to_string()]
+    }
+}
+
+pub struct Column {
+    name: Option<String>,
+    r#type: Option<String>,
+    null: Option<String>,
+    default: Option<String>,
+    comment: Option<String>,
+}
+
+impl TableRow for Column {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "type".to_string(),
+            "null".to_string(),
+            "default".to_string(),
+            "comment".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.r#type
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.null
+                .as_ref()
+                .map_or(String::new(), |null| null.to_string()),
+            self.default
+                .as_ref()
+                .map_or(String::new(), |default| default.to_string()),
+            self.comment
+                .as_ref()
+                .map_or(String::new(), |comment| comment.to_string()),
+        ]
     }
 }
 
@@ -92,27 +147,53 @@ impl Pool for MySqlPool {
         &self,
         database: &Database,
         table: &Table,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let query = format!(
             "SHOW FULL COLUMNS FROM `{}`.`{}`",
             database.name, table.name
         );
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
-        let mut headers = vec![];
-        let mut records = vec![];
+        let mut columns: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
-            let mut new_row = vec![];
-            for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
-            }
-            records.push(new_row)
+            columns.push(Box::new(Column {
+                name: row.try_get("Field")?,
+                r#type: row.try_get("Type")?,
+                null: row.try_get("Null")?,
+                default: row.try_get("Default")?,
+                comment: row.try_get("Comment")?,
+            }))
         }
-        Ok((headers, records))
+        Ok(columns)
+    }
+
+    async fn get_constraints(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            COLUMN_NAME,
+            CONSTRAINT_NAME
+        FROM
+            information_schema.KEY_COLUMN_USAGE
+        WHERE
+            TABLE_SCHEMA = ?
+            AND TABLE_NAME = ?
+        ",
+        )
+        .bind(&database.name)
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut constraints: Vec<Box<dyn TableRow>> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            constraints.push(Box::new(Constraint {
+                name: row.try_get("CONSTRAINT_NAME")?,
+                column_name: row.try_get("COLUMN_NAME")?,
+            }))
+        }
+        Ok(constraints)
     }
 
     async fn close(&self) {
@@ -124,7 +205,7 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        return Ok(value.unwrap_or_else(|| "NULL".to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;

@@ -79,7 +79,8 @@ pub struct KeyConfig {
     pub extend_selection_by_one_cell_up: Key,
     pub extend_selection_by_one_cell_down: Key,
     pub tab_records: Key,
-    pub tab_structure: Key,
+    pub tab_columns: Key,
+    pub tab_constraints: Key,
 }
 
 impl Default for KeyConfig {
@@ -108,7 +109,8 @@ impl Default for KeyConfig {
             extend_selection_by_one_cell_down: Key::Char('J'),
             extend_selection_by_one_cell_up: Key::Char('K'),
             tab_records: Key::Char('1'),
-            tab_structure: Key::Char('2'),
+            tab_columns: Key::Char('2'),
+            tab_constraints: Key::Char('3'),
         }
     }
 }
