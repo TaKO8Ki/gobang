@@ -55,7 +55,6 @@ The following is a sample config.toml file:
 ```toml
 [[conn]]
 type = "mysql"
-name = "sample"
 user = "root"
 host = "localhost"
 port = 3306
