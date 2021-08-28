@@ -18,6 +18,7 @@ pub enum Tab {
     Records,
     Columns,
     Constraints,
+    ForeignKeys,
 }
 
 impl std::fmt::Display for Tab {
@@ -48,6 +49,7 @@ impl TabComponent {
             command::tab_records(&self.key_config).name,
             command::tab_columns(&self.key_config).name,
             command::tab_constraints(&self.key_config).name,
+            command::tab_foreign_keys(&self.key_config).name,
         ]
     }
 }
@@ -81,6 +83,9 @@ impl Component for TabComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.tab_constraints {
             self.selected_tab = Tab::Constraints;
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.tab_foreign_keys {
+            self.selected_tab = Tab::ForeignKeys;
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)

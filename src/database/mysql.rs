@@ -73,6 +73,41 @@ impl TableRow for Column {
     }
 }
 
+pub struct ForeignKey {
+    name: Option<String>,
+    column_name: Option<String>,
+    ref_table: Option<String>,
+    ref_column: Option<String>,
+}
+
+impl TableRow for ForeignKey {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "column_name".to_string(),
+            "ref_table".to_string(),
+            "ref_column".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.column_name
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.ref_table
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.ref_column
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+        ]
+    }
+}
+
 #[async_trait]
 impl Pool for MySqlPool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
@@ -179,6 +214,8 @@ impl Pool for MySqlPool {
         FROM
             information_schema.KEY_COLUMN_USAGE
         WHERE
+            REFERENCED_TABLE_SCHEMA IS NULL
+            AND REFERENCED_TABLE_NAME IS NULL
             TABLE_SCHEMA = ?
             AND TABLE_NAME = ?
         ",
@@ -194,6 +231,44 @@ impl Pool for MySqlPool {
             }))
         }
         Ok(constraints)
+    }
+
+    async fn get_foreign_keys(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            TABLE_NAME,
+            COLUMN_NAME,
+            CONSTRAINT_NAME,
+            REFERENCED_TABLE_SCHEMA,
+            REFERENCED_TABLE_NAME,
+            REFERENCED_COLUMN_NAME
+        FROM
+            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE
+            REFERENCED_TABLE_SCHEMA IS NOT NULL
+            AND REFERENCED_TABLE_NAME IS NOT NULL
+            AND TABLE_SCHEMA = ?
+            AND TABLE_NAME = ?
+        ",
+        )
+        .bind(&database.name)
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            foreign_keys.push(Box::new(ForeignKey {
+                name: row.try_get("CONSTRAINT_NAME")?,
+                column_name: row.try_get("COLUMN_NAME")?,
+                ref_table: row.try_get("REFERENCED_TABLE_NAME")?,
+                ref_column: row.try_get("REFERENCED_COLUMN_NAME")?,
+            }))
+        }
+        Ok(foreign_keys)
     }
 
     async fn close(&self) {

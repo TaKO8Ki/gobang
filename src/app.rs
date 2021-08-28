@@ -26,6 +26,7 @@ pub struct App {
     record_table: RecordTableComponent,
     column_table: TableComponent,
     constraint_table: TableComponent,
+    foreign_key_table: TableComponent,
     focus: Focus,
     tab: TabComponent,
     help: HelpComponent,
@@ -45,6 +46,7 @@ impl App {
             record_table: RecordTableComponent::new(config.key_config.clone()),
             column_table: TableComponent::new(config.key_config.clone()),
             constraint_table: TableComponent::new(config.key_config.clone()),
+            foreign_key_table: TableComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone()),
@@ -100,6 +102,11 @@ impl App {
                     .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
             }
             Tab::Constraints => self.constraint_table.draw(
+                f,
+                right_chunks[1],
+                matches!(self.focus, Focus::Table),
+            )?,
+            Tab::ForeignKeys => self.foreign_key_table.draw(
                 f,
                 right_chunks[1],
                 matches!(self.focus, Focus::Table),
@@ -207,6 +214,24 @@ impl App {
             if !constraints.is_empty() {
                 self.constraint_table.update(
                     constraints
+                        .iter()
+                        .map(|c| c.columns())
+                        .collect::<Vec<Vec<String>>>(),
+                    constraints.get(0).unwrap().fields(),
+                    database.clone(),
+                    table.clone(),
+                );
+            }
+            self.foreign_key_table.reset();
+            let foreign_keys = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_foreign_keys(&database, &table)
+                .await?;
+            if !constraints.is_empty() {
+                self.foreign_key_table.update(
+                    foreign_keys
                         .iter()
                         .map(|c| c.columns())
                         .collect::<Vec<Vec<String>>>(),
@@ -356,7 +381,18 @@ impl App {
                         };
 
                         if key == self.config.key_config.copy {
-                            if let Some(text) = self.column_table.selected_cells() {
+                            if let Some(text) = self.constraint_table.selected_cells() {
+                                copy_to_clipboard(text.as_str())?
+                            }
+                        };
+                    }
+                    Tab::ForeignKeys => {
+                        if self.foreign_key_table.event(key)?.is_consumed() {
+                            return Ok(EventState::Consumed);
+                        };
+
+                        if key == self.config.key_config.copy {
+                            if let Some(text) = self.foreign_key_table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
                         };
