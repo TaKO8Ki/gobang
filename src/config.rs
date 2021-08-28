@@ -3,6 +3,14 @@ use serde::Deserialize;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use structopt::StructOpt;
+
+#[derive(StructOpt, Debug)]
+pub struct CliConfig {
+    /// Set the config file
+    #[structopt(long, short, global = true)]
+    config_path: Option<std::path::PathBuf>,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -118,8 +126,13 @@ impl Default for KeyConfig {
 }
 
 impl Config {
-    pub fn new(path: &str) -> anyhow::Result<Self> {
-        if let Ok(file) = File::open(path) {
+    pub fn new(config: &CliConfig) -> anyhow::Result<Self> {
+        let config_path = if let Some(config_path) = &config.config_path {
+            config_path.clone()
+        } else {
+            get_app_config_path()?.join("config.yml")
+        };
+        if let Ok(file) = File::open(config_path) {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             buf_reader.read_to_string(&mut contents)?;
@@ -175,4 +188,17 @@ impl Connection {
     pub fn is_mysql(&self) -> bool {
         matches!(self.r#type, DatabaseType::MySql)
     }
+}
+
+pub fn get_app_config_path() -> anyhow::Result<std::path::PathBuf> {
+    let mut path = if cfg!(target_os = "macos") {
+        dirs_next::home_dir().map(|h| h.join(".config"))
+    } else {
+        dirs_next::config_dir()
+    }
+    .ok_or_else(|| anyhow::anyhow!("failed to find os config dir."))?;
+
+    path.push("gobang");
+    std::fs::create_dir_all(&path)?;
+    Ok(path)
 }

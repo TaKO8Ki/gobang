@@ -6,20 +6,6 @@ host = "localhost"
 port = 3306
 
 [[conn]]
-type = "mysql"
-user = "root"
-host = "localhost"
-port = 3306
-database = "world"
-
-[[conn]]
-type = "mysql"
-user = "root"
-host = "localhost"
-port = 3306
-database = "employees"
-
-[[conn]]
 type = "postgres"
 user = "postgres"
 host = "localhost"
