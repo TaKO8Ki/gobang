@@ -35,6 +35,9 @@ copypasta = { version = "0.7.0", default-features = false }
 async-trait = "0.1.50"
 itertools = "0.10.0"
 rust_decimal = "1.15"
+dirs-next = "2.0"
+clap = "2.33.3"
+structopt = "0.3.22"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"

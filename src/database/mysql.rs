@@ -216,7 +216,7 @@ impl Pool for MySqlPool {
         WHERE
             REFERENCED_TABLE_SCHEMA IS NULL
             AND REFERENCED_TABLE_NAME IS NULL
-            TABLE_SCHEMA = ?
+            AND TABLE_SCHEMA = ?
             AND TABLE_NAME = ?
         ",
         )

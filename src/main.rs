@@ -1,4 +1,5 @@
 mod app;
+mod cli;
 mod clipboard;
 mod components;
 mod config;
@@ -16,24 +17,19 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use std::{
-    io::{self, stdout},
-    panic,
-};
+use std::{io, panic};
 use tui::{backend::CrosstermBackend, Terminal};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    enable_raw_mode()?;
-
     outln!("gobang logger");
 
-    let config = config::Config::new("sample.toml")?;
+    let value = crate::cli::parse();
+    let config = config::Config::new(&value.config)?;
 
-    let stdout = stdout();
     setup_terminal()?;
 
-    let backend = CrosstermBackend::new(stdout);
+    let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
     let mut app = App::new(config);
