@@ -205,7 +205,7 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        return Ok(value.unwrap_or_else(|| "NULL".to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
