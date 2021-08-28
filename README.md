@@ -31,9 +31,13 @@ $ cargo install --version 0.1.0-alpha.0 gobang
 
 | Key | Description |
 | ---- | ---- |
-| <kbd>h</kbd> | scroll left |
-| <kbd>j</kbd> | scroll down |
-| <kbd>k</kbd> | scroll up |
-| <kbd>l</kbd> | scroll right |
-| <kbd>Ctrl</kbd> + <kbd>d</kbd> | scroll down multiple lines |
-| <kbd>Ctrl</kbd> + <kbd>u</kbd> | scroll up multiple lines |
+| <kbd>h</kbd> | Scroll left |
+| <kbd>j</kbd> | Scroll down |
+| <kbd>k</kbd> | Scroll up |
+| <kbd>l</kbd> | Scroll right |
+| <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll down multiple lines |
+| <kbd>Ctrl</kbd> + <kbd>u</kbd> | Scroll up multiple lines |
+| <kbd>y</kbd> | Copy a cell value |
+| <kbd>→</kbd> | Move focus to right |
+| <kbd>←</kbd> | Move focus to left |
+| <kbd>/</kbd> | Filter |
