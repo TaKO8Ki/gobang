@@ -46,9 +46,9 @@ $ cargo install --version 0.1.0-alpha.0 gobang
 
 The location of the file depends on your OS:
 
-- macOS: $HOME/.config/gitui/config.toml
-- Linux: $HOME/.config/gitui/config.toml 
-- Windows: %APPDATA%/gitui/config.toml
+- macOS: `$HOME/.config/gitui/config.toml`
+- Linux: `$HOME/.config/gitui/config.toml`
+- Windows: `%APPDATA%/gitui/config.toml`
 
 The following is a sample config.toml file:
 
