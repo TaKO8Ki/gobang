@@ -219,7 +219,7 @@ impl Pool for PostgresPool {
                 r#type: row.try_get("data_type")?,
                 null: row.try_get("is_nullable")?,
                 default: row.try_get("column_default")?,
-                comment: row.try_get("Comment")?,
+                comment: None,
             }))
         }
         Ok(columns)
