@@ -90,6 +90,7 @@ pub struct KeyConfig {
     pub tab_columns: Key,
     pub tab_constraints: Key,
     pub tab_foreign_keys: Key,
+    pub tab_indexes: Key,
 }
 
 impl Default for KeyConfig {
@@ -121,6 +122,7 @@ impl Default for KeyConfig {
             tab_columns: Key::Char('2'),
             tab_constraints: Key::Char('3'),
             tab_foreign_keys: Key::Char('4'),
+            tab_indexes: Key::Char('5'),
         }
     }
 }
