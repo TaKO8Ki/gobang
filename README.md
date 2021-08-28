@@ -41,3 +41,29 @@ $ cargo install --version 0.1.0-alpha.0 gobang
 | <kbd>→</kbd> | Move focus to right |
 | <kbd>←</kbd> | Move focus to left |
 | <kbd>/</kbd> | Filter |
+
+## Configuration
+
+The location of the file depends on your OS:
+
+- macOS: $HOME/.config/gitui/config.toml
+- Linux: $HOME/.config/gitui/config.toml 
+- Windows: %APPDATA%/gitui/config.toml
+
+The following is a sample config.toml file:
+
+```toml
+[[conn]]
+type = "mysql"
+name = "sample"
+user = "root"
+host = "localhost"
+port = 3306
+
+[[conn]]
+type = "mysql"
+user = "root"
+host = "localhost"
+port = 3306
+database = "foo"
+```

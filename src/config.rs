@@ -132,7 +132,7 @@ impl Config {
         let config_path = if let Some(config_path) = &config.config_path {
             config_path.clone()
         } else {
-            get_app_config_path()?.join("config.yml")
+            get_app_config_path()?.join("config.toml")
         };
         if let Ok(file) = File::open(config_path) {
             let mut buf_reader = BufReader::new(file);
