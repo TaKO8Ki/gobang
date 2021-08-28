@@ -32,5 +32,6 @@ jobs:
         run: |
           cd database-tree
           cargo publish
+      - run: sleep 2
       - run: cargo publish
         if: ${{ always() }}
