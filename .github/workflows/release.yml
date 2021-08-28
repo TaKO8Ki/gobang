@@ -28,4 +28,9 @@ jobs:
       - run: cargo login ${CRATES_IO_TOKEN}
         env:
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Cargo puhlish database-tree
+        run: |
+          cd database-tree
+          cargo publish
       - run: cargo publish
+        if: ${{ always() }}
