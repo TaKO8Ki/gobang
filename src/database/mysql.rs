@@ -108,6 +108,36 @@ impl TableRow for ForeignKey {
     }
 }
 
+pub struct Index {
+    name: Option<String>,
+    column_name: Option<String>,
+    r#type: Option<String>,
+}
+
+impl TableRow for Index {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "column_name".to_string(),
+            "type".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.column_name
+                .as_ref()
+                .map_or(String::new(), |column_name| column_name.to_string()),
+            self.r#type
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+        ]
+    }
+}
+
 #[async_trait]
 impl Pool for MySqlPool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
@@ -266,6 +296,39 @@ impl Pool for MySqlPool {
                 column_name: row.try_get("COLUMN_NAME")?,
                 ref_table: row.try_get("REFERENCED_TABLE_NAME")?,
                 ref_column: row.try_get("REFERENCED_COLUMN_NAME")?,
+            }))
+        }
+        Ok(foreign_keys)
+    }
+
+    async fn get_indexes(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            DISTINCT TABLE_NAME,
+            INDEX_NAME,
+            INDEX_TYPE,
+            COLUMN_NAME
+        FROM
+            INFORMATION_SCHEMA.STATISTICS
+        WHERE
+            TABLE_SCHEMA = ?
+            AND TABLE_NAME = ?
+        ",
+        )
+        .bind(&database.name)
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            foreign_keys.push(Box::new(Index {
+                name: row.try_get("INDEX_NAME")?,
+                column_name: row.try_get("COLUMN_NAME")?,
+                r#type: row.try_get("INDEX_TYPE")?,
             }))
         }
         Ok(foreign_keys)

@@ -27,6 +27,7 @@ pub struct App {
     column_table: TableComponent,
     constraint_table: TableComponent,
     foreign_key_table: TableComponent,
+    index_table: TableComponent,
     focus: Focus,
     tab: TabComponent,
     help: HelpComponent,
@@ -47,6 +48,7 @@ impl App {
             column_table: TableComponent::new(config.key_config.clone()),
             constraint_table: TableComponent::new(config.key_config.clone()),
             foreign_key_table: TableComponent::new(config.key_config.clone()),
+            index_table: TableComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone()),
@@ -111,6 +113,10 @@ impl App {
                 right_chunks[1],
                 matches!(self.focus, Focus::Table),
             )?,
+            Tab::Indexes => {
+                self.index_table
+                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
+            }
         }
         self.error.draw(f, Rect::default(), false)?;
         self.help.draw(f, Rect::default(), false)?;
@@ -229,13 +235,31 @@ impl App {
                 .unwrap()
                 .get_foreign_keys(&database, &table)
                 .await?;
-            if !constraints.is_empty() {
+            if !foreign_keys.is_empty() {
                 self.foreign_key_table.update(
                     foreign_keys
                         .iter()
                         .map(|c| c.columns())
                         .collect::<Vec<Vec<String>>>(),
                     constraints.get(0).unwrap().fields(),
+                    database.clone(),
+                    table.clone(),
+                );
+            }
+            self.index_table.reset();
+            let indexes = self
+                .pool
+                .as_ref()
+                .unwrap()
+                .get_indexes(&database, &table)
+                .await?;
+            if !indexes.is_empty() {
+                self.index_table.update(
+                    indexes
+                        .iter()
+                        .map(|c| c.columns())
+                        .collect::<Vec<Vec<String>>>(),
+                    indexes.get(0).unwrap().fields(),
                     database.clone(),
                     table.clone(),
                 );
@@ -393,6 +417,17 @@ impl App {
 
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.foreign_key_table.selected_cells() {
+                                copy_to_clipboard(text.as_str())?
+                            }
+                        };
+                    }
+                    Tab::Indexes => {
+                        if self.index_table.event(key)?.is_consumed() {
+                            return Ok(EventState::Consumed);
+                        };
+
+                        if key == self.config.key_config.copy {
+                            if let Some(text) = self.index_table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
                         };

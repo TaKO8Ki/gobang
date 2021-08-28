@@ -109,6 +109,36 @@ impl TableRow for ForeignKey {
     }
 }
 
+pub struct Index {
+    name: Option<String>,
+    column_name: Option<String>,
+    r#type: Option<String>,
+}
+
+impl TableRow for Index {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "column_name".to_string(),
+            "type".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.column_name
+                .as_ref()
+                .map_or(String::new(), |column_name| column_name.to_string()),
+            self.r#type
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+        ]
+    }
+}
+
 #[async_trait]
 impl Pool for PostgresPool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
@@ -336,6 +366,50 @@ impl Pool for PostgresPool {
             }))
         }
         Ok(constraints)
+    }
+
+    async fn get_indexes(
+        &self,
+        _database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            t.relname AS table_name,
+            i.relname AS index_name,
+            a.attname AS column_name,
+            am.amname AS type
+        FROM
+            pg_class t,
+            pg_class i,
+            pg_index ix,
+            pg_attribute a,
+            pg_am am
+        WHERE
+            t.oid = ix.indrelid
+            and i.oid = ix.indexrelid
+            and a.attrelid = t.oid
+            and a.attnum = ANY(ix.indkey)
+            and t.relkind = 'r'
+            and am.oid = i.relam
+            and t.relname = $1
+        ORDER BY
+            t.relname,
+            i.relname
+        ",
+        )
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            foreign_keys.push(Box::new(Index {
+                name: row.try_get("index_name")?,
+                column_name: row.try_get("column_name")?,
+                r#type: row.try_get("type")?,
+            }))
+        }
+        Ok(foreign_keys)
     }
 
     async fn close(&self) {

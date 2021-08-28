@@ -117,6 +117,10 @@ pub fn tab_foreign_keys(key: &KeyConfig) -> CommandText {
     )
 }
 
+pub fn tab_indexes(key: &KeyConfig) -> CommandText {
+    CommandText::new(format!("Indexes [{}]", key.tab_indexes), CMD_GROUP_TABLE)
+}
+
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(

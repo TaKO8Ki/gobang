@@ -35,6 +35,11 @@ pub trait Pool {
         database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
+    async fn get_indexes(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
     async fn close(&self);
 }
 
