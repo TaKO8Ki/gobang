@@ -33,3 +33,4 @@ jobs:
           cd database-tree
           cargo publish
       - run: cargo publish
+        if: ${{ always() }}
