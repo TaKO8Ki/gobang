@@ -1,13 +1,13 @@
 [package]
 name = "database-tree"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 license = "MIT"
 homepage = "https://github.com/TaKO8Ki/gobang"
 repository = "https://github.com/TaKO8Ki/gobang"
 readme = "README.md"
-description = "A cross-platform terminal database tool written in Rust"
+description = "Database tree structure"
 
 [dependencies]
 thiserror = "1.0"
