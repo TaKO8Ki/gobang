@@ -30,6 +30,11 @@ pub trait Pool {
         database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
+    async fn get_foreign_keys(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
     async fn close(&self);
 }
 

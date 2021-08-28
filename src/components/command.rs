@@ -110,11 +110,21 @@ pub fn tab_constraints(key: &KeyConfig) -> CommandText {
     )
 }
 
+pub fn tab_foreign_keys(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!("Foreign keys [{}]", key.tab_foreign_keys),
+        CMD_GROUP_TABLE,
+    )
+}
+
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
-            "Tab [{},{},{}]",
-            key_config.tab_records, key_config.tab_columns, key_config.tab_constraints
+            "Tab [{},{},{},{}]",
+            key_config.tab_records,
+            key_config.tab_columns,
+            key_config.tab_constraints,
+            key_config.tab_foreign_keys
         ),
         CMD_GROUP_GENERAL,
     )

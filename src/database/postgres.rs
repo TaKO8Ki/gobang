@@ -74,6 +74,41 @@ impl TableRow for Column {
     }
 }
 
+pub struct ForeignKey {
+    name: Option<String>,
+    column_name: Option<String>,
+    ref_table: Option<String>,
+    ref_column: Option<String>,
+}
+
+impl TableRow for ForeignKey {
+    fn fields(&self) -> Vec<String> {
+        vec![
+            "name".to_string(),
+            "column_name".to_string(),
+            "ref_table".to_string(),
+            "ref_column".to_string(),
+        ]
+    }
+
+    fn columns(&self) -> Vec<String> {
+        vec![
+            self.name
+                .as_ref()
+                .map_or(String::new(), |name| name.to_string()),
+            self.column_name
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.ref_table
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+            self.ref_column
+                .as_ref()
+                .map_or(String::new(), |r#type| r#type.to_string()),
+        ]
+    }
+}
+
 #[async_trait]
 impl Pool for PostgresPool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
@@ -233,16 +268,22 @@ impl Pool for PostgresPool {
         let mut rows = sqlx::query(
             "
         SELECT
-            tc.constraint_name, tc.table_name, kcu.column_name,
+            tc.table_schema,
+            tc.constraint_name,
+            tc.table_name,
+            kcu.column_name,
+            ccu.table_schema AS foreign_table_schema,
             ccu.table_name AS foreign_table_name,
             ccu.column_name AS foreign_column_name
         FROM
             information_schema.table_constraints AS tc
-        JOIN information_schema.key_column_usage AS kcu
-            ON tc.constraint_name = kcu.constraint_name
-        JOIN information_schema.constraint_column_usage AS ccu
-            ON ccu.constraint_name = tc.constraint_name
-        WHERE ccu.table_name = $1
+            JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
+        WHERE
+            NOT tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_name = $1
         ",
         )
         .bind(&table.name)
@@ -252,6 +293,46 @@ impl Pool for PostgresPool {
             constraints.push(Box::new(Constraint {
                 name: row.try_get("constraint_name")?,
                 column_name: row.try_get("column_name")?,
+            }))
+        }
+        Ok(constraints)
+    }
+
+    async fn get_foreign_keys(
+        &self,
+        _database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
+        let mut rows = sqlx::query(
+            "
+        SELECT
+            tc.table_schema,
+            tc.constraint_name,
+            tc.table_name,
+            kcu.column_name,
+            ccu.table_schema AS foreign_table_schema,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
+        FROM
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
+        WHERE
+            tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_name = $1
+        ",
+        )
+        .bind(&table.name)
+        .fetch(&self.pool);
+        let mut constraints: Vec<Box<dyn TableRow>> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            constraints.push(Box::new(ForeignKey {
+                name: row.try_get("constraint_name")?,
+                column_name: row.try_get("column_name")?,
+                ref_table: row.try_get("foreign_table_name")?,
+                ref_column: row.try_get("foreign_column_name")?,
             }))
         }
         Ok(constraints)
