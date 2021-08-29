@@ -1,19 +1,19 @@
 use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPool as MPool, MySqlRow};
+use sqlx::sqlite::{SqliteColumn, SqlitePool as SPool, SqliteRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
 
-pub struct MySqlPool {
-    pool: MPool,
+pub struct SqlitePool {
+    pool: SPool,
 }
 
-impl MySqlPool {
+impl SqlitePool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: MPool::connect(database_url).await?,
+            pool: SPool::connect(database_url).await?,
         })
     }
 }
@@ -139,7 +139,7 @@ impl TableRow for Index {
 }
 
 #[async_trait]
-impl Pool for MySqlPool {
+impl Pool for SqlitePool {
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
         let databases = sqlx::query("SHOW DATABASES")
             .fetch_all(&self.pool)
@@ -339,7 +339,10 @@ impl Pool for MySqlPool {
     }
 }
 
-fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
+fn convert_column_value_to_string(
+    row: &SqliteRow,
+    column: &SqliteColumn,
+) -> anyhow::Result<String> {
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
@@ -347,10 +350,6 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<i8> = value;
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
@@ -374,43 +373,15 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u8> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u16> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u32> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u64> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<rust_decimal::Decimal> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDate> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDateTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
-        let value: Option<serde_json::Value> = value;
+        let value: Option<chrono::DateTime<chrono::Local>> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveDateTime> = value;
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
