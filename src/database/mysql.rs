@@ -183,7 +183,7 @@ impl Pool for MySqlPool {
             )
         } else {
             format!(
-                "SELECT * FROM `{}`.`{}` limit {page}, {limit}",
+                "SELECT * FROM `{}`.`{}` LIMIT {page}, {limit}",
                 database.name,
                 table.name,
                 page = page,
