@@ -17,3 +17,7 @@ user = "postgres"
 host = "localhost"
 port = 5432
 database = "dvdrental"
+
+[[conn]]
+type = "sqlite"
+path = "$HOME/Downloads/chinook.db"
