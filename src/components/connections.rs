@@ -89,7 +89,7 @@ impl DrawableComponent for ConnectionsComponent {
         let connections: Vec<ListItem> = conns
             .iter()
             .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(i.database_url()))])
+                ListItem::new(vec![Spans::from(Span::raw(i.database_url().unwrap()))])
                     .style(Style::default())
             })
             .collect();

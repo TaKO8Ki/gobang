@@ -25,6 +25,8 @@ enum DatabaseType {
     MySql,
     #[serde(rename = "postgres")]
     Postgres,
+    #[serde(rename = "sqlite")]
+    Sqlite,
 }
 
 impl fmt::Display for DatabaseType {
@@ -32,6 +34,7 @@ impl fmt::Display for DatabaseType {
         match self {
             Self::MySql => write!(f, "mysql"),
             Self::Postgres => write!(f, "postgres"),
+            Self::Sqlite => write!(f, "sqlite"),
         }
     }
 }
@@ -41,10 +44,10 @@ impl Default for Config {
         Self {
             conn: vec![Connection {
                 r#type: DatabaseType::MySql,
-                name: None,
-                user: "root".to_string(),
-                host: "localhost".to_string(),
-                port: 3306,
+                user: Some("root".to_string()),
+                host: Some("localhost".to_string()),
+                port: Some(3306),
+                path: None,
                 database: None,
             }],
             key_config: KeyConfig::default(),
@@ -55,10 +58,10 @@ impl Default for Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
     r#type: DatabaseType,
-    name: Option<String>,
-    user: String,
-    host: String,
-    port: u64,
+    user: Option<String>,
+    host: Option<String>,
+    port: Option<u64>,
+    path: Option<std::path::PathBuf>,
     pub database: Option<String>,
 }
 
@@ -150,45 +153,87 @@ impl Config {
 }
 
 impl Connection {
-    pub fn database_url(&self) -> String {
-        match &self.database {
-            Some(database) => match self.r#type {
-                DatabaseType::MySql => format!(
-                    "mysql://{user}:@{host}:{port}/{database}",
-                    user = self.user,
-                    host = self.host,
-                    port = self.port,
-                    database = database
-                ),
-                DatabaseType::Postgres => {
-                    format!(
-                        "postgres://{user}@{host}:{port}/{database}",
-                        user = self.user,
-                        host = self.host,
-                        port = self.port,
+    pub fn database_url(&self) -> anyhow::Result<String> {
+        match self.r#type {
+            DatabaseType::MySql => {
+                let user = self
+                    .user
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("user is not set"))?;
+                let host = self
+                    .host
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("host is not set"))?;
+                let port = self
+                    .port
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("port is not set"))?;
+
+                match self.database.as_ref() {
+                    Some(database) => Ok(format!(
+                        "mysql://{user}:@{host}:{port}/{database}",
+                        user = user,
+                        host = host,
+                        port = port,
                         database = database
-                    )
+                    )),
+                    None => Ok(format!(
+                        "mysql://{user}:@{host}:{port}",
+                        user = user,
+                        host = host,
+                        port = port,
+                    )),
                 }
-            },
-            None => match self.r#type {
-                DatabaseType::MySql => format!(
-                    "mysql://{user}:@{host}:{port}",
-                    user = self.user,
-                    host = self.host,
-                    port = self.port,
-                ),
-                DatabaseType::Postgres => format!(
-                    "postgres://{user}@{host}:{port}",
-                    user = self.user,
-                    host = self.host,
-                    port = self.port,
-                ),
-            },
+            }
+            DatabaseType::Postgres => {
+                let user = self
+                    .user
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("user is not set"))?;
+                let host = self
+                    .host
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("host is not set"))?;
+                let port = self
+                    .port
+                    .as_ref()
+                    .ok_or(anyhow::anyhow!("port is not set"))?;
+
+                match self.database.as_ref() {
+                    Some(database) => Ok(format!(
+                        "postgres://{user}@{host}:{port}/{database}",
+                        user = user,
+                        host = host,
+                        port = port,
+                        database = database
+                    )),
+                    None => Ok(format!(
+                        "postgres://{user}@{host}:{port}",
+                        user = user,
+                        host = host,
+                        port = port,
+                    )),
+                }
+            }
+            DatabaseType::Sqlite => {
+                let path = self
+                    .path
+                    .as_ref()
+                    .map_or(Err(anyhow::anyhow!("path is not set")), |path| {
+                        Ok(path.to_str().unwrap())
+                    })?;
+
+                Ok(format!("sqlite://{path}", path = path))
+            }
         }
     }
 
     pub fn is_mysql(&self) -> bool {
         matches!(self.r#type, DatabaseType::MySql)
+    }
+
+    pub fn is_postgres(&self) -> bool {
+        matches!(self.r#type, DatabaseType::Postgres)
     }
 }
 
