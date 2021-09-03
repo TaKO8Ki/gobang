@@ -21,15 +21,24 @@ impl SqlitePool {
 pub struct Constraint {
     name: String,
     column_name: String,
+    origin: String,
 }
 
 impl TableRow for Constraint {
     fn fields(&self) -> Vec<String> {
-        vec!["name".to_string(), "column_name".to_string()]
+        vec![
+            "name".to_string(),
+            "column_name".to_string(),
+            "origin".to_string(),
+        ]
     }
 
     fn columns(&self) -> Vec<String> {
-        vec![self.name.to_string(), self.column_name.to_string()]
+        vec![
+            self.name.to_string(),
+            self.column_name.to_string(),
+            self.origin.to_string(),
+        ]
     }
 }
 
@@ -74,7 +83,6 @@ impl TableRow for Column {
 }
 
 pub struct ForeignKey {
-    name: Option<String>,
     column_name: Option<String>,
     ref_table: Option<String>,
     ref_column: Option<String>,
@@ -83,7 +91,6 @@ pub struct ForeignKey {
 impl TableRow for ForeignKey {
     fn fields(&self) -> Vec<String> {
         vec![
-            "name".to_string(),
             "column_name".to_string(),
             "ref_table".to_string(),
             "ref_column".to_string(),
@@ -92,9 +99,6 @@ impl TableRow for ForeignKey {
 
     fn columns(&self) -> Vec<String> {
         vec![
-            self.name
-                .as_ref()
-                .map_or(String::new(), |name| name.to_string()),
             self.column_name
                 .as_ref()
                 .map_or(String::new(), |r#type| r#type.to_string()),
@@ -247,14 +251,17 @@ impl Pool for SqlitePool {
         let mut rows = sqlx::query(
             "
             SELECT
-                m.name AS index_name,
-                p.*
+                p.origin,
+                s.name AS index_name,
+                i.name AS column_name
             FROM
-                sqlite_master m,
-                pragma_index_info(m.name) p
+                sqlite_master s
+                JOIN pragma_index_list(s.tbl_name) p ON s.name = p.name,
+                pragma_index_info(s.name) i
             WHERE
-                m.type = 'index'
+                s.type = 'index'
                 AND tbl_name = ?
+                AND NOT p.origin = 'c'
             ",
         )
         .bind(&table.name)
@@ -263,7 +270,8 @@ impl Pool for SqlitePool {
         while let Some(row) = rows.try_next().await? {
             constraints.push(Box::new(Constraint {
                 name: row.try_get("index_name")?,
-                column_name: row.try_get("name")?,
+                column_name: row.try_get("column_name")?,
+                origin: row.try_get("origin")?,
             }))
         }
         Ok(constraints)
@@ -274,27 +282,16 @@ impl Pool for SqlitePool {
         _database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
-        let mut rows = sqlx::query(
-            "
-            SELECT
-                m.name AS index_name,
-                f.`from`,
-                f.`to`,
-                f.`table`
-            FROM
-                sqlite_master m,
-                pragma_index_info(m.name) p
-                INNER JOIN pragma_foreign_key_list(m.tbl_name) f ON f.`from` = p.name
-            WHERE
-                tbl_name = ?
-        ",
-        )
-        .bind(&table.name)
-        .fetch(&self.pool);
+        let query = format!(
+            "SELECT p.`from`, p.`to`, p.`table` FROM pragma_foreign_key_list('{}') p",
+            &table.name
+        );
+        let mut rows = sqlx::query(query.as_str())
+            .bind(&table.name)
+            .fetch(&self.pool);
         let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
             foreign_keys.push(Box::new(ForeignKey {
-                name: row.try_get("index_name")?,
                 column_name: row.try_get("from")?,
                 ref_table: row.try_get("table")?,
                 ref_column: row.try_get("to")?,
@@ -318,7 +315,7 @@ impl Pool for SqlitePool {
                 pragma_index_info(m.name) p
             WHERE
                 m.type = 'index'
-                AND tbl_name = ?
+                AND m.tbl_name = ?
             ",
         )
         .bind(&table.name)
