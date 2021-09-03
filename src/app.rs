@@ -1,6 +1,6 @@
 use crate::clipboard::copy_to_clipboard;
 use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
-use crate::database::{MySqlPool, Pool, PostgresPool, RECORDS_LIMIT_PER_PAGE};
+use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
 use crate::{
     components::tab::Tab,
@@ -153,11 +153,15 @@ impl App {
             }
             self.pool = if conn.is_mysql() {
                 Some(Box::new(
-                    MySqlPool::new(conn.database_url().as_str()).await?,
+                    MySqlPool::new(conn.database_url()?.as_str()).await?,
+                ))
+            } else if conn.is_postgres() {
+                Some(Box::new(
+                    PostgresPool::new(conn.database_url()?.as_str()).await?,
                 ))
             } else {
                 Some(Box::new(
-                    PostgresPool::new(conn.database_url().as_str()).await?,
+                    SqlitePool::new(conn.database_url()?.as_str()).await?,
                 ))
             };
             let databases = match &conn.database {
@@ -241,7 +245,7 @@ impl App {
                         .iter()
                         .map(|c| c.columns())
                         .collect::<Vec<Vec<String>>>(),
-                    constraints.get(0).unwrap().fields(),
+                    foreign_keys.get(0).unwrap().fields(),
                     database.clone(),
                     table.clone(),
                 );

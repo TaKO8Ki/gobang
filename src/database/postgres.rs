@@ -1,6 +1,6 @@
 use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
 use futures::TryStreamExt;
 use itertools::Itertools;
@@ -494,7 +494,23 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::NaiveDateTime> = value;
+        let value: Option<chrono::DateTime<chrono::Local>> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveDateTime> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveDate> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<NaiveTime> = value;
+        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+    }
+    if let Ok(value) = row.try_get(column_name) {
+        let value: Option<serde_json::Value> = value;
         return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
     }
     if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {

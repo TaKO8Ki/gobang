@@ -17,7 +17,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use std::{io, panic};
+use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
 #[tokio::main]
@@ -62,14 +62,6 @@ async fn main() -> anyhow::Result<()> {
 fn setup_terminal() -> Result<()> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
-    Ok(())
-}
-
-fn set_panic_handlers() -> Result<()> {
-    panic::set_hook(Box::new(|e| {
-        eprintln!("panic: {:?}", e);
-        shutdown_terminal();
-    }));
     Ok(())
 }
 
