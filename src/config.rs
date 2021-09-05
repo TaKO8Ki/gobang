@@ -159,15 +159,15 @@ impl Connection {
                 let user = self
                     .user
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("user is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("user is not set"))?;
                 let host = self
                     .host
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("host is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("host is not set"))?;
                 let port = self
                     .port
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("port is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("port is not set"))?;
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
@@ -189,15 +189,15 @@ impl Connection {
                 let user = self
                     .user
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("user is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("user is not set"))?;
                 let host = self
                     .host
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("host is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("host is not set"))?;
                 let port = self
                     .port
                     .as_ref()
-                    .ok_or(anyhow::anyhow!("port is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("port is not set"))?;
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(

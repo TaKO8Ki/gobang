@@ -49,10 +49,6 @@ impl RecordTableComponent {
         self.filter.reset();
     }
 
-    pub fn len(&self) -> usize {
-        self.table.rows.len()
-    }
-
     pub fn filter_focused(&self) -> bool {
         matches!(self.focus, Focus::Filter)
     }

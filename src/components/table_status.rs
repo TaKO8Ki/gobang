@@ -8,79 +8,65 @@ use tui::{
     layout::Rect,
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem},
+    widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
 
 pub struct TableStatusComponent {
-    rows_count: u64,
+    column_count: Option<usize>,
+    row_count: Option<usize>,
     table: Option<Table>,
 }
 
 impl Default for TableStatusComponent {
     fn default() -> Self {
         Self {
-            rows_count: 0,
+            row_count: None,
+            column_count: None,
             table: None,
         }
     }
 }
 
 impl TableStatusComponent {
-    pub fn update(&mut self, count: u64, table: Table) {
-        self.rows_count = count;
-        self.table = Some(table);
-    }
-
-    fn status_str(&self) -> Vec<String> {
-        if let Some(table) = self.table.as_ref() {
-            return vec![
-                format!(
-                    "created: {}",
-                    table
-                        .create_time
-                        .map(|time| time.to_string())
-                        .unwrap_or_default()
-                ),
-                format!(
-                    "updated: {}",
-                    table
-                        .update_time
-                        .map(|time| time.to_string())
-                        .unwrap_or_default()
-                ),
-                format!(
-                    "engine: {}",
-                    table
-                        .engine
-                        .as_ref()
-                        .map(|engine| engine.to_string())
-                        .unwrap_or_default()
-                ),
-                format!("rows: {}", self.rows_count),
-            ];
+    pub fn new(
+        row_count: Option<usize>,
+        column_count: Option<usize>,
+        table: Option<Table>,
+    ) -> Self {
+        Self {
+            row_count,
+            column_count,
+            table,
         }
-        Vec::new()
     }
 }
 
 impl DrawableComponent for TableStatusComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let table_status: Vec<ListItem> = self
-            .status_str()
-            .iter()
-            .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(i.to_string()))]).style(Style::default())
-            })
-            .collect();
-        let tasks = List::new(table_status).block(Block::default().borders(Borders::ALL).style(
-            if focused {
-                Style::default()
-            } else {
-                Style::default().fg(Color::DarkGray)
-            },
-        ));
-        f.render_widget(tasks, area);
+        let status = Paragraph::new(Spans::from(vec![
+            Span::from("rows: "),
+            Span::from(format!(
+                "{}, ",
+                self.row_count.map_or("-".to_string(), |c| c.to_string())
+            )),
+            Span::from("columns: "),
+            Span::from(format!(
+                "{}, ",
+                self.column_count.map_or("-".to_string(), |c| c.to_string())
+            )),
+            Span::from("engine: "),
+            Span::from(self.table.as_ref().map_or("-".to_string(), |c| {
+                c.engine.as_ref().map_or("-".to_string(), |e| e.to_string())
+            })),
+        ]))
+        .block(Block::default().borders(Borders::TOP).style(if focused {
+            Style::default()
+        } else {
+            Style::default().fg(Color::DarkGray)
+        }))
+        .wrap(Wrap { trim: true });
+        f.render_widget(status, area);
         Ok(())
     }
 }

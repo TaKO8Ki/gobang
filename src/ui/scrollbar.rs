@@ -15,15 +15,19 @@ struct Scrollbar {
     pos: u16,
     style_bar: Style,
     style_pos: Style,
+    inside: bool,
+    border: bool,
 }
 
 impl Scrollbar {
-    fn new(max: usize, pos: usize) -> Self {
+    fn new(max: usize, pos: usize, border: bool, inside: bool) -> Self {
         Self {
             max: u16::try_from(max).unwrap_or_default(),
             pos: u16::try_from(pos).unwrap_or_default(),
             style_pos: Style::default(),
             style_bar: Style::default(),
+            inside,
+            border,
         }
     }
 }
@@ -38,7 +42,11 @@ impl Widget for Scrollbar {
             return;
         }
 
-        let right = area.right().saturating_sub(1);
+        let right = if self.inside {
+            area.right().saturating_sub(1)
+        } else {
+            area.right()
+        };
         if right <= area.left() {
             return;
         };
@@ -46,7 +54,7 @@ impl Widget for Scrollbar {
         let (bar_top, bar_height) = {
             let scrollbar_area = area.inner(&Margin {
                 horizontal: 0,
-                vertical: 1,
+                vertical: if self.border { 1 } else { 0 },
             });
 
             (scrollbar_area.top(), scrollbar_area.height)
@@ -67,8 +75,15 @@ impl Widget for Scrollbar {
     }
 }
 
-pub fn draw_scrollbar<B: Backend>(f: &mut Frame<B>, r: Rect, max: usize, pos: usize) {
-    let mut widget = Scrollbar::new(max, pos);
+pub fn draw_scrollbar<B: Backend>(
+    f: &mut Frame<B>,
+    r: Rect,
+    max: usize,
+    pos: usize,
+    border: bool,
+    inside: bool,
+) {
+    let mut widget = Scrollbar::new(max, pos, border, inside);
     widget.style_pos = Style::default().fg(Color::Blue);
     f.render_widget(widget, r);
 }

@@ -1,6 +1,12 @@
 [[conn]]
 type = "mysql"
-name = "sample"
+user = "root"
+host = "localhost"
+database = "world"
+port = 3306
+
+[[conn]]
+type = "mysql"
 user = "root"
 host = "localhost"
 port = 3306
