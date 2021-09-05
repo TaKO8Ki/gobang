@@ -49,7 +49,7 @@ impl DatabasesComponent {
         Self {
             tree: DatabaseTree::default(),
             filterd_tree: None,
-            scroll: VerticalScroll::new(true, true),
+            scroll: VerticalScroll::new(false, false),
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
@@ -218,7 +218,8 @@ impl DatabasesComponent {
             });
 
         draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
-        self.scroll.draw(f, area);
+        self.scroll.draw(f, chunks[1]);
+
         if let Focus::Filter = self.focus {
             f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
         }
