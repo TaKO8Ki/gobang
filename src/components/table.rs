@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    TableValueComponent,
+    TableStatusComponent, TableValueComponent,
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
@@ -40,7 +40,7 @@ impl TableComponent {
             selected_column: 0,
             selection_area_corner: None,
             column_page_start: std::cell::Cell::new(0),
-            scroll: VerticalScroll::new(),
+            scroll: VerticalScroll::new(false, false),
             eod: false,
             key_config,
         }
@@ -68,7 +68,7 @@ impl TableComponent {
         self.selected_column = 0;
         self.selection_area_corner = None;
         self.column_page_start = std::cell::Cell::new(0);
-        self.scroll = VerticalScroll::new();
+        self.scroll = VerticalScroll::new(false, false);
         self.eod = false;
         self.table = Some((database, table));
     }
@@ -80,7 +80,7 @@ impl TableComponent {
         self.selected_column = 0;
         self.selection_area_corner = None;
         self.column_page_start = std::cell::Cell::new(0);
-        self.scroll = VerticalScroll::new();
+        self.scroll = VerticalScroll::new(false, false);
         self.eod = false;
         self.table = None;
     }
@@ -406,6 +406,25 @@ impl DrawableComponent for TableComponent {
             .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
             .split(area);
 
+        f.render_widget(
+            Block::default()
+                .title(self.title())
+                .borders(Borders::ALL)
+                .style(if focused {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                }),
+            layout[1],
+        );
+
+        let chunks = Layout::default()
+            .vertical_margin(1)
+            .horizontal_margin(1)
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(1), Constraint::Length(2)].as_ref())
+            .split(layout[1]);
+
         self.selected_row.selected().map_or_else(
             || {
                 self.scroll.reset();
@@ -422,9 +441,9 @@ impl DrawableComponent for TableComponent {
         TableValueComponent::new(self.selected_cells().unwrap_or_default())
             .draw(f, layout[0], focused)?;
 
-        let block = Block::default().borders(Borders::ALL).title(self.title());
+        let block = Block::default().borders(Borders::NONE);
         let (selected_column_index, headers, rows, constraints) =
-            self.calculate_cell_widths(block.inner(layout[1]).width);
+            self.calculate_cell_widths(block.inner(chunks[0]).width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
                 Style::default().add_modifier(Modifier::BOLD)
@@ -466,7 +485,7 @@ impl DrawableComponent for TableComponent {
         let mut state = self.selected_row.clone();
         f.render_stateful_widget(
             table,
-            layout[1],
+            chunks[0],
             if let Some((_, y)) = self.selection_area_corner {
                 state.select(Some(y));
                 &mut state
@@ -475,7 +494,22 @@ impl DrawableComponent for TableComponent {
             },
         );
 
-        self.scroll.draw(f, layout[1]);
+        TableStatusComponent::new(
+            if self.rows.is_empty() {
+                None
+            } else {
+                Some(self.rows.len())
+            },
+            if self.headers.is_empty() {
+                None
+            } else {
+                Some(self.headers.len())
+            },
+            self.table.as_ref().map_or(None, |t| Some(t.1.clone())),
+        )
+        .draw(f, chunks[1], focused)?;
+
+        self.scroll.draw(f, chunks[0]);
         Ok(())
     }
 }

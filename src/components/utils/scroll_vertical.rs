@@ -5,13 +5,17 @@ use tui::{backend::Backend, layout::Rect, Frame};
 pub struct VerticalScroll {
     top: Cell<usize>,
     max_top: Cell<usize>,
+    inside: bool,
+    border: bool,
 }
 
 impl VerticalScroll {
-    pub const fn new() -> Self {
+    pub const fn new(border: bool, inside: bool) -> Self {
         Self {
             top: Cell::new(0),
             max_top: Cell::new(0),
+            border,
+            inside,
         }
     }
 
@@ -38,7 +42,14 @@ impl VerticalScroll {
     }
 
     pub fn draw<B: Backend>(&self, f: &mut Frame<B>, r: Rect) {
-        draw_scrollbar(f, r, self.max_top.get(), self.top.get());
+        draw_scrollbar(
+            f,
+            r,
+            self.max_top.get(),
+            self.top.get(),
+            self.border,
+            self.inside,
+        );
     }
 }
 

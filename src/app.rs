@@ -33,7 +33,6 @@ pub struct App {
     help: HelpComponent,
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
-    table_status: TableStatusComponent,
     pool: Option<Box<dyn Pool>>,
     pub config: Config,
     pub error: ErrorComponent,
@@ -52,7 +51,6 @@ impl App {
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone()),
-            table_status: TableStatusComponent::default(),
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
@@ -77,15 +75,10 @@ impl App {
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
             .split(f.size());
-        let left_chunks = Layout::default()
-            .constraints([Constraint::Min(8), Constraint::Length(7)].as_ref())
-            .split(main_chunks[0]);
 
         self.databases
-            .draw(f, left_chunks[0], matches!(self.focus, Focus::DabataseList))
+            .draw(f, main_chunks[0], matches!(self.focus, Focus::DabataseList))
             .unwrap();
-        self.table_status
-            .draw(f, left_chunks[1], matches!(self.focus, Focus::DabataseList))?;
 
         let right_chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -268,8 +261,6 @@ impl App {
                     table.clone(),
                 );
             }
-            self.table_status
-                .update(self.record_table.len() as u64, table);
         }
         Ok(())
     }

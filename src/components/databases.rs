@@ -49,7 +49,7 @@ impl DatabasesComponent {
         Self {
             tree: DatabaseTree::default(),
             filterd_tree: None,
-            scroll: VerticalScroll::new(),
+            scroll: VerticalScroll::new(true, true),
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
