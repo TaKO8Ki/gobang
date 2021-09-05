@@ -74,3 +74,18 @@ const fn calc_scroll_top(
         current_top
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::calc_scroll_top;
+
+    #[test]
+    fn test_scroll_no_scroll_to_top() {
+        assert_eq!(calc_scroll_top(1, 10, 4, 4), 0);
+    }
+
+    #[test]
+    fn test_scroll_zero_height() {
+        assert_eq!(calc_scroll_top(4, 0, 4, 3), 0);
+    }
+}

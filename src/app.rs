@@ -6,7 +6,7 @@ use crate::{
     components::tab::Tab,
     components::{
         command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
-        RecordTableComponent, TabComponent, TableComponent, TableStatusComponent,
+        RecordTableComponent, TabComponent, TableComponent,
     },
     config::Config,
 };

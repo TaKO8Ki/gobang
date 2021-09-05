@@ -505,7 +505,7 @@ impl DrawableComponent for TableComponent {
             } else {
                 Some(self.headers.len())
             },
-            self.table.as_ref().map_or(None, |t| Some(t.1.clone())),
+            self.table.as_ref().map(|t| t.1.clone()),
         )
         .draw(f, chunks[1], focused)?;
 
