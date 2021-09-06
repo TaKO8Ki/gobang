@@ -31,17 +31,15 @@ $ cargo install --version 0.1.0-alpha.1 gobang
 
 | Key | Description |
 | ---- | ---- |
-| <kbd>h</kbd> | Scroll left |
-| <kbd>j</kbd> | Scroll down |
-| <kbd>k</kbd> | Scroll up |
-| <kbd>l</kbd> | Scroll right |
-| <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll down multiple lines |
-| <kbd>Ctrl</kbd> + <kbd>u</kbd> | Scroll up multiple lines |
+| <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd> | Scroll left/down/up/right |
+| <kbd>Ctrl</kbd> + <kbd>u</kbd>, <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll up/down multiple lines |
+| <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
+| <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
 | <kbd>y</kbd> | Copy a cell value |
-| <kbd>→</kbd> | Move focus to right |
-| <kbd>←</kbd> | Move focus to left |
+| <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>/</kbd> | Filter |
-| <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>, <kbd>5</kbd> | Switch to records, columns, constraints, foreign keys, indexes tab |
+| <kbd>?</kbd> | Help |
+| <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>, <kbd>5</kbd> | Switch to records/columns/constraints/foreign keys/indexes tab |
 
 ## Configuration
 
