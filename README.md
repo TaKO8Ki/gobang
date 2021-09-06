@@ -46,6 +46,8 @@ OPTIONS:
     -c, --config-path <config-path>    Set the config file
 ```
 
+If you want to add connections, you need to edit your config file. For more information, please see [Configuration](#Configuration).
+
 ## Keymap
 
 | Key | Description |
