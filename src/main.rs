@@ -6,6 +6,7 @@ mod config;
 mod database;
 mod event;
 mod ui;
+mod version;
 
 #[macro_use]
 mod log;
