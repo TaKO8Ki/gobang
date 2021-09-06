@@ -58,7 +58,7 @@ impl DrawableComponent for TableFilterComponent {
                 if focused || !self.input.is_empty() {
                     self.input.iter().collect::<String>()
                 } else {
-                    "Enter a SQL expression in WHERE clause".to_string()
+                    "Enter a SQL expression in WHERE clause to filter records".to_string()
                 }
             )),
         ]))

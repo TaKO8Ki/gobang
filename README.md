@@ -4,7 +4,7 @@
 
 gobang is currently in alpha
 
-A cross-platform terminal database tool written in Rust
+A cross-platform TUI database management tool written in Rust
 
 [![github workflow status](https://img.shields.io/github/workflow/status/TaKO8Ki/gobang/CI/main)](https://github.com/TaKO8Ki/gobang/actions) [![crates](https://img.shields.io/crates/v/gobang.svg?logo=rust)](https://crates.io/crates/gobang)
 
@@ -15,7 +15,7 @@ A cross-platform terminal database tool written in Rust
 ## Features
 
 - Cross-platform support (macOS, Windows, Linux)
-- Multiple Database support (MySQL PostgreSQL, SQLite)
+- Multiple Database support (MySQL, PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
 ## TODOs
@@ -34,6 +34,27 @@ If you already have a Rust environment set up, you can use the `cargo install` c
 ```
 $ cargo install --version 0.1.0-alpha.1 gobang
 ```
+
+## Usage
+
+```
+$ gobang
+```
+
+```
+USAGE:
+    gobang [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -c, --config-path <config-path>    Set the config file
+```
+
+If you want to add connections, you need to edit your config file. For more information, please see [Configuration](#Configuration).
+
 ## Keymap
 
 | Key | Description |

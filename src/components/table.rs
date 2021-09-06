@@ -143,10 +143,10 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
+        self.reset_selection();
         if self.selected_column >= self.headers.len().saturating_sub(1) {
             return;
         }
-        self.reset_selection();
         self.selected_column += 1;
     }
 
@@ -154,10 +154,10 @@ impl TableComponent {
         if self.rows.is_empty() {
             return;
         }
+        self.reset_selection();
         if self.selected_column == 0 {
             return;
         }
-        self.reset_selection();
         self.selected_column -= 1;
     }
 

@@ -1,7 +1,7 @@
 use crate::config::CliConfig;
 use structopt::StructOpt;
 
-/// A cross-platform terminal database tool written in Rust
+/// A cross-platform TUI database management tool written in Rust
 #[derive(StructOpt, Debug)]
 #[structopt(name = "gobang")]
 pub struct Cli {
