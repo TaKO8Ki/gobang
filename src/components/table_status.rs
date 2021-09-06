@@ -45,20 +45,20 @@ impl TableStatusComponent {
 impl DrawableComponent for TableStatusComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let status = Paragraph::new(Spans::from(vec![
-            Span::from("rows: "),
             Span::from(format!(
-                "{}, ",
+                "rows: {}, ",
                 self.row_count.map_or("-".to_string(), |c| c.to_string())
             )),
-            Span::from("columns: "),
             Span::from(format!(
-                "{}, ",
+                "columns: {}, ",
                 self.column_count.map_or("-".to_string(), |c| c.to_string())
             )),
-            Span::from("engine: "),
-            Span::from(self.table.as_ref().map_or("-".to_string(), |c| {
-                c.engine.as_ref().map_or("-".to_string(), |e| e.to_string())
-            })),
+            Span::from(format!(
+                "engine: {}",
+                self.table.as_ref().map_or("-".to_string(), |c| {
+                    c.engine.as_ref().map_or("-".to_string(), |e| e.to_string())
+                })
+            )),
         ]))
         .block(Block::default().borders(Borders::TOP).style(if focused {
             Style::default()
