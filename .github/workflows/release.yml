@@ -20,6 +20,7 @@ jobs:
       # Emit backtraces on panics.
       RUST_BACKTRACE: 1
     strategy:
+      fail-fast: false
       matrix:
         build: [linux, linux-arm, macos, win-msvc, win-gnu, win32-msvc]
         include:
