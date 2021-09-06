@@ -1,6 +1,6 @@
 <div align="center">
 
-# gobang
+![gobang](./resources/logo.png)
 
 gobang is currently in alpha
 
