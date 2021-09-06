@@ -124,11 +124,12 @@ pub fn tab_indexes(key: &KeyConfig) -> CommandText {
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
-            "Tab [{},{},{},{}]",
+            "Tab [{},{},{},{}, {}]",
             key_config.tab_records,
             key_config.tab_columns,
             key_config.tab_constraints,
-            key_config.tab_foreign_keys
+            key_config.tab_foreign_keys,
+            key_config.tab_indexes
         ),
         CMD_GROUP_GENERAL,
     )
