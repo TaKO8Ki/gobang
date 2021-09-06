@@ -83,4 +83,3 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 ```
-
