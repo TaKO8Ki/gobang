@@ -2,6 +2,7 @@ use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
+use crate::version::Version;
 use anyhow::Result;
 use itertools::Itertools;
 use std::convert::From;
@@ -58,7 +59,7 @@ impl DrawableComponent for HelpComponent {
 
             f.render_widget(
                 Paragraph::new(Spans::from(vec![Span::styled(
-                    format!("gobang {}", "0.1.0"),
+                    format!("gobang {}", Version::new()),
                     Style::default(),
                 )]))
                 .alignment(Alignment::Right),
