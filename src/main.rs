@@ -22,8 +22,6 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    outln!("gobang logger");
-
     let value = crate::cli::parse();
     let config = config::Config::new(&value.config)?;
 
@@ -32,12 +30,17 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let events = event::Events::new(250);
-    let mut app = App::new(config);
+    let mut app = App::new(config.clone());
 
     terminal.clear()?;
 
     loop {
-        terminal.draw(|f| app.draw(f).unwrap())?;
+        terminal.draw(|f| {
+            if let Err(err) = app.draw(f) {
+                outln!(config#Error, "error: {}", err.to_string());
+                std::process::exit(1);
+            }
+        })?;
         match events.next()? {
             Event::Input(key) => match app.event(key).await {
                 Ok(state) => {

@@ -1,3 +1,4 @@
+use crate::log::LogLevel;
 use crate::Key;
 use serde::Deserialize;
 use std::fmt;
@@ -17,6 +18,8 @@ pub struct Config {
     pub conn: Vec<Connection>,
     #[serde(default)]
     pub key_config: KeyConfig,
+    #[serde(default)]
+    pub log_level: LogLevel,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -51,6 +54,7 @@ impl Default for Config {
                 database: None,
             }],
             key_config: KeyConfig::default(),
+            log_level: LogLevel::default(),
         }
     }
 }
@@ -159,15 +163,15 @@ impl Connection {
                 let user = self
                     .user
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("user is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type mysql needs the user field"))?;
                 let host = self
                     .host
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("host is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type mysql needs the host field"))?;
                 let port = self
                     .port
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("port is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type mysql needs the port field"))?;
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
@@ -189,15 +193,15 @@ impl Connection {
                 let user = self
                     .user
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("user is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the user field"))?;
                 let host = self
                     .host
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("host is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the host field"))?;
                 let port = self
                     .port
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("port is not set"))?;
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the port field"))?;
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
@@ -216,12 +220,10 @@ impl Connection {
                 }
             }
             DatabaseType::Sqlite => {
-                let path = self
-                    .path
-                    .as_ref()
-                    .map_or(Err(anyhow::anyhow!("path is not set")), |path| {
-                        Ok(path.to_str().unwrap())
-                    })?;
+                let path = self.path.as_ref().map_or(
+                    Err(anyhow::anyhow!("type sqlite needs the path field")),
+                    |path| Ok(path.to_str().unwrap()),
+                )?;
 
                 Ok(format!("sqlite://{path}", path = path))
             }
