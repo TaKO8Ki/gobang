@@ -18,6 +18,13 @@ A cross-platform terminal database tool written in Rust
 - Multiple Database support (MySQL PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
+## TODOs
+
+- [ ] Query widget
+- [ ] Custom key bindings
+- [ ] Custom theme settings
+- [ ] Support the other databases
+
 ## Installation
 
 ### Cargo
@@ -76,3 +83,4 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 ```
+
