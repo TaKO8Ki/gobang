@@ -14,6 +14,9 @@ on:
       - 'LICENSE'
       - '**.md'
 
+env:
+  CARGO_INCREMENTAL: 0
+
 jobs:
   format:
     name: Format
