@@ -11,6 +11,6 @@ description = "Database tree structure"
 
 [dependencies]
 thiserror = "1.0"
-sqlx = { version = "0.5.6", features = ["chrono", "runtime-tokio-rustls"] }
+sqlx = { version = "0.5.7", features = ["chrono", "runtime-tokio-rustls"] }
 chrono = "0.4"
 anyhow = "1.0.38"
