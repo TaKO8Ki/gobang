@@ -86,13 +86,13 @@ impl DrawableComponent for ConnectionsComponent {
         let width = 80;
         let height = 20;
         let conns = &self.connections;
-        let connections: Vec<ListItem> = conns
-            .iter()
-            .map(|i| {
-                ListItem::new(vec![Spans::from(Span::raw(i.database_url().unwrap()))])
-                    .style(Style::default())
-            })
-            .collect();
+        let mut connections: Vec<ListItem> = Vec::new();
+        for c in conns {
+            connections.push(
+                ListItem::new(vec![Spans::from(Span::raw(c.database_url()?))])
+                    .style(Style::default()),
+            )
+        }
         let tasks = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
             .highlight_style(Style::default().bg(Color::Blue))
