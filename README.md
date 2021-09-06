@@ -27,6 +27,25 @@ If you already have a Rust environment set up, you can use the `cargo install` c
 ```
 $ cargo install --version 0.1.0-alpha.1 gobang
 ```
+
+## Usage
+
+```
+$ gobang
+```
+
+```
+USAGE:
+    gobang [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -c, --config-path <config-path>    Set the config file
+```
+
 ## Keymap
 
 | Key | Description |
