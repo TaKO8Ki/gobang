@@ -125,8 +125,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: steps.vars.outputs.DEPLOY
       with:
-        files: |
-          ${{ env.ASSET }}
+        files: ${{ env.ASSET }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
