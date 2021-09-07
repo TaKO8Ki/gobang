@@ -135,6 +135,8 @@ jobs:
       - uses: actions/checkout@v1
       - name: Cargo publish
         run: |
+          git config --global user.email "runner@gha.local"
+          git config --global user.name "Github Action"
           cargo workspaces publish \
             --yes --force '*' --exact \
             --no-git-commit --allow-dirty --skip-published \
