@@ -26,14 +26,6 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt --all -- --check
 
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cargo check
-        run: cargo check
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -102,7 +94,6 @@ jobs:
           os: windows-2019
           rust: stable
           target: i686-pc-windows-msvc
-    needs: check
     steps:
       - uses: actions/checkout@v2
 
