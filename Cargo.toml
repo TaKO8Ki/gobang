@@ -39,9 +39,3 @@ structopt = "0.3.22"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
-
-# [profile.dev.build-override]
-# opt-level = 1
-
-[profile.dev.package.sqlx]
-opt-level = 3
