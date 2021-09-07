@@ -120,7 +120,7 @@ jobs:
           echo "target dir is: ${{ env.TARGET_DIR }}"
 
       - name: Build
-        run: ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
+        run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
       - name: Run tests
         run: ${{ env.CARGO }} test --verbose --workspace ${{ env.TARGET_FLAGS }}
