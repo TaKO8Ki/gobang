@@ -41,4 +41,4 @@ structopt = "0.3.22"
 which = "4.1"
 
 [profile.dev.build-override]
-opt-level=3
+opt-level = 2
