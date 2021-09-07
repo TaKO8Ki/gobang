@@ -32,7 +32,7 @@ A cross-platform TUI database management tool written in Rust
 If you already have a Rust environment set up, you can use the `cargo install` command:
 
 ```
-$ cargo install --version 0.1.0-alpha.1 gobang
+$ cargo install --version 0.1.0-alpha.2 gobang
 ```
 
 ## Usage
