@@ -27,13 +27,26 @@ A cross-platform TUI database management tool written in Rust
 
 ## Installation
 
-### Cargo
+### Homebrew (Linux/macOS)
+
+If you’re using Homebrew or Linuxbrew, install the gobang formula:
+
+```
+$ brew install tako8ki/tap/gobang
+```
+
+### Cargo (Linux/macOS/Windows)
 
 If you already have a Rust environment set up, you can use the `cargo install` command:
 
 ```
 $ cargo install --version 0.1.0-alpha.2 gobang
 ```
+
+### Using a release binary (Linux/macOS/Windows)
+
+- Download the [latest release binary](https://github.com/TaKO8Ki/gobang/releases) for your system
+- Set the `PATH` environment variable
 
 ## Usage
 
