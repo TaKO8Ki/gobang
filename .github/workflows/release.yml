@@ -26,23 +26,23 @@ jobs:
         include:
         - build: linux
           os: ubuntu-18.04
-          rust: nightly
+          rust: stable
           target: x86_64-unknown-linux-musl
         - build: linux-arm
           os: ubuntu-18.04
-          rust: nightly
+          rust: stable
           target: arm-unknown-linux-gnueabihf
         - build: macos
           os: macos-latest
-          rust: nightly
+          rust: stable
           target: x86_64-apple-darwin
         - build: win-msvc
           os: windows-2019
-          rust: nightly
+          rust: stable
           target: x86_64-pc-windows-msvc
         - build: win32-msvc
           os: windows-2019
-          rust: nightly
+          rust: stable
           target: i686-pc-windows-msvc
 
     steps:
