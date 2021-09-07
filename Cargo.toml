@@ -8,6 +8,7 @@ homepage = "https://github.com/TaKO8Ki/gobang"
 repository = "https://github.com/TaKO8Ki/gobang"
 readme = "README.md"
 description = "A cross-platform TUI database management tool written in Rust"
+exclude = ["resources/"]
 
 [workspace]
 members=[
