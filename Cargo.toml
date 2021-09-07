@@ -15,13 +15,13 @@ members=[
 ]
 
 [dependencies]
-tui = { version = "0.14.0", features = ["crossterm"], default-features = false }
-crossterm = "0.19"
+tui = { version = "0.15.0", features = ["crossterm"], default-features = false }
+crossterm = "0.20"
 anyhow = "1.0.38"
 unicode-width = "0.1"
-sqlx = { version = "0.4.1", features = ["mysql", "postgres", "sqlite", "chrono", "runtime-tokio-rustls", "decimal", "json"] }
+sqlx = { version = "0.5.6", features = ["mysql", "postgres", "sqlite", "chrono", "runtime-tokio-rustls", "decimal", "json"], default-features = false }
 chrono = "0.4"
-tokio = { version = "0.2.22", features = ["full"] }
+tokio = { version = "1.11.0", features = ["full"] }
 futures = "0.3.5"
 serde_json = "1.0"
 serde = "1.0"

@@ -158,10 +158,18 @@ impl Pool for MySqlPool {
     }
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
-        let tables =
-            sqlx::query_as::<_, Table>(format!("SHOW TABLE STATUS FROM `{}`", database).as_str())
-                .fetch_all(&self.pool)
-                .await?;
+        let query = format!("SHOW TABLE STATUS FROM `{}`", database);
+        let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
+        let mut tables = vec![];
+        while let Some(row) = rows.try_next().await? {
+            tables.push(Table {
+                name: row.try_get("Name")?,
+                create_time: row.try_get("Create_time")?,
+                update_time: row.try_get("Update_time")?,
+                engine: row.try_get("Engine")?,
+                schema: None,
+            })
+        }
         Ok(tables.into_iter().map(|table| table.into()).collect())
     }
 
