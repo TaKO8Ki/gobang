@@ -120,7 +120,6 @@ jobs:
 
     - name: Publish
       uses: softprops/action-gh-release@v1
-      if: steps.vars.outputs.DEPLOY
       with:
         files: ${{ env.ASSET }}
       env:
