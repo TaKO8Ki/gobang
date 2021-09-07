@@ -39,3 +39,6 @@ structopt = "0.3.22"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
+
+[profile.release.package.sqlx]
+opt-level=3
