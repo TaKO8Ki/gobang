@@ -32,7 +32,7 @@ A cross-platform TUI database management tool written in Rust
 If you’re using Homebrew or Linuxbrew, install the gobang formula:
 
 ```
-$ brew install frum
+$ brew install tako8ki/tap/gobang
 ```
 
 ### Cargo (Linux/macOS/Windows)
