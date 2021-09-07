@@ -9,6 +9,8 @@ jobs:
   release:
     name: Release
     runs-on: ${{ matrix.os }}
+    outputs:
+      gobang_version: ${{ env.GOBANG_VERSION }}
     env:
       # For some builds, we use cross to test on 32-bit and big-endian
       # systems.
@@ -53,7 +55,7 @@ jobs:
         # Apparently, this is the right way to get a tag name. Really?
         #
         # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
-        echo "GOBANG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        echo "GOBANG_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
         echo "version is: ${{ env.GOBANG_VERSION }}"
 
     - name: Checkout repository
@@ -131,13 +133,9 @@ jobs:
     needs: release
     steps:
       - uses: actions/checkout@v1
-      - run: cargo login ${CRATES_IO_TOKEN}
-        env:
-          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-      - name: Cargo puhlish database-tree
+      - name: Cargo publish
         run: |
-          cd database-tree
-          cargo publish
-      - run: sleep 2
-      - run: cargo publish
-        if: ${{ always() }}
+          cargo workspaces publish \
+            --yes --force '*' --exact \
+            --no-git-commit --allow-dirty --skip-published \
+            custom ${{ needs.create-release.outputs.gobang_version }}
