@@ -42,4 +42,3 @@ which = "4.1"
 
 [profile.dev.build-override]
 opt-level=3
-codegen-units=1
