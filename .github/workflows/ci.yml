@@ -115,6 +115,9 @@ jobs:
           echo "target flag is: ${{ env.TARGET_FLAGS }}"
           echo "target dir is: ${{ env.TARGET_DIR }}"
 
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@va
+
       - name: Build
         run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
 
