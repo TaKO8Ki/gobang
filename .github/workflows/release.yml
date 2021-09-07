@@ -105,7 +105,7 @@ jobs:
         staging="gobang-${{ env.GOBANG_VERSION }}-${{ matrix.target }}"
         mkdir -p "$staging"/{complete,doc}
 
-        cp {README.md,COPYING,UNLICENSE,LICENSE-MIT} "$staging/"
+        cp {README.md,LICENSE} "$staging/"
 
         if [ "${{ matrix.os }}" = "windows-2019" ]; then
           cp "target/${{ matrix.target }}/release/gobang.exe" "$staging/"
