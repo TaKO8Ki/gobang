@@ -253,6 +253,7 @@ impl Pool for PostgresPool {
                                     new_row.push(v.iter().map(|v| v.to_string()).join(","))
                                 }
                                 serde_json::Value::Number(v) => new_row.push(v.to_string()),
+                                serde_json::Value::Bool(v) => new_row.push(v.to_string()),
                                 others => {
                                     panic!(
                                         "column type not implemented: `{}` {}",
