@@ -119,3 +119,7 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 ```
+
+## Contribution
+
+Contributions, issues and pull requests are welcome!
