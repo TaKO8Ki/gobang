@@ -40,7 +40,7 @@ $ brew install tako8ki/tap/gobang
 If you already have a Rust environment set up, you can use the `cargo install` command:
 
 ```
-$ cargo install --version 0.1.0-alpha.2 gobang
+$ cargo install --version 0.1.0-alpha.3 gobang
 ```
 
 ### Using a release binary (Linux/macOS/Windows)
