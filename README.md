@@ -105,6 +105,7 @@ type = "mysql"
 user = "root"
 host = "localhost"
 port = 3306
+password = "password"
 database = "foo"
 
 [[conn]]
