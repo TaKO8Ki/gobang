@@ -51,6 +51,7 @@ impl Default for Config {
                 host: Some("localhost".to_string()),
                 port: Some(3306),
                 path: None,
+                password: None,
                 database: None,
             }],
             key_config: KeyConfig::default(),
@@ -66,6 +67,7 @@ pub struct Connection {
     host: Option<String>,
     port: Option<u64>,
     path: Option<std::path::PathBuf>,
+    password: Option<String>,
     pub database: Option<String>,
 }
 
@@ -172,18 +174,24 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type mysql needs the port field"))?;
+                let password = self
+                    .password
+                    .as_ref()
+                    .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "mysql://{user}:@{host}:{port}/{database}",
+                        "mysql://{user}:{password}@{host}:{port}/{database}",
                         user = user,
+                        password = password,
                         host = host,
                         port = port,
                         database = database
                     )),
                     None => Ok(format!(
-                        "mysql://{user}:@{host}:{port}",
+                        "mysql://{user}:{password}@{host}:{port}",
                         user = user,
+                        password = password,
                         host = host,
                         port = port,
                     )),
@@ -202,18 +210,24 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type postgres needs the port field"))?;
+                let password = self
+                    .password
+                    .as_ref()
+                    .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "postgres://{user}@{host}:{port}/{database}",
+                        "postgres://{user}:{password}@{host}:{port}/{database}",
                         user = user,
+                        password = password,
                         host = host,
                         port = port,
                         database = database
                     )),
                     None => Ok(format!(
-                        "postgres://{user}@{host}:{port}",
+                        "postgres://{user}:{password}@{host}:{port}",
                         user = user,
+                        password = password,
                         host = host,
                         port = port,
                     )),
