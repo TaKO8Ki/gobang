@@ -1,6 +1,6 @@
 [package]
 name = "gobang"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -29,7 +29,7 @@ serde = "1.0"
 toml = "0.4"
 strum = "0.21"
 strum_macros = "0.21"
-database-tree = { path = "./database-tree", version = "0.1.0-alpha.2" }
+database-tree = { path = "./database-tree", version = "0.1.0-alpha.3" }
 easy-cast = "0.4"
 async-trait = "0.1.50"
 itertools = "0.10.0"
