@@ -4,6 +4,7 @@ use database_tree::MoveSelection;
 
 pub mod scrollbar;
 pub mod scrolllist;
+pub mod syntax_text;
 
 pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
     if key == key_config.scroll_down {

@@ -6,6 +6,7 @@ pub mod databases;
 pub mod error;
 pub mod help;
 pub mod record_table;
+pub mod syntax_text;
 pub mod tab;
 pub mod table;
 pub mod table_filter;
