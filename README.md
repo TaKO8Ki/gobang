@@ -20,7 +20,7 @@ A cross-platform TUI database management tool written in Rust
 
 ## TODOs
 
-- [ ] Query widget
+- [ ] SQL editor
 - [ ] Custom key bindings
 - [ ] Custom theme settings
 - [ ] Support the other databases
@@ -119,3 +119,7 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 ```
+
+## Contribution
+
+Contributions, issues and pull requests are welcome!
