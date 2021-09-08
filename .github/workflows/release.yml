@@ -133,6 +133,12 @@ jobs:
     needs: release
     steps:
       - uses: actions/checkout@v1
+
+      - name: Install cargo-workspaces
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-workspaces
+
       - name: Cargo publish
         run: |
           git config --global user.email "runner@gha.local"
