@@ -7,13 +7,10 @@ use crate::database::{ExecuteResult, Pool};
 use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
-use database_tree::Table;
-use sqlx::query::Query;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::Text,
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -84,16 +81,19 @@ impl Component for SqlEditorComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
+        if key == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
+            self.focus = Focus::Editor
+        }
         match key {
-            Key::Char(c) => {
+            Key::Char(c) if matches!(self.focus, Focus::Editor) => {
                 self.input.push(c);
 
                 return Ok(EventState::Consumed);
             }
+            key if matches!(self.focus, Focus::Table) => return self.table.event(key),
             _ => (),
         }
-
-        Ok(EventState::NotConsumed)
+        return Ok(EventState::NotConsumed);
     }
 
     async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
