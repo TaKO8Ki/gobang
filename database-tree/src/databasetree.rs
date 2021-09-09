@@ -16,6 +16,7 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+    Enter,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -112,6 +113,7 @@ impl DatabaseTree {
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
+                MoveSelection::Enter => self.expand(selection),
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
@@ -313,6 +315,26 @@ impl DatabaseTree {
         }
 
         self.select_parent(current_index)
+    }
+
+    fn expand(&mut self, current_selection: usize) -> Option<usize> {
+        let item = &mut self.items.tree_items.get(current_selection)?;
+
+        if item.kind().is_database() {
+            if item.kind().is_database_collapsed() {
+                self.items.expand(current_selection, false);
+                return None;
+            }
+        }
+
+        if item.kind().is_schema() {
+            if item.kind().is_schema_collapsed() {
+                self.items.expand(current_selection, false);
+                return None;
+            }
+        }
+
+        None
     }
 
     fn selection_right(&mut self, current_selection: usize) -> Option<usize> {
