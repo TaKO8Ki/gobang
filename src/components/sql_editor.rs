@@ -5,7 +5,6 @@ use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
 use crate::database::{ExecuteResult, Pool};
 use crate::event::Key;
-use crate::ui::syntax_text::SyntaxText;
 use anyhow::Result;
 use async_trait::async_trait;
 use database_tree::Table;
