@@ -18,8 +18,8 @@ pub struct SyntaxText {
 
 impl SyntaxText {
     pub fn new(text: String) -> Self {
-        const SYNTAX_SET: SyntaxSet = SyntaxSet::load_defaults_nonewlines();
-        const THEME_SET: ThemeSet = ThemeSet::load_defaults();
+        let SYNTAX_SET: SyntaxSet = SyntaxSet::load_defaults_nonewlines();
+        let THEME_SET: ThemeSet = ThemeSet::load_defaults();
 
         let mut state = ParseState::new(SYNTAX_SET.find_syntax_by_extension("sql").unwrap());
         let highlighter = Highlighter::new(&THEME_SET.themes["base16-eighties.dark"]);

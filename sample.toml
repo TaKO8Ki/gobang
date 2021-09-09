@@ -8,8 +8,23 @@ port = 3306
 [[conn]]
 type = "mysql"
 user = "root"
+host = "'127.0.0.1'"
+database = "world"
+port = 3306
+
+[[conn]]
+type = "mysql"
+user = "root"
 host = "localhost"
 port = 3306
+
+[[conn]]
+type = "mysql"
+user = "tako8ki"
+host = "localhost"
+port = 3306
+database = "world"
+password = "password"
 
 [[conn]]
 type = "postgres"
@@ -20,6 +35,22 @@ port = 5432
 [[conn]]
 type = "postgres"
 user = "postgres"
+host = "localhost"
+port = 5432
+password = "password"
+database = "dvdrental"
+
+[[conn]]
+type = "postgres"
+user = "hoge"
+host = "localhost"
+port = 5432
+password = "hoge"
+database = "dvdrental"
+
+[[conn]]
+type = "postgres"
+user = "hoge"
 host = "localhost"
 port = 5432
 database = "dvdrental"

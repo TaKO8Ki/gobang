@@ -20,6 +20,7 @@ pub enum Tab {
     Constraints,
     ForeignKeys,
     Indexes,
+    Sql,
 }
 
 impl std::fmt::Display for Tab {
@@ -52,6 +53,7 @@ impl TabComponent {
             command::tab_constraints(&self.key_config).name,
             command::tab_foreign_keys(&self.key_config).name,
             command::tab_indexes(&self.key_config).name,
+            command::tab_sql_editor(&self.key_config).name,
         ]
     }
 }
@@ -90,7 +92,7 @@ impl Component for TabComponent {
             self.selected_tab = Tab::ForeignKeys;
             return Ok(EventState::Consumed);
         } else if key == self.key_config.tab_indexes {
-            self.selected_tab = Tab::Indexes;
+            self.selected_tab = Tab::Sql;
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
