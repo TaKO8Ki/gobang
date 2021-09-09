@@ -16,6 +16,7 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+    Enter,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -112,6 +113,7 @@ impl DatabaseTree {
                 MoveSelection::Right => self.selection_right(selection),
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
+                MoveSelection::Enter => self.expand(selection),
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
@@ -315,6 +317,22 @@ impl DatabaseTree {
         self.select_parent(current_index)
     }
 
+    fn expand(&mut self, current_selection: usize) -> Option<usize> {
+        let item = &mut self.items.tree_items.get(current_selection)?;
+
+        if item.kind().is_database() && item.kind().is_database_collapsed() {
+            self.items.expand(current_selection, false);
+            return Some(current_selection);
+        }
+
+        if item.kind().is_schema() && item.kind().is_schema_collapsed() {
+            self.items.expand(current_selection, false);
+            return Some(current_selection);
+        }
+
+        None
+    }
+
     fn selection_right(&mut self, current_selection: usize) -> Option<usize> {
         let item = &mut self.items.tree_items.get(current_selection)?;
 
@@ -412,6 +430,62 @@ mod test {
         assert!(tree.move_selection(MoveSelection::Right));
         assert_eq!(tree.selection, Some(1));
         assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(2));
+    }
+
+    #[test]
+    fn test_expand() {
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Table::new("b".to_string()).into()],
+        )];
+
+        // a
+        //   b
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        assert!(tree.move_selection(MoveSelection::Enter));
+        assert!(!tree.items.tree_items[0].kind().is_database_collapsed());
+        assert_eq!(tree.selection, Some(0));
+
+        assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(!tree.move_selection(MoveSelection::Enter));
+        assert_eq!(tree.selection, Some(1));
+
+        let items = vec![Database::new(
+            "a".to_string(),
+            vec![Schema {
+                name: "b".to_string(),
+                tables: vec![Table::new("c".to_string()).into()],
+            }
+            .into()],
+        )];
+
+        // a
+        //   b
+        //     c
+
+        let mut tree = DatabaseTree::new(&items, &BTreeSet::new()).unwrap();
+
+        assert!(tree.move_selection(MoveSelection::Enter));
+        assert!(!tree.items.tree_items[0].kind().is_database_collapsed());
+        assert!(tree.items.tree_items[1].kind().is_schema_collapsed());
+        assert_eq!(tree.selection, Some(0));
+
+        assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(tree.move_selection(MoveSelection::Enter));
+        assert!(!tree.items.tree_items[1].kind().is_database_collapsed());
+        assert_eq!(tree.selection, Some(1));
+
+        assert!(tree.move_selection(MoveSelection::Down));
+        assert_eq!(tree.selection, Some(2));
+
+        assert!(!tree.move_selection(MoveSelection::Enter));
         assert_eq!(tree.selection, Some(2));
     }
 

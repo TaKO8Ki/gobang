@@ -22,6 +22,8 @@ pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
         Some(MoveSelection::Top)
     } else if key == key_config.scroll_to_bottom {
         Some(MoveSelection::End)
+    } else if key == key_config.enter {
+        Some(MoveSelection::Enter)
     } else {
         None
     }
