@@ -322,14 +322,14 @@ impl App {
                 }
             }
             Focus::DabataseList => {
-                if self.databases.event(key)?.is_consumed() {
-                    return Ok(EventState::Consumed);
-                }
+                let state = self.databases.event(key)?;
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
                     self.update_table().await?;
                     return Ok(EventState::Consumed);
                 }
+
+                return Ok(state);
             }
             Focus::Table => {
                 match self.tab.selected_tab {
