@@ -3,17 +3,21 @@ use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPool as MPool, MySqlRow};
+use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
+use std::time::Duration;
 
 pub struct MySqlPool {
-    pool: MPool,
+    pool: sqlx::mysql::MySqlPool,
 }
 
 impl MySqlPool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: MPool::connect(database_url).await?,
+            pool: MySqlPoolOptions::new()
+                .connect_timeout(Duration::from_millis(500))
+                .connect(database_url)
+                .await?,
         })
     }
 }

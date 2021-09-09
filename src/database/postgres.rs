@@ -4,8 +4,9 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
 use futures::TryStreamExt;
 use itertools::Itertools;
-use sqlx::postgres::{PgColumn, PgPool, PgRow};
+use sqlx::postgres::{PgColumn, PgPool, PgPoolOptions, PgRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
+use std::time::Duration;
 
 pub struct PostgresPool {
     pool: PgPool,
@@ -14,7 +15,10 @@ pub struct PostgresPool {
 impl PostgresPool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: PgPool::connect(database_url).await?,
+            pool: PgPoolOptions::new()
+                .connect_timeout(Duration::from_millis(500))
+                .connect(database_url)
+                .await?,
         })
     }
 }

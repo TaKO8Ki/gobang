@@ -3,17 +3,21 @@ use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::sqlite::{SqliteColumn, SqlitePool as SPool, SqliteRow};
+use sqlx::sqlite::{SqliteColumn, SqlitePoolOptions, SqliteRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
+use std::time::Duration;
 
 pub struct SqlitePool {
-    pool: SPool,
+    pool: sqlx::sqlite::SqlitePool,
 }
 
 impl SqlitePool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: SPool::connect(database_url).await?,
+            pool: SqlitePoolOptions::new()
+                .connect_timeout(Duration::from_millis(500))
+                .connect(database_url)
+                .await?,
         })
     }
 }
