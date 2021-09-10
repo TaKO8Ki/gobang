@@ -11,7 +11,7 @@ use tui::{
     Frame,
 };
 
-const RESERVED_WORDS: &[&str] = &["AND", "OR", "NOT", "NULL", "IS"];
+const RESERVED_WORDS: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
@@ -67,8 +67,9 @@ impl CompletionComponent {
 
     fn filterd_candidates(&self) -> impl Iterator<Item = &String> {
         self.candidates.iter().filter(move |c| {
-            c.starts_with(self.word.to_lowercase().as_str())
-                || c.starts_with(self.word.to_uppercase().as_str())
+            (c.starts_with(self.word.to_lowercase().as_str())
+                || c.starts_with(self.word.to_uppercase().as_str()))
+                && !self.word.is_empty()
         })
     }
 
