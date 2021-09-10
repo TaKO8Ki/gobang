@@ -2,6 +2,7 @@ pub mod command;
 pub mod completion;
 pub mod connections;
 pub mod databases;
+pub mod debug;
 pub mod error;
 pub mod help;
 pub mod record_table;
@@ -24,6 +25,9 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
+
+#[cfg(debug_assertions)]
+pub use debug::DebugComponent;
 
 use anyhow::Result;
 use async_trait::async_trait;
