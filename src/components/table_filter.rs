@@ -54,7 +54,7 @@ impl TableFilterComponent {
             .input
             .iter()
             .enumerate()
-            .filter(|(i, _)| i <= &self.input_idx)
+            .filter(|(i, _)| i < &self.input_idx)
             .map(|(_, i)| i)
             .collect::<String>()
             .split(" ")
@@ -160,7 +160,7 @@ impl Component for TableFilterComponent {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
                     self.input_cursor_position -= compute_character_width(last_c);
-                    self.update_completion();
+                    self.completion.update("");
                 }
                 Ok(EventState::Consumed)
             }
@@ -170,6 +170,7 @@ impl Component for TableFilterComponent {
                     self.input_cursor_position = self
                         .input_cursor_position
                         .saturating_sub(compute_character_width(self.input[self.input_idx]));
+                    self.completion.update("");
                 }
                 Ok(EventState::Consumed)
             }
@@ -185,6 +186,7 @@ impl Component for TableFilterComponent {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
                     self.input_cursor_position += compute_character_width(next_c);
+                    self.completion.update("");
                 }
                 Ok(EventState::Consumed)
             }
@@ -197,5 +199,16 @@ impl Component for TableFilterComponent {
             }
             key => self.completion.event(key),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{KeyConfig, TableFilterComponent};
+
+    fn test_update_completion() {
+        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        filter.input_idx = 3;
+        filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', 'g']
     }
 }
