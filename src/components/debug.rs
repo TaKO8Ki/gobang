@@ -26,13 +26,6 @@ impl DebugComponent {
     }
 }
 
-impl DebugComponent {
-    pub fn set(&mut self, error: String) -> anyhow::Result<()> {
-        self.msg = error;
-        self.show()
-    }
-}
-
 impl DrawableComponent for DebugComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if true {
