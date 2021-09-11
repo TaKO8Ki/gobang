@@ -8,7 +8,7 @@ use tui::{
     layout::Rect,
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
@@ -64,8 +64,7 @@ impl DrawableComponent for TableStatusComponent {
             Style::default()
         } else {
             Style::default().fg(Color::DarkGray)
-        }))
-        .wrap(Wrap { trim: true });
+        }));
         f.render_widget(status, area);
         Ok(())
     }

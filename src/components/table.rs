@@ -401,9 +401,18 @@ impl TableComponent {
 
 impl DrawableComponent for TableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let layout = Layout::default()
+        let chunks = Layout::default()
+            .vertical_margin(1)
+            .horizontal_margin(1)
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
+            .constraints(
+                [
+                    Constraint::Length(2),
+                    Constraint::Min(1),
+                    Constraint::Length(2),
+                ]
+                .as_ref(),
+            )
             .split(area);
 
         f.render_widget(
@@ -415,15 +424,8 @@ impl DrawableComponent for TableComponent {
                 } else {
                     Style::default().fg(Color::DarkGray)
                 }),
-            layout[1],
+            area,
         );
-
-        let chunks = Layout::default()
-            .vertical_margin(1)
-            .horizontal_margin(1)
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(1), Constraint::Length(2)].as_ref())
-            .split(layout[1]);
 
         self.selected_row.selected().map_or_else(
             || {
@@ -433,13 +435,10 @@ impl DrawableComponent for TableComponent {
                 self.scroll.update(
                     selection,
                     self.rows.len(),
-                    layout[1].height.saturating_sub(2) as usize,
+                    chunks[1].height.saturating_sub(2) as usize,
                 );
             },
         );
-
-        TableValueComponent::new(self.selected_cells().unwrap_or_default())
-            .draw(f, layout[0], focused)?;
 
         let block = Block::default().borders(Borders::NONE);
         let (selected_column_index, headers, rows, constraints) =
@@ -485,7 +484,7 @@ impl DrawableComponent for TableComponent {
         let mut state = self.selected_row.clone();
         f.render_stateful_widget(
             table,
-            chunks[0],
+            chunks[1],
             if let Some((_, y)) = self.selection_area_corner {
                 state.select(Some(y));
                 &mut state
@@ -493,6 +492,9 @@ impl DrawableComponent for TableComponent {
                 &mut self.selected_row
             },
         );
+
+        TableValueComponent::new(self.selected_cells().unwrap_or_default())
+            .draw(f, chunks[0], focused)?;
 
         TableStatusComponent::new(
             if self.rows.is_empty() {
@@ -507,9 +509,9 @@ impl DrawableComponent for TableComponent {
             },
             self.table.as_ref().map(|t| t.1.clone()),
         )
-        .draw(f, chunks[1], focused)?;
+        .draw(f, chunks[2], focused)?;
 
-        self.scroll.draw(f, chunks[0]);
+        self.scroll.draw(f, chunks[1]);
         Ok(())
     }
 }
