@@ -73,20 +73,15 @@ impl CompletionComponent {
         })
     }
 
-    pub fn string_to_be_completed(&self) -> Option<String> {
-        let len = self.word.len();
-        Some(format!(
-            "{} ",
-            self.filterd_candidates()
-                .collect::<Vec<&String>>()
-                .get(self.state.selected()?)
-                .map(|c| c.to_string())?
-                .chars()
-                .enumerate()
-                .filter(|(i, _)| i >= &len)
-                .map(|(_, c)| c)
-                .collect::<String>()
-        ))
+    pub fn selected_candidate(&self) -> Option<String> {
+        self.filterd_candidates()
+            .collect::<Vec<&String>>()
+            .get(self.state.selected()?)
+            .map(|c| c.to_string())
+    }
+
+    pub fn word(&self) -> String {
+        self.word.to_string()
     }
 }
 
