@@ -17,6 +17,7 @@ pub struct DebugComponent {
 }
 
 impl DebugComponent {
+    #[allow(dead_code)]
     pub fn new(key_config: KeyConfig, msg: String) -> Self {
         Self {
             msg,
