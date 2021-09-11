@@ -63,14 +63,4 @@ impl Component for DebugComponent {
         }
         Ok(EventState::NotConsumed)
     }
-
-    fn hide(&mut self) {
-        self.visible = false;
-    }
-
-    fn show(&mut self) -> Result<()> {
-        self.visible = true;
-
-        Ok(())
-    }
 }

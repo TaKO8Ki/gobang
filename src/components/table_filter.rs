@@ -57,7 +57,7 @@ impl TableFilterComponent {
             .filter(|(i, _)| i < &self.input_idx)
             .map(|(_, i)| i)
             .collect::<String>()
-            .split(" ")
+            .split(' ')
             .map(|i| i.to_string())
             .collect::<Vec<String>>();
         self.completion
@@ -181,7 +181,7 @@ impl Component for TableFilterComponent {
                 self.input_cursor_position += middle
                     .join("")
                     .chars()
-                    .map(|c| compute_character_width(c))
+                    .map(compute_character_width)
                     .sum::<u16>();
                 if is_last_word {
                     self.input_cursor_position += " ".to_string().width() as u16
@@ -190,7 +190,7 @@ impl Component for TableFilterComponent {
                     .completion
                     .word()
                     .chars()
-                    .map(|c| compute_character_width(c))
+                    .map(compute_character_width)
                     .sum::<u16>();
                 self.update_completion();
                 return Ok(EventState::Consumed);
