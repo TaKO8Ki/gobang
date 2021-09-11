@@ -132,12 +132,63 @@ impl Component for TableFilterComponent {
 
         // apply comletion candidates
         if key == self.key_config.enter {
-            if let Some(candidate) = self.completion.string_to_be_completed() {
-                let mut input = self.input.iter().collect::<String>();
-                input.insert_str(self.input_idx, candidate.as_str());
-                self.input = input.chars().collect();
-                self.input_idx += candidate.len();
-                self.input_cursor_position += candidate
+            if let Some(candidate) = self.completion.selected_candidate() {
+                let mut input = Vec::new();
+
+                let first = self
+                    .input
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| {
+                        i < &self.input_idx.saturating_sub(self.completion.word().len())
+                    })
+                    .map(|(_, c)| c.to_string())
+                    .collect::<Vec<String>>();
+
+                let last = self
+                    .input
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| i >= &self.input_idx)
+                    .map(|(_, c)| c.to_string())
+                    .collect::<Vec<String>>();
+
+                let is_last_word = last.first().map_or(false, |c| c == &" ".to_string());
+                let middle = if is_last_word {
+                    candidate
+                        .chars()
+                        .map(|c| c.to_string())
+                        .collect::<Vec<String>>()
+                } else {
+                    let mut c = candidate
+                        .chars()
+                        .map(|c| c.to_string())
+                        .collect::<Vec<String>>();
+                    c.push(" ".to_string());
+                    c
+                };
+
+                input.extend(first);
+                input.extend(middle.clone());
+                input.extend(last);
+
+                self.input = input.join("").chars().collect();
+                self.input_idx += &middle.len();
+                if is_last_word {
+                    self.input_idx += 1;
+                }
+                self.input_idx -= self.completion.word().len();
+                self.input_cursor_position += middle
+                    .join("")
+                    .chars()
+                    .map(|c| compute_character_width(c))
+                    .sum::<u16>();
+                if is_last_word {
+                    self.input_cursor_position += " ".to_string().width() as u16
+                }
+                self.input_cursor_position -= self
+                    .completion
+                    .word()
                     .chars()
                     .map(|c| compute_character_width(c))
                     .sum::<u16>();
@@ -145,6 +196,8 @@ impl Component for TableFilterComponent {
                 return Ok(EventState::Consumed);
             }
         }
+
+        self.completion.selected_candidate();
 
         match key {
             Key::Char(c) => {
