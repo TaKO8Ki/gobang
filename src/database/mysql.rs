@@ -1,3 +1,5 @@
+use crate::get_or_null;
+
 use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -353,85 +355,69 @@ impl Pool for MySqlPool {
 
 fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
     let column_name = column.name();
+
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        return Ok(value.unwrap_or_else(|| "NULL".to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(value.unwrap_or_else(|| "NULL".to_string()))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i8> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u8> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u16> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u32> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u64> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<rust_decimal::Decimal> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
-    }
-    if let Ok(value) = row.try_get(column_name) {
+        Ok(get_or_null!(value))
+    } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        Ok(get_or_null!(value))
+    } else {
+        anyhow::bail!(
+            "column type not implemented: `{}` {}",
+            column_name,
+            column.type_info().clone().name()
+        )
     }
-    Err(anyhow::anyhow!(
-        "column type not implemented: `{}` {}",
-        column_name,
-        column.type_info().clone().name()
-    ))
 }
