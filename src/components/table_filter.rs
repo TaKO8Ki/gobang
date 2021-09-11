@@ -262,12 +262,28 @@ mod test {
     use super::{KeyConfig, TableFilterComponent};
 
     #[test]
+    fn test_complete_end() {
+        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        filter.input_idx = 2;
+        filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
+        filter.completion.update("an");
+        assert!(filter.complete().is_ok());
+        assert_eq!(
+            filter.input,
+            vec!['A', 'N', 'D', ' ', 'c', 'd', 'e', 'f', 'g']
+        );
+    }
+
+    #[test]
     fn test_complete() {
         let mut filter = TableFilterComponent::new(KeyConfig::default());
-        filter.input_idx = 3;
-        filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', 'g'];
-        filter.completion.state.select(Some(0));
+        filter.input_idx = 9;
+        filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
+        filter.completion.update('i');
         assert!(filter.complete().is_ok());
-        assert_eq!(filter.input, vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', 'g']);
+        assert_eq!(
+            filter.input,
+            vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'I', 'N', ' ']
+        );
     }
 }
