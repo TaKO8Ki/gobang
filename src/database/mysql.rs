@@ -9,8 +9,6 @@ use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
 use std::time::Duration;
 
-const NULL: &str = "NULL";
-
 pub struct MySqlPool {
     pool: sqlx::mysql::MySqlPool,
 }
@@ -360,7 +358,7 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        Ok(value.unwrap_or_else(|| NULL.to_string()))
+        Ok(value.unwrap_or_else(|| "NULL".to_string()))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
         Ok(get_or_null!(value))
