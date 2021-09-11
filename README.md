@@ -18,16 +18,16 @@ A cross-platform TUI database management tool written in Rust
 - Multiple Database support (MySQL, PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
-## Where does "gobang" come from?
-
-gobang means a Japanese game played on goban, a go board. The appearance of goban looks like table structure. And I live in Kyoto, Japan. In Kyoto city, streets are laid out on a grid (We call it “goban no me no youna (碁盤の目のような)”). They are why I named this project "gobang".
-
 ## TODOs
 
 - [ ] SQL editor
 - [ ] Custom key bindings
 - [ ] Custom theme settings
 - [ ] Support the other databases
+
+## What does "gobang" come from?
+
+gobang means a Japanese game played on goban, a go board. The appearance of goban looks like table structure. And I live in Kyoto, Japan. In Kyoto city, streets are laid out on a grid (We call it “goban no me no youna (碁盤の目のような)”). They are why I named this project "gobang".
 
 ## Installation
 
