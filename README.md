@@ -55,6 +55,7 @@ $ gobang
 ```
 
 ```
+$ gobang -h
 USAGE:
     gobang [OPTIONS]
 
