@@ -1,3 +1,5 @@
+use crate::get_or_null;
+
 use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -467,19 +469,19 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<rust_decimal::Decimal> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<&[u8]> = value;
@@ -495,7 +497,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: String = value;
@@ -503,31 +505,31 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Local>> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
         let value: Option<bool> = value;
-        return Ok(value.map_or("NULL".to_string(), |v| v.to_string()));
+        get_or_null!(value)
     }
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<Vec<String>> = value;
