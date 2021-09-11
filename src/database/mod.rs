@@ -53,6 +53,6 @@ pub trait TableRow: std::marker::Send {
 #[macro_export]
 macro_rules! get_or_null {
     ($value:expr) => {
-        return Ok($value.map_or("NULL".to_string(), |v| v.to_string()));
+        $value.map_or("NULL".to_string(), |v| v.to_string())
     };
 }

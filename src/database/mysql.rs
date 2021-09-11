@@ -363,58 +363,58 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
         Ok(value.unwrap_or_else(|| NULL.to_string()))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i8> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u8> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u16> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u32> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u64> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<rust_decimal::Decimal> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        get_or_null!(value)
+        Ok(get_or_null!(value))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",
