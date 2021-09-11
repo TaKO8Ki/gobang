@@ -4,9 +4,9 @@ use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
-    layout::{Alignment, Rect},
+    layout::Rect,
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
@@ -28,9 +28,7 @@ impl DrawableComponent for TableValueComponent {
                 Style::default()
             } else {
                 Style::default().fg(Color::DarkGray)
-            })
-            .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true });
+            });
         f.render_widget(paragraph, area);
         Ok(())
     }
