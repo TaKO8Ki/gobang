@@ -5,8 +5,7 @@ use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::{Alignment, Rect},
-    style::{Color, Modifier, Style},
-    text::Span,
+    style::{Color, Style},
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -24,15 +23,7 @@ impl TableValueComponent {
 impl DrawableComponent for TableValueComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let paragraph = Paragraph::new(self.value.clone())
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .style(Style::default())
-                    .title(Span::styled(
-                        "Value",
-                        Style::default().add_modifier(Modifier::BOLD),
-                    )),
-            )
+            .block(Block::default().borders(Borders::BOTTOM))
             .style(if focused {
                 Style::default()
             } else {
