@@ -26,13 +26,12 @@ impl CompletionComponent {
             key_config,
             state: ListState::default(),
             word: word.into(),
-            candidates: Vec::new(),
+            candidates: RESERVED_WORDS.iter().map(|w| w.to_string()).collect(),
         }
     }
 
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
-        self.candidates = RESERVED_WORDS.iter().map(|w| w.to_string()).collect();
         self.state.select(None);
         self.state.select(Some(0))
     }
