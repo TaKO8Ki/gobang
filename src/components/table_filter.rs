@@ -197,7 +197,7 @@ impl Component for TableFilterComponent {
 
         // apply comletion candidates
         if key == self.key_config.enter {
-            return self.complete()
+            return self.complete();
         }
 
         self.completion.selected_candidate();
@@ -289,7 +289,7 @@ mod test {
     }
 
     #[test]
-    fn test_complete_no_candidate() {
+    fn test_complete_no_candidates() {
         let mut filter = TableFilterComponent::new(KeyConfig::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
