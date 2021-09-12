@@ -265,7 +265,7 @@ mod test {
     use super::{KeyConfig, TableFilterComponent};
 
     #[test]
-    fn test_complete_end() {
+    fn test_complete() {
         let mut filter = TableFilterComponent::new(KeyConfig::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
@@ -278,7 +278,7 @@ mod test {
     }
 
     #[test]
-    fn test_complete() {
+    fn test_complete_end() {
         let mut filter = TableFilterComponent::new(KeyConfig::default());
         filter.input_idx = 9;
         filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
@@ -288,5 +288,15 @@ mod test {
             filter.input,
             vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'I', 'N', ' ']
         );
+    }
+
+    #[test]
+    fn test_complete_no_candidate() {
+        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        filter.input_idx = 2;
+        filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
+        filter.completion.update("foo");
+        assert!(filter.complete().is_ok());
+        assert_eq!(filter.input, vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g']);
     }
 }
