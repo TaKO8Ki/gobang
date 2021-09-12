@@ -197,9 +197,7 @@ impl Component for TableFilterComponent {
 
         // apply comletion candidates
         if key == self.key_config.enter {
-            if self.complete()?.is_consumed() {
-                return Ok(EventState::Consumed);
-            };
+            return self.complete()
         }
 
         self.completion.selected_candidate();
