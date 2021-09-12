@@ -134,3 +134,45 @@ impl Component for CompletionComponent {
         Ok(EventState::NotConsumed)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CompletionComponent, KeyConfig};
+
+    #[test]
+    fn test_filterd_candidates_lowercase() {
+        assert_eq!(
+            CompletionComponent::new(KeyConfig::default(), "an")
+                .filterd_candidates()
+                .collect::<Vec<&String>>(),
+            vec![&"AND".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_filterd_candidates_uppercase() {
+        assert_eq!(
+            CompletionComponent::new(KeyConfig::default(), "AN")
+                .filterd_candidates()
+                .collect::<Vec<&String>>(),
+            vec![&"AND".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_filterd_candidates_multiple_candidates() {
+        assert_eq!(
+            CompletionComponent::new(KeyConfig::default(), "n")
+                .filterd_candidates()
+                .collect::<Vec<&String>>(),
+            vec![&"NOT".to_string(), &"NULL".to_string()]
+        );
+
+        assert_eq!(
+            CompletionComponent::new(KeyConfig::default(), "N")
+                .filterd_candidates()
+                .collect::<Vec<&String>>(),
+            vec![&"NOT".to_string(), &"NULL".to_string()]
+        );
+    }
+}
