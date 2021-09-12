@@ -163,10 +163,11 @@ impl DrawableComponent for TableFilterComponent {
                 (self
                     .table
                     .as_ref()
-                    .map_or(String::new(), |table| table.name.to_string())
-                    .width() as u16
-                    + 2)
-                .saturating_add(self.input_cursor_position),
+                    .map_or(String::new(), |table| {
+                        format!("{} ", table.name.to_string())
+                    })
+                    .width() as u16)
+                    .saturating_add(self.input_cursor_position),
                 0,
             )?;
         };
@@ -196,7 +197,9 @@ impl Component for TableFilterComponent {
 
         // apply comletion candidates
         if key == self.key_config.enter {
-            self.complete()?;
+            if self.complete()?.is_consumed() {
+                return Ok(EventState::Consumed);
+            };
         }
 
         self.completion.selected_candidate();

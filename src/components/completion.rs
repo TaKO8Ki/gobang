@@ -11,7 +11,9 @@ use tui::{
     Frame,
 };
 
-const RESERVED_WORDS: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
+const RESERVED_WORDS: &[&str] = &[
+    "IN", "AND", "OR", "NOT", "NULL", "IS",
+];
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
@@ -95,15 +97,14 @@ impl MovableComponent for CompletionComponent {
     ) -> Result<()> {
         if !self.word.is_empty() {
             let width = 30;
-            let height = 5;
             let candidates = self
                 .filterd_candidates()
-                .map(|c| ListItem::new(c.to_string()).style(Style::default()))
+                .map(|c| ListItem::new(c.to_string()))
                 .collect::<Vec<ListItem>>();
-            if candidates.is_empty() {
+            if candidates.clone().is_empty() {
                 return Ok(());
             }
-            let candidates = List::new(candidates)
+            let candidate_list = List::new(candidates.clone())
                 .block(Block::default().borders(Borders::ALL))
                 .highlight_style(Style::default().bg(Color::Blue))
                 .style(Style::default());
@@ -112,10 +113,10 @@ impl MovableComponent for CompletionComponent {
                 area.x + x,
                 area.y + y + 2,
                 width.min(f.size().width),
-                height.min(f.size().height),
+                candidates.len().min(5) as u16 + 2,
             );
             f.render_widget(Clear, area);
-            f.render_stateful_widget(candidates, area, &mut self.state);
+            f.render_stateful_widget(candidate_list, area, &mut self.state);
         }
         Ok(())
     }
