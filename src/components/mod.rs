@@ -1,4 +1,5 @@
 pub mod command;
+pub mod completion;
 pub mod connections;
 pub mod databases;
 pub mod error;
@@ -11,7 +12,11 @@ pub mod table_status;
 pub mod table_value;
 pub mod utils;
 
+#[cfg(debug_assertions)]
+pub mod debug;
+
 pub use command::{CommandInfo, CommandText};
+pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
 pub use databases::DatabasesComponent;
 pub use error::ErrorComponent;
@@ -22,6 +27,9 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
+
+#[cfg(debug_assertions)]
+pub use debug::DebugComponent;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -53,6 +61,17 @@ impl From<bool> for EventState {
 
 pub trait DrawableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
+}
+
+pub trait MovableComponent {
+    fn draw<B: Backend>(
+        &mut self,
+        f: &mut Frame<B>,
+        rect: Rect,
+        focused: bool,
+        x: u16,
+        y: u16,
+    ) -> Result<()>;
 }
 
 /// base component trait

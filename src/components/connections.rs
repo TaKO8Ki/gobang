@@ -93,7 +93,7 @@ impl DrawableComponent for ConnectionsComponent {
                     .style(Style::default()),
             )
         }
-        let tasks = List::new(connections)
+        let connections = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
             .highlight_style(Style::default().bg(Color::Blue))
             .style(Style::default());
@@ -104,8 +104,9 @@ impl DrawableComponent for ConnectionsComponent {
             width.min(f.size().width),
             height.min(f.size().height),
         );
+
         f.render_widget(Clear, area);
-        f.render_stateful_widget(tasks, area, &mut self.state);
+        f.render_stateful_widget(connections, area, &mut self.state);
         Ok(())
     }
 }

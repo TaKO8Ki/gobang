@@ -59,8 +59,8 @@ impl TableComponent {
         database: Database,
         table: DTable,
     ) {
+        self.selected_row.select(None);
         if !rows.is_empty() {
-            self.selected_row.select(None);
             self.selected_row.select(Some(0))
         }
         self.headers = headers;
@@ -97,7 +97,7 @@ impl TableComponent {
         let i = match self.selected_row.selected() {
             Some(i) => {
                 if i + lines >= self.rows.len() {
-                    Some(self.rows.len() - 1)
+                    Some(self.rows.len().saturating_sub(1))
                 } else {
                     Some(i + lines)
                 }
@@ -114,7 +114,7 @@ impl TableComponent {
                 if i <= lines {
                     Some(0)
                 } else {
-                    Some(i - lines)
+                    Some(i.saturating_sub(lines))
                 }
             }
             None => None,
@@ -136,7 +136,8 @@ impl TableComponent {
             return;
         }
         self.reset_selection();
-        self.selected_row.select(Some(self.rows.len() - 1));
+        self.selected_row
+            .select(Some(self.rows.len().saturating_sub(1)));
     }
 
     fn next_column(&mut self) {

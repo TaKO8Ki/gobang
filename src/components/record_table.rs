@@ -26,7 +26,7 @@ pub struct RecordTableComponent {
 impl RecordTableComponent {
     pub fn new(key_config: KeyConfig) -> Self {
         Self {
-            filter: TableFilterComponent::default(),
+            filter: TableFilterComponent::new(key_config.clone()),
             table: TableComponent::new(key_config.clone()),
             focus: Focus::Table,
             key_config,
@@ -61,11 +61,11 @@ impl DrawableComponent for RecordTableComponent {
             .constraints(vec![Constraint::Length(3), Constraint::Length(5)])
             .split(area);
 
-        self.filter
-            .draw(f, layout[0], focused && matches!(self.focus, Focus::Filter))?;
-
         self.table
             .draw(f, layout[1], focused && matches!(self.focus, Focus::Table))?;
+
+        self.filter
+            .draw(f, layout[0], focused && matches!(self.focus, Focus::Filter))?;
         Ok(())
     }
 }

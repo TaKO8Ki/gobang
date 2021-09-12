@@ -275,7 +275,7 @@ impl App {
                     &database,
                     &table,
                     0,
-                    if self.record_table.filter.input.is_empty() {
+                    if self.record_table.filter.input_str().is_empty() {
                         None
                     } else {
                         Some(self.record_table.filter.input_str())
@@ -367,7 +367,7 @@ impl App {
                                             &database,
                                             &table,
                                             index as u16,
-                                            if self.record_table.filter.input.is_empty() {
+                                            if self.record_table.filter.input_str().is_empty() {
                                                 None
                                             } else {
                                                 Some(self.record_table.filter.input_str())
