@@ -20,7 +20,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct TableFilterComponent {
     key_config: KeyConfig,
     pub table: Option<Table>,
-    pub input: Vec<char>,
+    input: Vec<char>,
     input_idx: usize,
     input_cursor_position: u16,
     completion: CompletionComponent,
