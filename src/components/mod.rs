@@ -2,7 +2,6 @@ pub mod command;
 pub mod completion;
 pub mod connections;
 pub mod databases;
-pub mod debug;
 pub mod error;
 pub mod help;
 pub mod record_table;
@@ -12,6 +11,9 @@ pub mod table_filter;
 pub mod table_status;
 pub mod table_value;
 pub mod utils;
+
+#[cfg(debug_assertions)]
+pub mod debug;
 
 pub use command::{CommandInfo, CommandText};
 pub use completion::CompletionComponent;
