@@ -11,7 +11,7 @@ use tui::{
     Frame,
 };
 
-const RESERVED_WORDS: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS", "IN"];
+const RESERVED_WORDS: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
