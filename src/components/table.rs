@@ -314,7 +314,7 @@ impl TableComponent {
                     )
                     .clamp(&3, &20)
                 });
-            if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len()
+            if widths.iter().map(|(_, width)| width).sum::<usize>() + length + widths.len() + 1
                 >= area_width.saturating_sub(number_column_width) as usize
             {
                 column_index += 1;
@@ -332,7 +332,7 @@ impl TableComponent {
         let selected_column_index = widths.len().saturating_sub(1);
         let mut column_index = far_right_column_index + 1;
         while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len()
-            <= area_width.saturating_sub(number_column_width) as usize
+            < area_width.saturating_sub(number_column_width) as usize
         {
             let length = self
                 .rows
