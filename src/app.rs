@@ -34,6 +34,7 @@ pub struct App {
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
     pool: Option<Box<dyn Pool>>,
+    left_chunk_percentage: u16,
     pub config: Config,
     pub error: ErrorComponent,
 }
@@ -54,6 +55,7 @@ impl App {
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
+            left_chunk_percentage: 15,
         }
     }
 
@@ -73,7 +75,10 @@ impl App {
 
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
+            .constraints([
+                Constraint::Percentage(self.left_chunk_percentage),
+                Constraint::Percentage((100_u16).saturating_sub(self.left_chunk_percentage)),
+            ])
             .split(f.size());
 
         self.databases
@@ -327,6 +332,23 @@ impl App {
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
                     self.update_table().await?;
                     return Ok(EventState::Consumed);
+                } else if key
+                    == self
+                        .config
+                        .key_config
+                        .extend_or_shorten_widget_width_to_left
+                {
+                    self.left_chunk_percentage =
+                        self.left_chunk_percentage.saturating_sub(5).max(15);
+                    return Ok(EventState::Consumed);
+                } else if key
+                    == self
+                        .config
+                        .key_config
+                        .extend_or_shorten_widget_width_to_right
+                {
+                    self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
+                    return Ok(EventState::Consumed);
                 }
 
                 return Ok(state);
@@ -428,6 +450,25 @@ impl App {
                         };
                     }
                 };
+
+                if key
+                    == self
+                        .config
+                        .key_config
+                        .extend_or_shorten_widget_width_to_left
+                {
+                    self.left_chunk_percentage =
+                        self.left_chunk_percentage.saturating_sub(5).max(15);
+                    return Ok(EventState::Consumed);
+                } else if key
+                    == self
+                        .config
+                        .key_config
+                        .extend_or_shorten_widget_width_to_right
+                {
+                    self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
+                    return Ok(EventState::Consumed);
+                }
             }
         }
         Ok(EventState::NotConsumed)
