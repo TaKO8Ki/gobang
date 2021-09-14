@@ -315,10 +315,6 @@ impl App {
             return Ok(EventState::Consumed);
         }
 
-        if self.expand_or_shorten_widget_width(key)?.is_consumed() {
-            return Ok(EventState::Consumed);
-        };
-
         match self.focus {
             Focus::ConnectionList => {
                 if self.connections.event(key)?.is_consumed() {
@@ -439,10 +435,15 @@ impl App {
                 };
             }
         }
+
+        if self.extend_or_shorten_widget_width(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        };
+
         Ok(EventState::NotConsumed)
     }
 
-    fn expand_or_shorten_widget_width(&mut self, key: Key) -> anyhow::Result<EventState> {
+    fn extend_or_shorten_widget_width(&mut self, key: Key) -> anyhow::Result<EventState> {
         if key
             == self
                 .config
