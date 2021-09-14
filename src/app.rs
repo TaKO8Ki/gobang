@@ -495,3 +495,22 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{App, Config, EventState, Key};
+
+    fn test_extend_or_shorten_widget_width() {
+        let mut app = App::new(Config::default());
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
+            EventState::Consumed
+        );
+        aasert_eq!(app.left_chunk_percentage, )
+
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
+            EventState::Consumed
+        );
+    }
+}
