@@ -207,7 +207,7 @@ impl Pool for PostgresPool {
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter.as_ref() {
             format!(
-                r#"SELECT * FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
@@ -217,7 +217,7 @@ impl Pool for PostgresPool {
             )
         } else {
             format!(
-                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
@@ -441,7 +441,7 @@ impl PostgresPool {
     ) -> anyhow::Result<Vec<serde_json::Value>> {
         let query = if let Some(filter) = filter {
             format!(
-                r#"SELECT to_json({table}.*) FROM "{database}""{table_schema}"."{table}" WHERE {filter} LIMIT {page}, {limit}"#,
+                r#"SELECT to_json({table}.*) FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
@@ -451,7 +451,7 @@ impl PostgresPool {
             )
         } else {
             format!(
-                r#"SELECT to_json({table}.*) FROM "{database}"."{table_schema}"."{table}" limit {limit} offset {page}"#,
+                r#"SELECT to_json({table}.*) FROM "{database}"."{table_schema}"."{table}" LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
