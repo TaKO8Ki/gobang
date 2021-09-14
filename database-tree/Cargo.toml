@@ -1,6 +1,6 @@
 [package]
 name = "database-tree"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.3"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 license = "MIT"
