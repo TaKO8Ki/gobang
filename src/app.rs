@@ -306,7 +306,7 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
+    async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
         if self.error.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
@@ -314,6 +314,10 @@ impl App {
         if !matches!(self.focus, Focus::ConnectionList) && self.help.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
+
+        if self.expand_or_shorten_widget_width(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        };
 
         match self.focus {
             Focus::ConnectionList => {
@@ -331,23 +335,6 @@ impl App {
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
                     self.update_table().await?;
-                    return Ok(EventState::Consumed);
-                } else if key
-                    == self
-                        .config
-                        .key_config
-                        .extend_or_shorten_widget_width_to_left
-                {
-                    self.left_chunk_percentage =
-                        self.left_chunk_percentage.saturating_sub(5).max(15);
-                    return Ok(EventState::Consumed);
-                } else if key
-                    == self
-                        .config
-                        .key_config
-                        .extend_or_shorten_widget_width_to_right
-                {
-                    self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
                     return Ok(EventState::Consumed);
                 }
 
@@ -450,31 +437,33 @@ impl App {
                         };
                     }
                 };
-
-                if key
-                    == self
-                        .config
-                        .key_config
-                        .extend_or_shorten_widget_width_to_left
-                {
-                    self.left_chunk_percentage =
-                        self.left_chunk_percentage.saturating_sub(5).max(15);
-                    return Ok(EventState::Consumed);
-                } else if key
-                    == self
-                        .config
-                        .key_config
-                        .extend_or_shorten_widget_width_to_right
-                {
-                    self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
-                    return Ok(EventState::Consumed);
-                }
             }
         }
         Ok(EventState::NotConsumed)
     }
 
-    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
+    fn expand_or_shorten_widget_width(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if key
+            == self
+                .config
+                .key_config
+                .extend_or_shorten_widget_width_to_left
+        {
+            self.left_chunk_percentage = self.left_chunk_percentage.saturating_sub(5).max(15);
+            return Ok(EventState::Consumed);
+        } else if key
+            == self
+                .config
+                .key_config
+                .extend_or_shorten_widget_width_to_right
+        {
+            self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
+            return Ok(EventState::Consumed);
+        }
+        Ok(EventState::NotConsumed)
+    }
+
+    fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
         if key == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
