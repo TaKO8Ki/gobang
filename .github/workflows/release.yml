@@ -146,4 +146,4 @@ jobs:
           cargo workspaces publish \
             --yes --force '*' --exact \
             --no-git-commit --allow-dirty --skip-published \
-            custom ${{ needs.create-release.outputs.gobang_version }}
+            custom ${{ needs.release.outputs.gobang_version }}
