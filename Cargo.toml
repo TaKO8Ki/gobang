@@ -29,7 +29,7 @@ serde = "1.0"
 toml = "0.4"
 strum = "0.21"
 strum_macros = "0.21"
-database-tree = { path = "./database-tree", version = "0.1.0-alpha.3" }
+database-tree = { path = "./database-tree", version = "0.1.0-alpha.4" }
 easy-cast = "0.4"
 async-trait = "0.1.50"
 itertools = "0.10.0"
