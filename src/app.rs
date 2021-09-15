@@ -127,15 +127,15 @@ impl App {
 
     fn commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
+            CommandInfo::new(command::filter(&self.config.key_config)),
+            CommandInfo::new(command::help(&self.config.key_config)),
+            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
             CommandInfo::new(command::scroll(&self.config.key_config)),
             CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
             CommandInfo::new(command::scroll_up_down_multiple_lines(
                 &self.config.key_config,
             )),
             CommandInfo::new(command::move_focus(&self.config.key_config)),
-            CommandInfo::new(command::filter(&self.config.key_config)),
-            CommandInfo::new(command::help(&self.config.key_config)),
-            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
             CommandInfo::new(command::extend_or_shorten_widget_width(
                 &self.config.key_config,
             )),
@@ -337,7 +337,9 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                return Ok(state);
+                if state.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
             }
             Focus::Table => {
                 match self.tab.selected_tab {
