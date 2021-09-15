@@ -136,6 +136,9 @@ impl App {
             CommandInfo::new(command::filter(&self.config.key_config)),
             CommandInfo::new(command::help(&self.config.key_config)),
             CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
+            CommandInfo::new(command::extend_or_shorten_widget_width(
+                &self.config.key_config,
+            )),
         ];
 
         self.databases.commands(&mut res);
@@ -500,17 +503,33 @@ impl App {
 mod test {
     use super::{App, Config, EventState, Key};
 
+    #[test]
     fn test_extend_or_shorten_widget_width() {
         let mut app = App::new(Config::default());
-        assert_eq!(
-            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
-            EventState::Consumed
-        );
-        aasert_eq!(app.left_chunk_percentage, )
-
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed
         );
+        assert_eq!(app.left_chunk_percentage, 20);
+
+        app.left_chunk_percentage = 70;
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_chunk_percentage, 70);
+
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_chunk_percentage, 65);
+
+        app.left_chunk_percentage = 15;
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_chunk_percentage, 15);
     }
 }
