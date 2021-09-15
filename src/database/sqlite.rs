@@ -17,7 +17,7 @@ impl SqlitePool {
     pub async fn new(database_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
             pool: SqlitePoolOptions::new()
-                .connect_timeout(Duration::from_millis(500))
+                .connect_timeout(Duration::from_secs(5))
                 .connect(database_url)
                 .await?,
         })
