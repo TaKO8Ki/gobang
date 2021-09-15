@@ -98,7 +98,7 @@ pub fn extend_selection_by_one_cell(key: &KeyConfig) -> CommandText {
 pub fn extend_or_shorten_widget_width(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
-            "Extend or shorten widget width to left/right [{},{}]",
+            "Extend/shorten widget width to left/right [{},{}]",
             key.extend_or_shorten_widget_width_to_left, key.extend_or_shorten_widget_width_to_right
         ),
         CMD_GROUP_GENERAL,
