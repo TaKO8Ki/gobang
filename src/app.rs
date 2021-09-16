@@ -34,7 +34,7 @@ pub struct App {
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
     pool: Option<Box<dyn Pool>>,
-    left_chunk_percentage: u16,
+    left_main_chunk_percentage: u16,
     pub config: Config,
     pub error: ErrorComponent,
 }
@@ -55,7 +55,7 @@ impl App {
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
-            left_chunk_percentage: 15,
+            left_main_chunk_percentage: 15,
         }
     }
 
@@ -76,8 +76,8 @@ impl App {
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(self.left_chunk_percentage),
-                Constraint::Percentage((100_u16).saturating_sub(self.left_chunk_percentage)),
+                Constraint::Percentage(self.left_main_chunk_percentage),
+                Constraint::Percentage((100_u16).saturating_sub(self.left_main_chunk_percentage)),
             ])
             .split(f.size());
 
@@ -455,7 +455,8 @@ impl App {
                 .key_config
                 .extend_or_shorten_widget_width_to_left
         {
-            self.left_chunk_percentage = self.left_chunk_percentage.saturating_sub(5).max(15);
+            self.left_main_chunk_percentage =
+                self.left_main_chunk_percentage.saturating_sub(5).max(15);
             return Ok(EventState::Consumed);
         } else if key
             == self
@@ -463,7 +464,7 @@ impl App {
                 .key_config
                 .extend_or_shorten_widget_width_to_right
         {
-            self.left_chunk_percentage = (self.left_chunk_percentage + 5).min(70);
+            self.left_main_chunk_percentage = (self.left_main_chunk_percentage + 5).min(70);
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
@@ -512,26 +513,26 @@ mod test {
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed
         );
-        assert_eq!(app.left_chunk_percentage, 20);
+        assert_eq!(app.left_main_chunk_percentage, 20);
 
-        app.left_chunk_percentage = 70;
+        app.left_main_chunk_percentage = 70;
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed
         );
-        assert_eq!(app.left_chunk_percentage, 70);
+        assert_eq!(app.left_main_chunk_percentage, 70);
 
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
             EventState::Consumed
         );
-        assert_eq!(app.left_chunk_percentage, 65);
+        assert_eq!(app.left_main_chunk_percentage, 65);
 
-        app.left_chunk_percentage = 15;
+        app.left_main_chunk_percentage = 15;
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
             EventState::Consumed
         );
-        assert_eq!(app.left_chunk_percentage, 15);
+        assert_eq!(app.left_main_chunk_percentage, 15);
     }
 }
