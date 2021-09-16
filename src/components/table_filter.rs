@@ -181,7 +181,8 @@ impl DrawableComponent for TableFilterComponent {
                         .map_or(String::new(), |table| table.name.to_string())
                         .width()
                         + 1) as u16)
-                    .saturating_add(self.input_cursor_position),
+                    .saturating_add(self.input_cursor_position)
+                    .min(area.right().saturating_sub(2)),
                 area.y + 1,
             )
         }
