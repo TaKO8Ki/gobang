@@ -102,6 +102,8 @@ pub struct KeyConfig {
     pub tab_constraints: Key,
     pub tab_foreign_keys: Key,
     pub tab_indexes: Key,
+    pub extend_or_shorten_widget_width_to_right: Key,
+    pub extend_or_shorten_widget_width_to_left: Key,
 }
 
 impl Default for KeyConfig {
@@ -136,6 +138,8 @@ impl Default for KeyConfig {
             tab_constraints: Key::Char('3'),
             tab_foreign_keys: Key::Char('4'),
             tab_indexes: Key::Char('5'),
+            extend_or_shorten_widget_width_to_right: Key::Char('>'),
+            extend_or_shorten_widget_width_to_left: Key::Char('<'),
         }
     }
 }

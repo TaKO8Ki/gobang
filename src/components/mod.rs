@@ -37,7 +37,7 @@ use std::convert::TryInto;
 use tui::{backend::Backend, layout::Rect, Frame};
 use unicode_width::UnicodeWidthChar;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum EventState {
     Consumed,
     NotConsumed,

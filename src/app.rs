@@ -34,6 +34,7 @@ pub struct App {
     databases: DatabasesComponent,
     connections: ConnectionsComponent,
     pool: Option<Box<dyn Pool>>,
+    left_main_chunk_percentage: u16,
     pub config: Config,
     pub error: ErrorComponent,
 }
@@ -54,6 +55,7 @@ impl App {
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
+            left_main_chunk_percentage: 15,
         }
     }
 
@@ -73,7 +75,10 @@ impl App {
 
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
+            .constraints([
+                Constraint::Percentage(self.left_main_chunk_percentage),
+                Constraint::Percentage((100_u16).saturating_sub(self.left_main_chunk_percentage)),
+            ])
             .split(f.size());
 
         self.databases
@@ -122,15 +127,18 @@ impl App {
 
     fn commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
+            CommandInfo::new(command::filter(&self.config.key_config)),
+            CommandInfo::new(command::help(&self.config.key_config)),
+            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
             CommandInfo::new(command::scroll(&self.config.key_config)),
             CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
             CommandInfo::new(command::scroll_up_down_multiple_lines(
                 &self.config.key_config,
             )),
             CommandInfo::new(command::move_focus(&self.config.key_config)),
-            CommandInfo::new(command::filter(&self.config.key_config)),
-            CommandInfo::new(command::help(&self.config.key_config)),
-            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
+            CommandInfo::new(command::extend_or_shorten_widget_width(
+                &self.config.key_config,
+            )),
         ];
 
         self.databases.commands(&mut res);
@@ -301,7 +309,7 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    pub async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
+    async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
         if self.error.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
@@ -329,7 +337,9 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                return Ok(state);
+                if state.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
             }
             Focus::Table => {
                 match self.tab.selected_tab {
@@ -430,10 +440,37 @@ impl App {
                 };
             }
         }
+
+        if self.extend_or_shorten_widget_width(key)?.is_consumed() {
+            return Ok(EventState::Consumed);
+        };
+
         Ok(EventState::NotConsumed)
     }
 
-    pub fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
+    fn extend_or_shorten_widget_width(&mut self, key: Key) -> anyhow::Result<EventState> {
+        if key
+            == self
+                .config
+                .key_config
+                .extend_or_shorten_widget_width_to_left
+        {
+            self.left_main_chunk_percentage =
+                self.left_main_chunk_percentage.saturating_sub(5).max(15);
+            return Ok(EventState::Consumed);
+        } else if key
+            == self
+                .config
+                .key_config
+                .extend_or_shorten_widget_width_to_right
+        {
+            self.left_main_chunk_percentage = (self.left_main_chunk_percentage + 5).min(70);
+            return Ok(EventState::Consumed);
+        }
+        Ok(EventState::NotConsumed)
+    }
+
+    fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
         if key == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
@@ -462,5 +499,40 @@ impl App {
             }
         }
         Ok(EventState::NotConsumed)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{App, Config, EventState, Key};
+
+    #[test]
+    fn test_extend_or_shorten_widget_width() {
+        let mut app = App::new(Config::default());
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_main_chunk_percentage, 20);
+
+        app.left_main_chunk_percentage = 70;
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_main_chunk_percentage, 70);
+
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_main_chunk_percentage, 65);
+
+        app.left_main_chunk_percentage = 15;
+        assert_eq!(
+            app.extend_or_shorten_widget_width(Key::Char('<')).unwrap(),
+            EventState::Consumed
+        );
+        assert_eq!(app.left_main_chunk_percentage, 15);
     }
 }

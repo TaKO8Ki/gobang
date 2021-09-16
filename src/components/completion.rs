@@ -110,8 +110,11 @@ impl MovableComponent for CompletionComponent {
             let area = Rect::new(
                 area.x + x,
                 area.y + y + 2,
-                width.min(f.size().width),
-                candidates.len().min(5) as u16 + 2,
+                width
+                    .min(f.size().width)
+                    .min(f.size().right().saturating_sub(area.x + x)),
+                (candidates.len().min(5) as u16 + 2)
+                    .min(f.size().bottom().saturating_sub(area.y + y + 2)),
             );
             f.render_widget(Clear, area);
             f.render_stateful_widget(candidate_list, area, &mut self.state);
