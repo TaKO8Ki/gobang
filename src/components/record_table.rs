@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent, EventState, StatefulDrawableComponent};
+use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::KeyConfig;

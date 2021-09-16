@@ -1,9 +1,5 @@
-use super::{
-    compute_character_width, CompletionComponent, Component, DrawableComponent, EventState,
-    MovableComponent,
-};
+use super::{compute_character_width, Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -11,7 +7,7 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
-    text::{Span, Spans},
+    text::Spans,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -48,23 +44,15 @@ impl DatabaseFilterComponent {
 
 impl DrawableComponent for DatabaseFilterComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let query = Paragraph::new(Spans::from(vec![
-            Span::styled(
-                self.table
-                    .as_ref()
-                    .map_or("-".to_string(), |table| table.name.to_string()),
-                Style::default().fg(Color::Blue),
-            ),
-            Span::from(format!(
-                "{}{:w$}",
-                if self.input.is_empty() && !focused {
-                    "Filter tables".to_string()
-                } else {
-                    self.input_str()
-                },
-                w = area.width as usize
-            )),
-        ]))
+        let query = Paragraph::new(Spans::from(format!(
+            "{:w$}",
+            if self.input.is_empty() && !focused {
+                "Filter tables".to_string()
+            } else {
+                self.input_str()
+            },
+            w = area.width as usize
+        )))
         .style(if focused {
             Style::default()
         } else {
@@ -75,7 +63,7 @@ impl DrawableComponent for DatabaseFilterComponent {
 
         if focused {
             f.set_cursor(
-                (area.x + self.input_cursor_position + 1).min(area.right().saturating_sub(2)),
+                (area.x + self.input_cursor_position).min(area.right().saturating_sub(1)),
                 area.y,
             )
         }
