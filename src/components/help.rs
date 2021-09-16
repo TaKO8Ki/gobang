@@ -23,7 +23,7 @@ pub struct HelpComponent {
 }
 
 impl DrawableComponent for HelpComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if self.visible {
             const SIZE: (u16, u16) = (65, 24);
             let scroll_threshold = SIZE.1 / 3;

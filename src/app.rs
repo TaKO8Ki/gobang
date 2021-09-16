@@ -1,5 +1,7 @@
 use crate::clipboard::copy_to_clipboard;
-use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
+use crate::components::{
+    CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
+};
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
 use crate::{

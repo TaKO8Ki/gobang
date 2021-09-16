@@ -28,7 +28,7 @@ impl DebugComponent {
 }
 
 impl DrawableComponent for DebugComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if true {
             let width = 65;
             let height = 10;

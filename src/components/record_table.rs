@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent, EventState};
+use super::{Component, DrawableComponent, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::KeyConfig;
@@ -54,7 +54,7 @@ impl RecordTableComponent {
     }
 }
 
-impl DrawableComponent for RecordTableComponent {
+impl StatefulDrawableComponent for RecordTableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Vertical)

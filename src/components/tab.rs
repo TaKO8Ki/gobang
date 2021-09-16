@@ -57,7 +57,7 @@ impl TabComponent {
 }
 
 impl DrawableComponent for TabComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _focused: bool) -> Result<()> {
         let titles = self.names().iter().cloned().map(Spans::from).collect();
         let tabs = Tabs::new(titles)
             .block(Block::default().borders(Borders::ALL))

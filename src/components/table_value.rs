@@ -21,7 +21,7 @@ impl TableValueComponent {
 }
 
 impl DrawableComponent for TableValueComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let paragraph = Paragraph::new(self.value.clone())
             .block(Block::default().borders(Borders::BOTTOM))
             .style(if focused {

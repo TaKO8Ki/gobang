@@ -1,6 +1,7 @@
 pub mod command;
 pub mod completion;
 pub mod connections;
+pub mod database_filter;
 pub mod databases;
 pub mod error;
 pub mod help;
@@ -18,6 +19,7 @@ pub mod debug;
 pub use command::{CommandInfo, CommandText};
 pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
+pub use database_filter::DatabaseFilterComponent;
 pub use databases::DatabasesComponent;
 pub use error::ErrorComponent;
 pub use help::HelpComponent;
@@ -60,6 +62,10 @@ impl From<bool> for EventState {
 }
 
 pub trait DrawableComponent {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
+}
+
+pub trait StatefulDrawableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, rect: Rect, focused: bool) -> Result<()>;
 }
 

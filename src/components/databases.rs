@@ -1,6 +1,6 @@
 use super::{
-    compute_character_width, utils::scroll_vertical::VerticalScroll, Component, DrawableComponent,
-    EventState,
+    compute_character_width, utils::scroll_vertical::VerticalScroll, Component,
+    DatabaseFilterComponent, DrawableComponent, EventState,
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
@@ -35,6 +35,7 @@ pub enum Focus {
 
 pub struct DatabasesComponent {
     tree: DatabaseTree,
+    filter: DatabaseFilterComponent,
     filterd_tree: Option<DatabaseTree>,
     scroll: VerticalScroll,
     input: Vec<char>,
@@ -48,6 +49,7 @@ impl DatabasesComponent {
     pub fn new(key_config: KeyConfig) -> Self {
         Self {
             tree: DatabaseTree::default(),
+            filter: DatabaseFilterComponent::new(),
             filterd_tree: None,
             scroll: VerticalScroll::new(false, false),
             input: Vec::new(),
@@ -147,7 +149,7 @@ impl DatabasesComponent {
         ))
     }
 
-    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) {
+    fn draw_tree<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         f.render_widget(
             Block::default()
                 .title("Databases")
@@ -167,24 +169,26 @@ impl DatabasesComponent {
             .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
             .split(area);
 
-        let filter = Paragraph::new(Span::styled(
-            format!(
-                "{}{:w$}",
-                if self.input.is_empty() && matches!(self.focus, Focus::Tree) {
-                    "Filter tables".to_string()
-                } else {
-                    self.input_str()
-                },
-                w = area.width as usize
-            ),
-            if let Focus::Filter = self.focus {
-                Style::default()
-            } else {
-                Style::default().fg(Color::DarkGray)
-            },
-        ))
-        .block(Block::default().borders(Borders::BOTTOM));
-        f.render_widget(filter, chunks[0]);
+        // let filter = Paragraph::new(Span::styled(
+        //     format!(
+        //         "{}{:w$}",
+        //         if self.input.is_empty() && matches!(self.focus, Focus::Tree) {
+        //             "Filter tables".to_string()
+        //         } else {
+        //             self.input_str()
+        //         },
+        //         w = area.width as usize
+        //     ),
+        //     if let Focus::Filter = self.focus {
+        //         Style::default()
+        //     } else {
+        //         Style::default().fg(Color::DarkGray)
+        //     },
+        // ))
+        // .block(Block::default().borders(Borders::BOTTOM));
+        // f.render_widget(filter, chunks[0]);
+        // self.filter
+        //     .draw(f, chunks[0], matches!(self.focus, Focus::Filter))?;
 
         let tree_height = chunks[1].height as usize;
         let tree = if let Some(tree) = self.filterd_tree.as_ref() {
@@ -220,20 +224,18 @@ impl DatabasesComponent {
         draw_list_block(f, chunks[1], Block::default().borders(Borders::NONE), items);
         self.scroll.draw(f, chunks[1]);
 
-        if let Focus::Filter = self.focus {
-            f.set_cursor(area.x + self.input_cursor_position + 1, area.y + 1)
-        }
+        Ok(())
     }
 }
 
 impl DrawableComponent for DatabasesComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
-        self.draw_tree(f, chunks[0], focused);
+        self.draw_tree(f, chunks[0], focused)?;
         Ok(())
     }
 }
@@ -249,64 +251,70 @@ impl Component for DatabasesComponent {
             self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }
-        match key {
-            Key::Char(c) if self.focus == Focus::Filter => {
-                self.input.insert(self.input_idx, c);
-                self.input_idx += 1;
-                self.input_cursor_position += compute_character_width(c);
-                self.filterd_tree = Some(self.tree.filter(self.input_str()));
-                return Ok(EventState::Consumed);
-            }
-            Key::Delete | Key::Backspace if matches!(self.focus, Focus::Filter) => {
-                if input_str.width() > 0 {
-                    if !self.input.is_empty() && self.input_idx > 0 {
-                        let last_c = self.input.remove(self.input_idx - 1);
-                        self.input_idx -= 1;
-                        self.input_cursor_position -= compute_character_width(last_c);
-                    }
 
-                    self.filterd_tree = if self.input.is_empty() {
-                        None
-                    } else {
-                        Some(self.tree.filter(self.input_str()))
-                    };
-                    return Ok(EventState::Consumed);
-                }
-            }
-            Key::Left if matches!(self.focus, Focus::Filter) => {
-                if !self.input.is_empty() && self.input_idx > 0 {
-                    self.input_idx -= 1;
-                    self.input_cursor_position = self
-                        .input_cursor_position
-                        .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                }
-                return Ok(EventState::Consumed);
-            }
-            Key::Ctrl('a') => {
-                if !self.input.is_empty() && self.input_idx > 0 {
-                    self.input_idx = 0;
-                    self.input_cursor_position = 0
-                }
-                return Ok(EventState::Consumed);
-            }
-            Key::Right if matches!(self.focus, Focus::Filter) => {
-                if self.input_idx < self.input.len() {
-                    let next_c = self.input[self.input_idx];
-                    self.input_idx += 1;
-                    self.input_cursor_position += compute_character_width(next_c);
-                }
-                return Ok(EventState::Consumed);
-            }
-            Key::Ctrl('e') => {
-                if self.input_idx < self.input.len() {
-                    self.input_idx = self.input.len();
-                    self.input_cursor_position = self.input_str().width() as u16;
-                }
-                return Ok(EventState::Consumed);
-            }
+        match key {
+            // Key::Char(c) if self.focus == Focus::Filter => {
+            //     self.input.insert(self.input_idx, c);
+            //     self.input_idx += 1;
+            //     self.input_cursor_position += compute_character_width(c);
+            //     self.filterd_tree = Some(self.tree.filter(self.input_str()));
+            //     return Ok(EventState::Consumed);
+            // }
+            // Key::Delete | Key::Backspace if matches!(self.focus, Focus::Filter) => {
+            //     if input_str.width() > 0 {
+            //         if !self.input.is_empty() && self.input_idx > 0 {
+            //             let last_c = self.input.remove(self.input_idx - 1);
+            //             self.input_idx -= 1;
+            //             self.input_cursor_position -= compute_character_width(last_c);
+            //         }
+
+            //         self.filterd_tree = if self.input.is_empty() {
+            //             None
+            //         } else {
+            //             Some(self.tree.filter(self.input_str()))
+            //         };
+            //         return Ok(EventState::Consumed);
+            //     }
+            // }
+            // Key::Left if matches!(self.focus, Focus::Filter) => {
+            //     if !self.input.is_empty() && self.input_idx > 0 {
+            //         self.input_idx -= 1;
+            //         self.input_cursor_position = self
+            //             .input_cursor_position
+            //             .saturating_sub(compute_character_width(self.input[self.input_idx]));
+            //     }
+            //     return Ok(EventState::Consumed);
+            // }
+            // Key::Ctrl('a') => {
+            //     if !self.input.is_empty() && self.input_idx > 0 {
+            //         self.input_idx = 0;
+            //         self.input_cursor_position = 0
+            //     }
+            //     return Ok(EventState::Consumed);
+            // }
+            // Key::Right if matches!(self.focus, Focus::Filter) => {
+            //     if self.input_idx < self.input.len() {
+            //         let next_c = self.input[self.input_idx];
+            //         self.input_idx += 1;
+            //         self.input_cursor_position += compute_character_width(next_c);
+            //     }
+            //     return Ok(EventState::Consumed);
+            // }
+            // Key::Ctrl('e') => {
+            //     if self.input_idx < self.input.len() {
+            //         self.input_idx = self.input.len();
+            //         self.input_cursor_position = self.input_str().width() as u16;
+            //     }
+            //     return Ok(EventState::Consumed);
+            // }
             Key::Enter if matches!(self.focus, Focus::Filter) => {
                 self.focus = Focus::Tree;
                 return Ok(EventState::Consumed);
+            }
+            key if matches!(self.focus, Focus::Filter) => {
+                if self.filter.event(key)?.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
             }
             key => {
                 if tree_nav(

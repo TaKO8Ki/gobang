@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    TableStatusComponent, TableValueComponent,
+    StatefulDrawableComponent, TableStatusComponent, TableValueComponent,
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
@@ -400,7 +400,7 @@ impl TableComponent {
     }
 }
 
-impl DrawableComponent for TableComponent {
+impl StatefulDrawableComponent for TableComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let chunks = Layout::default()
             .vertical_margin(1)
