@@ -303,7 +303,7 @@ mod test {
         let home = std::env::var("HOME").unwrap();
         #[cfg(windows)]
         let home = std::env::var("APPDATA").unwrap();
-        let projects = PathBuf::from(format!("{}/Projects", home));
+        let projects = PathBuf::from(home).join("Projects");
         assert_eq!(expand_tilde("~/Projects"), Some(projects));
         assert_eq!(expand_tilde("/foo/bar"), Some("/foo/bar".into()));
         assert_eq!(
