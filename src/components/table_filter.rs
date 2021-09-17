@@ -1,6 +1,6 @@
 use super::{
-    compute_character_width, CompletionComponent, Component, DrawableComponent, EventState,
-    MovableComponent,
+    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    StatefulDrawableComponent,
 };
 use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
@@ -129,7 +129,7 @@ impl TableFilterComponent {
     }
 }
 
-impl DrawableComponent for TableFilterComponent {
+impl StatefulDrawableComponent for TableFilterComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let query = Paragraph::new(Spans::from(vec![
             Span::styled(
@@ -181,7 +181,8 @@ impl DrawableComponent for TableFilterComponent {
                         .map_or(String::new(), |table| table.name.to_string())
                         .width()
                         + 1) as u16)
-                    .saturating_add(self.input_cursor_position),
+                    .saturating_add(self.input_cursor_position)
+                    .min(area.right().saturating_sub(2)),
                 area.y + 1,
             )
         }

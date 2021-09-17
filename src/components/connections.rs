@@ -1,4 +1,4 @@
-use super::{Component, DrawableComponent, EventState};
+use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
 use crate::config::{Connection, KeyConfig};
 use crate::event::Key;
@@ -81,7 +81,7 @@ impl ConnectionsComponent {
     }
 }
 
-impl DrawableComponent for ConnectionsComponent {
+impl StatefulDrawableComponent for ConnectionsComponent {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         let width = 80;
         let height = 20;

@@ -1,5 +1,7 @@
 use crate::clipboard::copy_to_clipboard;
-use crate::components::{CommandInfo, Component as _, DrawableComponent as _, EventState};
+use crate::components::{
+    CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
+};
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::Key;
 use crate::{
@@ -330,14 +332,12 @@ impl App {
                 }
             }
             Focus::DabataseList => {
-                let state = self.databases.event(key)?;
-
-                if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    self.update_table().await?;
+                if self.databases.event(key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
-                if state.is_consumed() {
+                if key == self.config.key_config.enter && self.databases.tree_focused() {
+                    self.update_table().await?;
                     return Ok(EventState::Consumed);
                 }
             }

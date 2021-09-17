@@ -35,7 +35,7 @@ impl ErrorComponent {
 }
 
 impl DrawableComponent for ErrorComponent {
-    fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
+    fn draw<B: Backend>(&self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if self.visible {
             let width = 65;
             let height = 10;
