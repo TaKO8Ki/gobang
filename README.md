@@ -31,23 +31,31 @@ gobang means a Japanese game played on goban, a go board. The appearance of goba
 
 ## Installation
 
-### Homebrew (Linux/macOS)
+### With Homebrew (Linux, macOS)
 
 If you’re using Homebrew or Linuxbrew, install the gobang formula:
 
 ```
-$ brew install tako8ki/tap/gobang
+brew install tako8ki/tap/gobang
 ```
 
-### Cargo (Linux/macOS/Windows)
+### On NetBSD
+
+If you're a NetBSD user, then you can install gobang from [pkgsrc](https://pkgsrc.se/databases/gobang):
+
+```
+pkgin install gobang
+```
+
+### With Cargo (Linux, macOS, Windows)
 
 If you already have a Rust environment set up, you can use the `cargo install` command:
 
 ```
-$ cargo install --version 0.1.0-alpha.5 gobang
+cargo install --version 0.1.0-alpha.5 gobang
 ```
 
-### Using a release binary (Linux/macOS/Windows)
+### From binaries (Linux, macOS, Windows)
 
 - Download the [latest release binary](https://github.com/TaKO8Ki/gobang/releases) for your system
 - Set the `PATH` environment variable
