@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -244,10 +245,10 @@ impl Connection {
             DatabaseType::Sqlite => {
                 let path = self.path.as_ref().map_or(
                     Err(anyhow::anyhow!("type sqlite needs the path field")),
-                    |path| Ok(path.to_str().unwrap()),
+                    |path| expand_tilde(path).ok_or(anyhow::anyhow!("cannot expand file path")),
                 )?;
 
-                Ok(format!("sqlite://{path}", path = path))
+                Ok(format!("sqlite://{path}", path = path.to_str().unwrap()))
             }
         }
     }
@@ -272,4 +273,42 @@ pub fn get_app_config_path() -> anyhow::Result<std::path::PathBuf> {
     path.push("gobang");
     std::fs::create_dir_all(&path)?;
     Ok(path)
+}
+
+fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
+    let p = path_user_input.as_ref();
+    if !p.starts_with("~") {
+        return Some(p.to_path_buf());
+    }
+    if p == Path::new("~") {
+        return dirs_next::home_dir();
+    }
+    dirs_next::home_dir().map(|mut h| {
+        if h == Path::new("/") {
+            p.strip_prefix("~").unwrap().to_path_buf()
+        } else {
+            h.push(p.strip_prefix("~/").unwrap());
+            h
+        }
+    })
+}
+
+#[cfg(test)]
+mod test {
+    use super::{expand_tilde, PathBuf};
+
+    #[test]
+    fn test_expand_tilde() {
+        #[cfg(unix)]
+        let home = std::env::var("HOME").unwrap();
+        #[cfg(windows)]
+        let home = std::env::var("APPDATA").unwrap();
+        let projects = PathBuf::from(format!("{}/Projects", home));
+        assert_eq!(expand_tilde("~/Projects"), Some(projects));
+        assert_eq!(expand_tilde("/foo/bar"), Some("/foo/bar".into()));
+        assert_eq!(
+            expand_tilde("~alice/projects"),
+            Some("~alice/projects".into())
+        );
+    }
 }
