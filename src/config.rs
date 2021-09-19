@@ -350,12 +350,17 @@ mod test {
 
         assert_eq!(
             expand_path(&Path::new("~/foo")),
-            Some(PathBuf::from(&home).join("foo"))
+            Some(PathBuf::from(&dirs_next::home_dir().unwrap()).join("foo"))
         );
 
         assert_eq!(
             expand_path(&Path::new("~/foo/~/bar")),
-            Some(PathBuf::from(&home).join("foo").join("~").join("bar"))
+            Some(
+                PathBuf::from(&dirs_next::home_dir().unwrap())
+                    .join("foo")
+                    .join("~")
+                    .join("bar")
+            )
         );
     }
 }
