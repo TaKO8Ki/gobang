@@ -333,28 +333,28 @@ mod test {
 
     #[test]
     #[cfg(windows)]
-    fn test_expand_path() {
+    fn test_expand_patha() {
         let home = std::env::var("APPDATA").unwrap();
         let test_env = "baz";
         env::set_var("TEST", test_env);
 
         assert_eq!(
-            expand_path(Path::new("%APPDATA%/foo").to_path_buf()),
-            Some(PathBuf::from(home).join("foo"))
-        );
-
-        assert_eq!(
-            expand_path(Path::new("%APPDATA%/foo/%TEST%/bar").to_path_buf()),
-            Some(PathBuf::from(&home).join("foo").join(test_env).join("bar"))
-        );
-
-        assert_eq!(
-            expand_path(Path::new("~/foo").to_path_buf()),
+            expand_path(&Path::new("%APPDATA%/foo")),
             Some(PathBuf::from(&home).join("foo"))
         );
 
         assert_eq!(
-            expand_path(Path::new("~/foo/~/bar").to_path_buf()),
+            expand_path(&Path::new("%APPDATA%/foo/%TEST%/bar")),
+            Some(PathBuf::from(&home).join("foo").join(test_env).join("bar"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo")),
+            Some(PathBuf::from(&home).join("foo"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo/~/bar")),
             Some(PathBuf::from(&home).join("foo").join("~").join("bar"))
         );
     }
