@@ -288,7 +288,7 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
         let path = path.to_str()?;
         expanded_path = if cfg!(unix) && path.starts_with('$') {
             expanded_path.join(std::env::var(path.strip_prefix('$')?).unwrap_or_default())
-        } else if cfg!(winddows) && path.starts_with('%') && path.ends_with('%') {
+        } else if cfg!(windows) && path.starts_with('%') && path.ends_with('%') {
             expanded_path
                 .join(std::env::var(path.strip_prefix('%')?.strip_suffix('%')?).unwrap_or_default())
         } else {
