@@ -51,7 +51,7 @@ impl SqlEditorComponent {
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone()),
-            completion: CompletionComponent::new(key_config.clone(), ""),
+            completion: CompletionComponent::new(key_config.clone(), "", true),
             focus: Focus::Editor,
             query_result: None,
             key_config,
@@ -193,7 +193,7 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             )
         }
 
-        if focused {
+        if focused && matches!(self.focus, Focus::Editor) {
             self.completion.draw(
                 f,
                 area,
@@ -234,6 +234,7 @@ impl Component for SqlEditorComponent {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
                     self.input_cursor_position_x -= compute_character_width(last_c);
+                    self.completion.update("");
                 }
 
                 return Ok(EventState::Consumed);
@@ -244,6 +245,7 @@ impl Component for SqlEditorComponent {
                     self.input_cursor_position_x = self
                         .input_cursor_position_x
                         .saturating_sub(compute_character_width(self.input[self.input_idx]));
+                    self.completion.update("");
                 }
                 return Ok(EventState::Consumed);
             }
@@ -252,6 +254,7 @@ impl Component for SqlEditorComponent {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
                     self.input_cursor_position_x += compute_character_width(next_c);
+                    self.completion.update("");
                 }
                 return Ok(EventState::Consumed);
             }
