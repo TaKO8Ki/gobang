@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -244,10 +245,12 @@ impl Connection {
             DatabaseType::Sqlite => {
                 let path = self.path.as_ref().map_or(
                     Err(anyhow::anyhow!("type sqlite needs the path field")),
-                    |path| Ok(path.to_str().unwrap()),
+                    |path| {
+                        expand_path(path).ok_or_else(|| anyhow::anyhow!("cannot expand file path"))
+                    },
                 )?;
 
-                Ok(format!("sqlite://{path}", path = path))
+                Ok(format!("sqlite://{path}", path = path.to_str().unwrap()))
             }
         }
     }
@@ -272,4 +275,92 @@ pub fn get_app_config_path() -> anyhow::Result<std::path::PathBuf> {
     path.push("gobang");
     std::fs::create_dir_all(&path)?;
     Ok(path)
+}
+
+fn expand_path(path: &Path) -> Option<PathBuf> {
+    let mut expanded_path = PathBuf::new();
+    let mut path_iter = path.iter();
+    if path.starts_with("~") {
+        path_iter.next()?;
+        expanded_path = expanded_path.join(dirs_next::home_dir()?);
+    }
+    for path in path_iter {
+        let path = path.to_str()?;
+        expanded_path = if cfg!(unix) && path.starts_with('$') {
+            expanded_path.join(std::env::var(path.strip_prefix('$')?).unwrap_or_default())
+        } else if cfg!(windows) && path.starts_with('%') && path.ends_with('%') {
+            expanded_path
+                .join(std::env::var(path.strip_prefix('%')?.strip_suffix('%')?).unwrap_or_default())
+        } else {
+            expanded_path.join(path)
+        }
+    }
+    Some(expanded_path)
+}
+
+#[cfg(test)]
+mod test {
+    use super::{expand_path, Path, PathBuf};
+    use std::env;
+
+    #[test]
+    #[cfg(unix)]
+    fn test_expand_path() {
+        let home = env::var("HOME").unwrap();
+        let test_env = "baz";
+        env::set_var("TEST", test_env);
+
+        assert_eq!(
+            expand_path(&Path::new("$HOME/foo")),
+            Some(PathBuf::from(&home).join("foo"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("$HOME/foo/$TEST/bar")),
+            Some(PathBuf::from(&home).join("foo").join(test_env).join("bar"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo")),
+            Some(PathBuf::from(&home).join("foo"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo/~/bar")),
+            Some(PathBuf::from(&home).join("foo").join("~").join("bar"))
+        );
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_expand_patha() {
+        let home = std::env::var("HOMEPATH").unwrap();
+        let test_env = "baz";
+        env::set_var("TEST", test_env);
+
+        assert_eq!(
+            expand_path(&Path::new("%HOMEPATH%/foo")),
+            Some(PathBuf::from(&home).join("foo"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("%HOMEPATH%/foo/%TEST%/bar")),
+            Some(PathBuf::from(&home).join("foo").join(test_env).join("bar"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo")),
+            Some(PathBuf::from(&dirs_next::home_dir().unwrap()).join("foo"))
+        );
+
+        assert_eq!(
+            expand_path(&Path::new("~/foo/~/bar")),
+            Some(
+                PathBuf::from(&dirs_next::home_dir().unwrap())
+                    .join("foo")
+                    .join("~")
+                    .join("bar")
+            )
+        );
+    }
 }

@@ -26,4 +26,4 @@ database = "dvdrental"
 
 [[conn]]
 type = "sqlite"
-path = "/Users/tako8ki/Downloads/chinook.db"
+path = "$HOME/Downloads/chinook.db"
