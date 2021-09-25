@@ -38,6 +38,7 @@ dirs-next = "2.0"
 clap = "2.33.3"
 structopt = "0.3.22"
 syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
+unicode-segmentation = "1.7"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"

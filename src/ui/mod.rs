@@ -2,8 +2,10 @@ use crate::config::KeyConfig;
 use crate::event::Key;
 use database_tree::MoveSelection;
 
+pub mod reflow;
 pub mod scrollbar;
 pub mod scrolllist;
+pub mod stateful_paragraph;
 
 pub fn common_nav(key: Key, key_config: &KeyConfig) -> Option<MoveSelection> {
     if key == key_config.scroll_down {

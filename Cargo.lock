@@ -593,6 +593,7 @@ dependencies = [
  "tokio",
  "toml",
  "tui",
+ "unicode-segmentation",
  "unicode-width",
  "which",
 ]

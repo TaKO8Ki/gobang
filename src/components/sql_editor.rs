@@ -6,6 +6,7 @@ use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
 use crate::database::{ExecuteResult, Pool};
 use crate::event::Key;
+use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
 use async_trait::async_trait;
 use tui::{
@@ -41,6 +42,7 @@ pub struct SqlEditorComponent {
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
     key_config: KeyConfig,
+    paragraph_state: ParagraphState,
     focus: Focus,
 }
 
@@ -53,6 +55,7 @@ impl SqlEditorComponent {
             table: TableComponent::new(key_config.clone()),
             completion: CompletionComponent::new(key_config.clone(), "", true),
             focus: Focus::Editor,
+            paragraph_state: ParagraphState::default(),
             query_result: None,
             key_config,
         }
@@ -149,19 +152,25 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             })
             .split(area);
 
-        let editor = Paragraph::new(self.input.iter().collect::<String>())
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("SQL Editor")
-                    .style(if focused && matches!(self.focus, Focus::Editor) {
-                        Style::default()
-                    } else {
-                        Style::default().fg(Color::DarkGray)
-                    }),
-            )
-            .wrap(Wrap { trim: true });
-        f.render_widget(editor, layout[0]);
+        // let editor = Paragraph::new(self.input.iter().collect::<String>())
+        //     .block(
+        //         Block::default()
+        //             .borders(Borders::ALL)
+        //             .title("SQL Editor")
+        //             .style(if focused && matches!(self.focus, Focus::Editor) {
+        //                 Style::default()
+        //             } else {
+        //                 Style::default().fg(Color::DarkGray)
+        //             }),
+        //     )
+        //     .wrap(Wrap { trim: true });
+        // f.render_widget(editor, layout[0]);
+
+        let content = StatefulParagraph::new(self.input.iter().collect::<String>())
+            .wrap(Wrap { trim: false })
+            .block(Block::default().borders(Borders::ALL));
+
+        f.render_stateful_widget(content, area, &mut self.paragraph_state);
 
         if let Some(result) = self.query_result.as_ref() {
             let result = Paragraph::new(result.result_str())
