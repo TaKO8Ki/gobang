@@ -39,6 +39,14 @@ If you’re using Homebrew or Linuxbrew, install the gobang formula:
 brew install tako8ki/tap/gobang
 ```
 
+### On Windows
+
+If you're a Windows Scoop user, then you can install gobang from the [official bucket](https://github.com/ScoopInstaller/Main/blob/master/bucket/gobang.json):
+
+```
+scoop install gobang
+```
+
 ### On NetBSD
 
 If you're a NetBSD user, then you can install gobang from [pkgsrc](https://pkgsrc.se/databases/gobang):
