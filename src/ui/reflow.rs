@@ -86,7 +86,23 @@ impl<'a, 'b> LineComposer<'a> for WordWrapper<'a, 'b> {
             self.current_line.push(StyledGrapheme { symbol, style });
             current_line_width += Cast::<u16>::cast(symbol.width());
 
-            if current_line_width >= self.max_line_width {
+            if current_line_width > self.max_line_width {
+                // If there was no word break in the text, wrap at the end of the line.
+                let (truncate_at, truncated_width) = if symbols_to_last_word_end == 0 {
+                    (self.current_line.len() - 1, self.max_line_width)
+                } else {
+                    (self.current_line.len() - 1, width_to_last_word_end)
+                };
+
+                // Push the remainder to the next line but strip leading whitespace:
+                {
+                    let remainder = &self.current_line[truncate_at..];
+                    if !remainder.is_empty() {
+                        self.next_line.extend_from_slice(&remainder);
+                    }
+                }
+                self.current_line.truncate(truncate_at);
+                current_line_width = truncated_width;
                 break;
             }
 
@@ -309,15 +325,26 @@ mod test {
         );
         let (line_truncator, _) = run_composer(Composer::LineTruncator, text, width as u16);
 
-        let word_wrapped = vec![
-            "abcd efghij",
-            "klmnopabcd efgh",
-            "ijklmnopabcdefg",
-            "hijkl mnopab c d e f",
-            "g h i j k l m n o",
-        ];
-        assert_eq!(word_wrapper_single_space, word_wrapped);
-        assert_eq!(word_wrapper_multi_space, word_wrapped);
+        assert_eq!(
+            word_wrapper_single_space,
+            vec![
+                "abcd efghij klmnopab",
+                "cd efgh ijklmnopabcd",
+                "efg hijkl mnopab c d",
+                " e f g h i j k l m n",
+                " o",
+            ]
+        );
+        assert_eq!(
+            word_wrapper_multi_space,
+            vec![
+                "abcd efghij    klmno",
+                "pabcd efgh     ijklm",
+                "nopabcdefg hijkl mno",
+                "pab c d e f g h i j ",
+                "k l m n o"
+            ]
+        );
 
         assert_eq!(line_truncator, vec![&text[..width]]);
     }
@@ -341,9 +368,7 @@ mod test {
         let (word_wrapper, _) = run_composer(Composer::WordWrapper { trim: true }, text, width);
         let (line_truncator, _) = run_composer(Composer::LineTruncator, text, width);
 
-        let expected: Vec<&str> = UnicodeSegmentation::graphemes(text, true)
-            .filter(|g| g.chars().any(|c| !c.is_whitespace()))
-            .collect();
+        let expected: Vec<&str> = UnicodeSegmentation::graphemes(text, true).collect();
         assert_eq!(word_wrapper, expected);
         assert_eq!(line_truncator, vec!["a"]);
     }
@@ -368,11 +393,10 @@ mod test {
         assert_eq!(
             word_wrapper,
             vec![
-                "abcd efghij",
-                "klmnopabcdefghijklmn",
-                "opabcdefghijkl",
-                "mnopab cdefghi j",
-                "klmno",
+                "abcd efghij klmnopab",
+                "cdefghijklmnopabcdef",
+                "ghijkl mnopab cdefgh",
+                "i j klmno"
             ]
         )
     }
@@ -403,7 +427,7 @@ mod test {
         let text = "AAAAAAAAAAAAAAAAAAAA    AAA";
         let (word_wrapper, _) = run_composer(Composer::WordWrapper { trim: true }, text, width);
         let (line_truncator, _) = run_composer(Composer::LineTruncator, text, width);
-        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAAAAAAA", "AAA",]);
+        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAAAAAAA", "    AAA",]);
         assert_eq!(line_truncator, vec!["AAAAAAAAAAAAAAAAAAAA"]);
     }
 
@@ -430,7 +454,15 @@ mod test {
         // after 20 of which a word break occurs (probably shouldn't). The second line break
         // discards all whitespace. The result should probably be vec!["a"] but it doesn't matter
         // that much.
-        assert_eq!(word_wrapper, vec!["a", ""]);
+        assert_eq!(
+            word_wrapper,
+            vec![
+                "a                   ",
+                "                    ",
+                "                    ",
+                "          "
+            ]
+        );
         assert_eq!(line_truncator, vec!["a                   "]);
     }
 
@@ -448,16 +480,15 @@ mod test {
         assert_eq!(
             word_wrapper,
             vec![
-                "コンピュ",
-                "ータ上で文字を扱う場",
-                "合、 典型的には文",
-                "字による 通信を行",
-                "う場合にその両端点で",
-                "は、",
+                "コンピュ ータ上で文",
+                "字を扱う場合、 典型",
+                "的には文 字による 通",
+                "信を行 う場合にその",
+                "両端点では、"
             ]
         );
         // Odd-sized lines have a space in them.
-        assert_eq!(word_wrapper_width, vec![8, 20, 17, 17, 20, 4]);
+        assert_eq!(word_wrapper_width, vec![8, 14, 17, 6, 12]);
     }
 
     /// Ensure words separated by nbsp are wrapped as if they were a single one.
@@ -466,13 +497,13 @@ mod test {
         let width = 20;
         let text = "AAAAAAAAAAAAAAA AAAA\u{00a0}AAA";
         let (word_wrapper, _) = run_composer(Composer::WordWrapper { trim: true }, text, width);
-        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAA", "AAAA\u{00a0}AAA",]);
+        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAA AAAA", "\u{a0}AAA"]);
 
         // Ensure that if the character was a regular space, it would be wrapped differently.
         let text_space = text.replace("\u{00a0}", " ");
         let (word_wrapper_space, _) =
             run_composer(Composer::WordWrapper { trim: true }, &text_space, width);
-        assert_eq!(word_wrapper_space, vec!["AAAAAAAAAAAAAAA AAAA", "AAA",]);
+        assert_eq!(word_wrapper_space, vec!["AAAAAAAAAAAAAAA AAAA", " AAA"]);
     }
 
     #[test]
@@ -480,7 +511,7 @@ mod test {
         let width = 20;
         let text = "AAAAAAAAAAAAAAAAAAAA    AAA";
         let (word_wrapper, _) = run_composer(Composer::WordWrapper { trim: false }, text, width);
-        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAAAAAAA", "   AAA",]);
+        assert_eq!(word_wrapper, vec!["AAAAAAAAAAAAAAAAAAAA", "    AAA"]);
     }
 
     #[test]
@@ -490,7 +521,7 @@ mod test {
         let (word_wrapper, _) = run_composer(Composer::WordWrapper { trim: false }, text, width);
         assert_eq!(
             word_wrapper,
-            vec!["AAA AAA", "AAAAA AA", "AAAAAA", " B", "  C", "   D"]
+            vec!["AAA AAA AA", "AAA AA AAA", "AAA", " B", "  C", "   D"]
         );
     }
 
@@ -503,11 +534,11 @@ mod test {
             word_wrapper,
             vec![
                 "          ",
-                "    4",
-                "Indent",
+                "     4 Ind",
+                "ent",
                 "          ",
-                "      must",
-                "wrap!"
+                "       mus",
+                "t wrap!"
             ]
         );
     }
