@@ -18,16 +18,16 @@ pub struct SyntaxText {
 
 impl SyntaxText {
     pub fn new(text: String) -> Self {
-        let SYNTAX_SET: SyntaxSet = SyntaxSet::load_defaults_nonewlines();
-        let THEME_SET: ThemeSet = ThemeSet::load_defaults();
+        let syntax_set: SyntaxSet = SyntaxSet::load_defaults_nonewlines();
+        let theme_set: ThemeSet = ThemeSet::load_defaults();
 
-        let mut state = ParseState::new(SYNTAX_SET.find_syntax_by_extension("sql").unwrap());
-        let highlighter = Highlighter::new(&THEME_SET.themes["base16-eighties.dark"]);
+        let mut state = ParseState::new(syntax_set.find_syntax_by_extension("sql").unwrap());
+        let highlighter = Highlighter::new(&theme_set.themes["base16-eighties.dark"]);
         let mut syntax_lines: Vec<SyntaxLine> = Vec::new();
         let mut highlight_state = HighlightState::new(&highlighter, ScopeStack::new());
 
         for (number, line) in text.lines().enumerate() {
-            let ops = state.parse_line(line, &SYNTAX_SET);
+            let ops = state.parse_line(line, &syntax_set);
             let iter =
                 RangedHighlightIterator::new(&mut highlight_state, &ops[..], line, &highlighter);
 
