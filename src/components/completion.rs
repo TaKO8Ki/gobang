@@ -11,7 +11,10 @@ use tui::{
     Frame,
 };
 
-const RESERVED_WORDS: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
+const RESERVED_WORDS_IN_WHERE_CLAUSE: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
+const ALL_RESERVED_WORDS: &[&str] = &[
+    "IN", "AND", "OR", "NOT", "NULL", "IS", "SELECT", "UPDATE", "DELETE", "FROM", "LIMIT", "WHERE",
+];
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
@@ -21,12 +24,19 @@ pub struct CompletionComponent {
 }
 
 impl CompletionComponent {
-    pub fn new(key_config: KeyConfig, word: impl Into<String>) -> Self {
+    pub fn new(key_config: KeyConfig, word: impl Into<String>, all: bool) -> Self {
         Self {
             key_config,
             state: ListState::default(),
             word: word.into(),
-            candidates: RESERVED_WORDS.iter().map(|w| w.to_string()).collect(),
+            candidates: if all {
+                ALL_RESERVED_WORDS.iter().map(|w| w.to_string()).collect()
+            } else {
+                RESERVED_WORDS_IN_WHERE_CLAUSE
+                    .iter()
+                    .map(|w| w.to_string())
+                    .collect()
+            },
         }
     }
 
@@ -145,7 +155,7 @@ mod test {
     #[test]
     fn test_filterd_candidates_lowercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "an")
+            CompletionComponent::new(KeyConfig::default(), "an", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -155,7 +165,7 @@ mod test {
     #[test]
     fn test_filterd_candidates_uppercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "AN")
+            CompletionComponent::new(KeyConfig::default(), "AN", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -165,14 +175,14 @@ mod test {
     #[test]
     fn test_filterd_candidates_multiple_candidates() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "n")
+            CompletionComponent::new(KeyConfig::default(), "n", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
 
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "N")
+            CompletionComponent::new(KeyConfig::default(), "N", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]

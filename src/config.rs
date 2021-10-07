@@ -87,6 +87,7 @@ pub struct KeyConfig {
     pub exit_popup: Key,
     pub focus_right: Key,
     pub focus_left: Key,
+    pub focus_above: Key,
     pub focus_connections: Key,
     pub open_help: Key,
     pub filter: Key,
@@ -105,6 +106,7 @@ pub struct KeyConfig {
     pub tab_indexes: Key,
     pub extend_or_shorten_widget_width_to_right: Key,
     pub extend_or_shorten_widget_width_to_left: Key,
+    pub tab_sql_editor: Key,
 }
 
 impl Default for KeyConfig {
@@ -123,6 +125,7 @@ impl Default for KeyConfig {
             exit_popup: Key::Esc,
             focus_right: Key::Right,
             focus_left: Key::Left,
+            focus_above: Key::Up,
             focus_connections: Key::Char('c'),
             open_help: Key::Char('?'),
             filter: Key::Char('/'),
@@ -141,6 +144,7 @@ impl Default for KeyConfig {
             tab_indexes: Key::Char('5'),
             extend_or_shorten_widget_width_to_right: Key::Char('>'),
             extend_or_shorten_widget_width_to_left: Key::Char('<'),
+            tab_sql_editor: Key::Char('6'),
         }
     }
 }

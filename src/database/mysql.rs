@@ -1,6 +1,6 @@
 use crate::get_or_null;
 
-use super::{Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
@@ -146,6 +146,49 @@ impl TableRow for Index {
 
 #[async_trait]
 impl Pool for MySqlPool {
+    async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
+        let query = query.trim();
+
+        if query.starts_with("SELECT") || query.starts_with("select") {
+            let mut rows = sqlx::query(query).fetch(&self.pool);
+            let mut headers = vec![];
+            let mut records = vec![];
+            while let Some(row) = rows.try_next().await? {
+                headers = row
+                    .columns()
+                    .iter()
+                    .map(|column| column.name().to_string())
+                    .collect();
+                let mut new_row = vec![];
+                for column in row.columns() {
+                    new_row.push(convert_column_value_to_string(&row, column)?)
+                }
+                records.push(new_row)
+            }
+
+            return Ok(ExecuteResult::Read {
+                headers,
+                rows: records,
+                database: Database {
+                    name: "-".to_string(),
+                    children: Vec::new(),
+                },
+                table: Table {
+                    name: "-".to_string(),
+                    create_time: None,
+                    update_time: None,
+                    engine: None,
+                    schema: None,
+                },
+            });
+        }
+
+        let result = sqlx::query(query).execute(&self.pool).await?;
+        Ok(ExecuteResult::Write {
+            updated_rows: result.rows_affected(),
+        })
+    }
+
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
         let databases = sqlx::query("SHOW DATABASES")
             .fetch_all(&self.pool)

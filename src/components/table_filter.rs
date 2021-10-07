@@ -34,7 +34,7 @@ impl TableFilterComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, ""),
+            completion: CompletionComponent::new(key_config, "", false),
         }
     }
 
