@@ -61,3 +61,21 @@ macro_rules! outln {
         writeln!($config.log_level.write(&$level), $($expr),+).expect("Can't write output");
     }}
 }
+
+#[macro_export]
+macro_rules! debug {
+    ($($expr:expr),+) => {
+        #[cfg(debug_assertions)]
+        {
+            use std::io::{Write};
+            use std::fs::OpenOptions;
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .append(true)
+                .open("gobang.log")
+                .unwrap();
+            writeln!(file, $($expr),+).expect("Can't write output");
+        }
+    }
+}
