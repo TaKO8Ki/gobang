@@ -148,29 +148,15 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             .constraints(if matches!(self.focus, Focus::Table) {
                 vec![Constraint::Length(7), Constraint::Min(1)]
             } else {
-                vec![Constraint::Percentage(50), Constraint::Percentage(50)]
+                vec![Constraint::Percentage(50), Constraint::Min(1)]
             })
             .split(area);
 
-        // let editor = Paragraph::new(self.input.iter().collect::<String>())
-        //     .block(
-        //         Block::default()
-        //             .borders(Borders::ALL)
-        //             .title("SQL Editor")
-        //             .style(if focused && matches!(self.focus, Focus::Editor) {
-        //                 Style::default()
-        //             } else {
-        //                 Style::default().fg(Color::DarkGray)
-        //             }),
-        //     )
-        //     .wrap(Wrap { trim: true });
-        // f.render_widget(editor, layout[0]);
-
-        let content = StatefulParagraph::new(self.input.iter().collect::<String>())
-            .wrap(Wrap { trim: false })
+        let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
+            .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
-        f.render_stateful_widget(content, area, &mut self.paragraph_state);
+        f.render_stateful_widget(editor, layout[0], &mut self.paragraph_state);
 
         if let Some(result) = self.query_result.as_ref() {
             let result = Paragraph::new(result.result_str())
@@ -274,7 +260,7 @@ impl Component for SqlEditorComponent {
     }
 
     async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
-        if key == self.key_config.run && matches!(self.focus, Focus::Editor) {
+        if key == self.key_config.enter && matches!(self.focus, Focus::Editor) {
             let query = self.input.iter().collect();
             let result = pool.execute(&query).await?;
             match result {
