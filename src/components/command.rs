@@ -135,6 +135,13 @@ pub fn tab_sql_editor(key: &KeyConfig) -> CommandText {
     CommandText::new(format!("SQL [{}]", key.tab_sql_editor), CMD_GROUP_TABLE)
 }
 
+pub fn tab_properties(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!("Properties [{}]", key.tab_properties),
+        CMD_GROUP_TABLE,
+    )
+}
+
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(

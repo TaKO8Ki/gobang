@@ -8,7 +8,8 @@ use crate::{
     components::tab::Tab,
     components::{
         command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
-        RecordTableComponent, SqlEditorComponent, TabComponent, TableComponent,
+        PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
+        TableComponent,
     },
     config::Config,
 };
@@ -30,6 +31,7 @@ pub struct App {
     constraint_table: TableComponent,
     foreign_key_table: TableComponent,
     index_table: TableComponent,
+    properties: PropertiesComponent,
     sql_editor: SqlEditorComponent,
     focus: Focus,
     tab: TabComponent,
@@ -52,6 +54,7 @@ impl App {
             constraint_table: TableComponent::new(config.key_config.clone()),
             foreign_key_table: TableComponent::new(config.key_config.clone()),
             index_table: TableComponent::new(config.key_config.clone()),
+            properties: PropertiesComponent::new(config.key_config.clone()),
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
@@ -120,6 +123,10 @@ impl App {
             }
             Tab::Sql => {
                 self.sql_editor
+                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?;
+            }
+            Tab::Properties => {
+                self.properties
                     .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?;
             }
         }
@@ -193,6 +200,9 @@ impl App {
 
     async fn update_table(&mut self) -> anyhow::Result<()> {
         if let Some((database, table)) = self.databases.tree().selected_table() {
+            self.properties
+                .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
+                .await?;
             self.focus = Focus::Table;
             self.record_table.reset();
             let (headers, records) = self
@@ -450,6 +460,11 @@ impl App {
                                 .await?
                                 .is_consumed()
                         {
+                            return Ok(EventState::Consumed);
+                        };
+                    }
+                    Tab::Properties => {
+                        if self.properties.event(key)?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
                     }
