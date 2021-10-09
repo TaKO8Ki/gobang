@@ -1,4 +1,5 @@
 use super::{Component, EventState, StatefulDrawableComponent};
+use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
 use crate::config::KeyConfig;
@@ -7,7 +8,6 @@ use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
 use database_tree::{Database, Table as DTable};
-use strum_macros::EnumIter;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -16,7 +16,7 @@ use tui::{
     Frame,
 };
 
-#[derive(Debug, EnumIter)]
+#[derive(Debug, PartialEq)]
 pub enum Focus {
     Column,
     Constraint,
@@ -31,7 +31,6 @@ impl std::fmt::Display for Focus {
 }
 
 pub struct PropertiesComponent {
-    table: Option<(Database, DTable)>,
     column_table: TableComponent,
     constraint_table: TableComponent,
     foreign_key_table: TableComponent,
@@ -43,7 +42,6 @@ pub struct PropertiesComponent {
 impl PropertiesComponent {
     pub fn new(key_config: KeyConfig) -> Self {
         Self {
-            table: None,
             column_table: TableComponent::new(key_config.clone()),
             constraint_table: TableComponent::new(key_config.clone()),
             foreign_key_table: TableComponent::new(key_config.clone()),
@@ -128,14 +126,18 @@ impl PropertiesComponent {
         // self.filter.reset();
     }
 
-    fn tab_names(&self) -> Vec<String> {
+    fn tab_names(&self) -> Vec<(Focus, String)> {
         vec![
-            command::tab_columns(&self.key_config).name,
-            command::tab_constraints(&self.key_config).name,
-            command::tab_foreign_keys(&self.key_config).name,
-            command::tab_indexes(&self.key_config).name,
-            command::tab_sql_editor(&self.key_config).name,
-            command::tab_properties(&self.key_config).name,
+            (Focus::Column, command::tab_columns(&self.key_config).name),
+            (
+                Focus::Constraint,
+                command::tab_constraints(&self.key_config).name,
+            ),
+            (
+                Focus::ForeignKey,
+                command::tab_foreign_keys(&self.key_config).name,
+            ),
+            (Focus::Index, command::tab_indexes(&self.key_config).name),
         ]
     }
 }
@@ -150,9 +152,8 @@ impl StatefulDrawableComponent for PropertiesComponent {
         let tab_names = self
             .tab_names()
             .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                ListItem::new(c.to_string()).style(if i == 0 {
+            .map(|(f, c)| {
+                ListItem::new(c.to_string()).style(if *f == self.focus {
                     Style::default().bg(Color::Blue)
                 } else {
                     Style::default()
@@ -181,10 +182,20 @@ impl Component for PropertiesComponent {
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         self.focused_component().event(key)?;
-        Ok(EventState::NotConsumed)
-    }
 
-    async fn async_event(&mut self, _key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
+        if key == self.key_config.copy {
+            if let Some(text) = self.focused_component().selected_cells() {
+                copy_to_clipboard(text.as_str())?
+            }
+        } else if key == self.key_config.tab_columns {
+            self.focus = Focus::Column;
+        } else if key == self.key_config.tab_constraints {
+            self.focus = Focus::Constraint;
+        } else if key == self.key_config.tab_foreign_keys {
+            self.focus = Focus::ForeignKey;
+        } else if key == self.key_config.tab_indexes {
+            self.focus = Focus::Index;
+        }
         Ok(EventState::NotConsumed)
     }
 }
