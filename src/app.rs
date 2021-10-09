@@ -9,11 +9,9 @@ use crate::{
     components::{
         command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
-        TableComponent,
     },
     config::Config,
 };
-use database_tree::Database;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -27,10 +25,6 @@ pub enum Focus {
 }
 pub struct App {
     record_table: RecordTableComponent,
-    column_table: TableComponent,
-    constraint_table: TableComponent,
-    foreign_key_table: TableComponent,
-    index_table: TableComponent,
     properties: PropertiesComponent,
     sql_editor: SqlEditorComponent,
     focus: Focus,
@@ -50,10 +44,6 @@ impl App {
             config: config.clone(),
             connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
             record_table: RecordTableComponent::new(config.key_config.clone()),
-            column_table: TableComponent::new(config.key_config.clone()),
-            constraint_table: TableComponent::new(config.key_config.clone()),
-            foreign_key_table: TableComponent::new(config.key_config.clone()),
-            index_table: TableComponent::new(config.key_config.clone()),
             properties: PropertiesComponent::new(config.key_config.clone()),
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
@@ -101,24 +91,6 @@ impl App {
         match self.tab.selected_tab {
             Tab::Records => {
                 self.record_table
-                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
-            }
-            Tab::Columns => {
-                self.column_table
-                    .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
-            }
-            Tab::Constraints => self.constraint_table.draw(
-                f,
-                right_chunks[1],
-                matches!(self.focus, Focus::Table),
-            )?,
-            Tab::ForeignKeys => self.foreign_key_table.draw(
-                f,
-                right_chunks[1],
-                matches!(self.focus, Focus::Table),
-            )?,
-            Tab::Indexes => {
-                self.index_table
                     .draw(f, right_chunks[1], matches!(self.focus, Focus::Table))?
             }
             Tab::Sql => {
@@ -179,113 +151,12 @@ impl App {
                     SqlitePool::new(conn.database_url()?.as_str()).await?,
                 ))
             };
-            let databases = match &conn.database {
-                Some(database) => vec![Database::new(
-                    database.clone(),
-                    self.pool
-                        .as_ref()
-                        .unwrap()
-                        .get_tables(database.clone())
-                        .await?,
-                )],
-                None => self.pool.as_ref().unwrap().get_databases().await?,
-            };
-            self.databases.update(databases.as_slice()).unwrap();
+            self.databases
+                .update(conn, self.pool.as_ref().unwrap())
+                .await?;
             self.focus = Focus::DabataseList;
             self.record_table.reset();
             self.tab.reset();
-        }
-        Ok(())
-    }
-
-    async fn update_table(&mut self) -> anyhow::Result<()> {
-        if let Some((database, table)) = self.databases.tree().selected_table() {
-            self.properties
-                .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
-                .await?;
-            self.focus = Focus::Table;
-            self.record_table.reset();
-            let (headers, records) = self
-                .pool
-                .as_ref()
-                .unwrap()
-                .get_records(&database, &table, 0, None)
-                .await?;
-            self.record_table
-                .update(records, headers, database.clone(), table.clone());
-
-            self.column_table.reset();
-            let columns = self
-                .pool
-                .as_ref()
-                .unwrap()
-                .get_columns(&database, &table)
-                .await?;
-            if !columns.is_empty() {
-                self.column_table.update(
-                    columns
-                        .iter()
-                        .map(|c| c.columns())
-                        .collect::<Vec<Vec<String>>>(),
-                    columns.get(0).unwrap().fields(),
-                    database.clone(),
-                    table.clone(),
-                );
-            }
-            self.constraint_table.reset();
-            let constraints = self
-                .pool
-                .as_ref()
-                .unwrap()
-                .get_constraints(&database, &table)
-                .await?;
-            if !constraints.is_empty() {
-                self.constraint_table.update(
-                    constraints
-                        .iter()
-                        .map(|c| c.columns())
-                        .collect::<Vec<Vec<String>>>(),
-                    constraints.get(0).unwrap().fields(),
-                    database.clone(),
-                    table.clone(),
-                );
-            }
-            self.foreign_key_table.reset();
-            let foreign_keys = self
-                .pool
-                .as_ref()
-                .unwrap()
-                .get_foreign_keys(&database, &table)
-                .await?;
-            if !foreign_keys.is_empty() {
-                self.foreign_key_table.update(
-                    foreign_keys
-                        .iter()
-                        .map(|c| c.columns())
-                        .collect::<Vec<Vec<String>>>(),
-                    foreign_keys.get(0).unwrap().fields(),
-                    database.clone(),
-                    table.clone(),
-                );
-            }
-            self.index_table.reset();
-            let indexes = self
-                .pool
-                .as_ref()
-                .unwrap()
-                .get_indexes(&database, &table)
-                .await?;
-            if !indexes.is_empty() {
-                self.index_table.update(
-                    indexes
-                        .iter()
-                        .map(|c| c.columns())
-                        .collect::<Vec<Vec<String>>>(),
-                    indexes.get(0).unwrap().fields(),
-                    database.clone(),
-                    table.clone(),
-                );
-            }
         }
         Ok(())
     }
@@ -352,7 +223,12 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    self.update_table().await?;
+                    if let Some((database, table)) = self.databases.tree().selected_table() {
+                        self.properties
+                            .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
+                            .await?;
+                        self.focus = Focus::Table;
+                    }
                     return Ok(EventState::Consumed);
                 }
             }
@@ -405,50 +281,6 @@ impl App {
                                         self.record_table.table.end()
                                     }
                                 }
-                            }
-                        };
-                    }
-                    Tab::Columns => {
-                        if self.column_table.event(key)?.is_consumed() {
-                            return Ok(EventState::Consumed);
-                        };
-
-                        if key == self.config.key_config.copy {
-                            if let Some(text) = self.column_table.selected_cells() {
-                                copy_to_clipboard(text.as_str())?
-                            }
-                        };
-                    }
-                    Tab::Constraints => {
-                        if self.constraint_table.event(key)?.is_consumed() {
-                            return Ok(EventState::Consumed);
-                        };
-
-                        if key == self.config.key_config.copy {
-                            if let Some(text) = self.constraint_table.selected_cells() {
-                                copy_to_clipboard(text.as_str())?
-                            }
-                        };
-                    }
-                    Tab::ForeignKeys => {
-                        if self.foreign_key_table.event(key)?.is_consumed() {
-                            return Ok(EventState::Consumed);
-                        };
-
-                        if key == self.config.key_config.copy {
-                            if let Some(text) = self.foreign_key_table.selected_cells() {
-                                copy_to_clipboard(text.as_str())?
-                            }
-                        };
-                    }
-                    Tab::Indexes => {
-                        if self.index_table.event(key)?.is_consumed() {
-                            return Ok(EventState::Consumed);
-                        };
-
-                        if key == self.config.key_config.copy {
-                            if let Some(text) = self.index_table.selected_cells() {
-                                copy_to_clipboard(text.as_str())?
                             }
                         };
                     }
