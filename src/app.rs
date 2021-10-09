@@ -224,6 +224,15 @@ impl App {
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
                     if let Some((database, table)) = self.databases.tree().selected_table() {
+                        self.record_table.reset();
+                        let (headers, records) = self
+                            .pool
+                            .as_ref()
+                            .unwrap()
+                            .get_records(&database, &table, 0, None)
+                            .await?;
+                        self.record_table
+                            .update(records, headers, database.clone(), table.clone());
                         self.properties
                             .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
                             .await?;
