@@ -42,3 +42,6 @@ unicode-segmentation = "1.7"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.1"
+
+[dev-dependencies]
+pretty_assertions = "1.0.0"

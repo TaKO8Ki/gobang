@@ -3,12 +3,13 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::KeyConfig;
+use crate::config::{Connection, KeyConfig};
+use crate::database::Pool;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use database_tree::{Database, DatabaseTree, DatabaseTreeItem, Table};
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -53,8 +54,15 @@ impl DatabasesComponent {
         }
     }
 
-    pub fn update(&mut self, list: &[Database]) -> Result<()> {
-        self.tree = DatabaseTree::new(list, &BTreeSet::new())?;
+    pub async fn update(&mut self, connection: &Connection, pool: &Box<dyn Pool>) -> Result<()> {
+        let databases = match &connection.database {
+            Some(database) => vec![Database::new(
+                database.clone(),
+                pool.get_tables(database.clone()).await?,
+            )],
+            None => pool.get_databases().await?,
+        };
+        self.tree = DatabaseTree::new(databases.as_slice(), &BTreeSet::new())?;
         self.filterd_tree = None;
         self.filter.reset();
         Ok(())
