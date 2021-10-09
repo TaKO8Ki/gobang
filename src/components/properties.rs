@@ -121,11 +121,6 @@ impl PropertiesComponent {
         Ok(())
     }
 
-    pub fn reset(&mut self) {
-        // self.table.reset();
-        // self.filter.reset();
-    }
-
     fn tab_names(&self) -> Vec<(Focus, String)> {
         vec![
             (Focus::Column, command::tab_columns(&self.key_config).name),
@@ -178,7 +173,11 @@ impl StatefulDrawableComponent for PropertiesComponent {
 
 #[async_trait]
 impl Component for PropertiesComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, out: &mut Vec<CommandInfo>) {
+        out.push(CommandInfo::new(command::toggle_property_tabs(
+            &self.key_config,
+        )));
+    }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
         self.focused_component().event(key)?;

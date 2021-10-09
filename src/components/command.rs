@@ -3,6 +3,7 @@ use crate::config::KeyConfig;
 static CMD_GROUP_GENERAL: &str = "-- General --";
 static CMD_GROUP_TABLE: &str = "-- Table --";
 static CMD_GROUP_DATABASES: &str = "-- Databases --";
+static CMD_GROUP_PROPERTIES: &str = "-- Properties --";
 
 #[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct CommandText {
@@ -145,14 +146,23 @@ pub fn tab_properties(key: &KeyConfig) -> CommandText {
 pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
-            "Tab [{},{},{},{},{}]",
-            key_config.tab_records,
+            "Tab [{},{},{}]",
+            key_config.tab_records, key_config.tab_properties, key_config.tab_sql_editor
+        ),
+        CMD_GROUP_GENERAL,
+    )
+}
+
+pub fn toggle_property_tabs(key_config: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!(
+            "Tab [{},{},{},{}]",
             key_config.tab_columns,
             key_config.tab_constraints,
             key_config.tab_foreign_keys,
             key_config.tab_indexes
         ),
-        CMD_GROUP_GENERAL,
+        CMD_GROUP_PROPERTIES,
     )
 }
 
