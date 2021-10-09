@@ -1,11 +1,14 @@
 use crate::log::LogLevel;
 use crate::Key;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
+
+#[cfg(test)]
+use serde::Serialize;
 
 #[derive(StructOpt, Debug)]
 pub struct CliConfig {
@@ -23,7 +26,7 @@ pub struct Config {
     pub log_level: LogLevel,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 enum DatabaseType {
     #[serde(rename = "mysql")]
     MySql,
@@ -72,7 +75,8 @@ pub struct Connection {
     pub database: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct KeyConfig {
     pub scroll_up: Key,
     pub scroll_down: Key,

@@ -9,7 +9,7 @@ use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use database_tree::{Database, DatabaseTree, DatabaseTreeItem, Table};
+use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{

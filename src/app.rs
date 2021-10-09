@@ -129,6 +129,7 @@ impl App {
 
         self.databases.commands(&mut res);
         self.record_table.commands(&mut res);
+        self.properties.commands(&mut res);
 
         res
     }
