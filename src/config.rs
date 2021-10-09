@@ -7,6 +7,9 @@ use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
+#[cfg(test)]
+use serde::Serialize;
+
 #[derive(StructOpt, Debug)]
 pub struct CliConfig {
     /// Set the config file
@@ -73,6 +76,7 @@ pub struct Connection {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[cfg_attr(test, derive(Serialize))]
 pub struct KeyConfig {
     pub scroll_up: Key,
     pub scroll_down: Key,
@@ -104,9 +108,10 @@ pub struct KeyConfig {
     pub tab_constraints: Key,
     pub tab_foreign_keys: Key,
     pub tab_indexes: Key,
+    pub tab_sql_editor: Key,
+    pub tab_properties: Key,
     pub extend_or_shorten_widget_width_to_right: Key,
     pub extend_or_shorten_widget_width_to_left: Key,
-    pub tab_sql_editor: Key,
 }
 
 impl Default for KeyConfig {
@@ -138,13 +143,14 @@ impl Default for KeyConfig {
             extend_selection_by_one_cell_down: Key::Char('J'),
             extend_selection_by_one_cell_up: Key::Char('K'),
             tab_records: Key::Char('1'),
-            tab_columns: Key::Char('2'),
-            tab_constraints: Key::Char('3'),
-            tab_foreign_keys: Key::Char('4'),
-            tab_indexes: Key::Char('5'),
+            tab_properties: Key::Char('2'),
+            tab_sql_editor: Key::Char('3'),
+            tab_columns: Key::Char('4'),
+            tab_constraints: Key::Char('5'),
+            tab_foreign_keys: Key::Char('6'),
+            tab_indexes: Key::Char('7'),
             extend_or_shorten_widget_width_to_right: Key::Char('>'),
             extend_or_shorten_widget_width_to_left: Key::Char('<'),
-            tab_sql_editor: Key::Char('6'),
         }
     }
 }
@@ -304,8 +310,29 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, Path, PathBuf};
+    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use serde_json::Value;
     use std::env;
+
+    #[test]
+    fn test_overlappted_key() {
+        let value: Value =
+            serde_json::from_str(&serde_json::to_string(&KeyConfig::default()).unwrap()).unwrap();
+        if let Value::Object(map) = value {
+            let mut values: Vec<String> = map
+                .values()
+                .map(|v| match v {
+                    Value::Object(map) => Some(format!("{:?}", map)),
+                    _ => None,
+                })
+                .flatten()
+                .collect();
+            values.sort();
+            let before_values = values.clone();
+            values.dedup();
+            pretty_assertions::assert_eq!(before_values, values);
+        }
+    }
 
     #[test]
     #[cfg(unix)]

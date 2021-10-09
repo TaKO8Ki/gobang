@@ -20,7 +20,6 @@ use unicode_width::UnicodeWidthStr;
 
 struct QueryResult {
     updated_rows: u64,
-    query: String,
 }
 
 impl QueryResult {
@@ -275,10 +274,7 @@ impl Component for SqlEditorComponent {
                     self.query_result = None;
                 }
                 ExecuteResult::Write { updated_rows } => {
-                    self.query_result = Some(QueryResult {
-                        updated_rows,
-                        query: query.to_string(),
-                    })
+                    self.query_result = Some(QueryResult { updated_rows })
                 }
             }
             return Ok(EventState::Consumed);
