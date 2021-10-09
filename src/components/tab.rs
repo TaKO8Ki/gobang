@@ -16,12 +16,8 @@ use tui::{
 #[derive(Debug, Clone, Copy, EnumIter)]
 pub enum Tab {
     Records,
-    Columns,
-    Constraints,
-    ForeignKeys,
-    Indexes,
-    Sql,
     Properties,
+    Sql,
 }
 
 impl std::fmt::Display for Tab {
@@ -50,12 +46,8 @@ impl TabComponent {
     fn names(&self) -> Vec<String> {
         vec![
             command::tab_records(&self.key_config).name,
-            command::tab_columns(&self.key_config).name,
-            command::tab_constraints(&self.key_config).name,
-            command::tab_foreign_keys(&self.key_config).name,
-            command::tab_indexes(&self.key_config).name,
-            command::tab_sql_editor(&self.key_config).name,
             command::tab_properties(&self.key_config).name,
+            command::tab_sql_editor(&self.key_config).name,
         ]
     }
 }
@@ -83,18 +75,6 @@ impl Component for TabComponent {
     fn event(&mut self, key: Key) -> Result<EventState> {
         if key == self.key_config.tab_records {
             self.selected_tab = Tab::Records;
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_columns {
-            self.selected_tab = Tab::Columns;
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_constraints {
-            self.selected_tab = Tab::Constraints;
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_foreign_keys {
-            self.selected_tab = Tab::ForeignKeys;
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_indexes {
-            self.selected_tab = Tab::Indexes;
             return Ok(EventState::Consumed);
         } else if key == self.key_config.tab_sql_editor {
             self.selected_tab = Tab::Sql;
