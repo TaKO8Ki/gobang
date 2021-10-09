@@ -7,7 +7,7 @@ use crate::database::Pool;
 use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
-use database_tree::{Database, Table as DTable};
+use database_tree::{Database, Table};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -63,7 +63,7 @@ impl PropertiesComponent {
     pub async fn update(
         &mut self,
         database: Database,
-        table: DTable,
+        table: Table,
         pool: &Box<dyn Pool>,
     ) -> Result<()> {
         self.column_table.reset();
