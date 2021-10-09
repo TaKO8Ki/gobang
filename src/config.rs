@@ -1,6 +1,6 @@
 use crate::log::LogLevel;
 use crate::Key;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -23,7 +23,7 @@ pub struct Config {
     pub log_level: LogLevel,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 enum DatabaseType {
     #[serde(rename = "mysql")]
     MySql,
@@ -72,7 +72,7 @@ pub struct Connection {
     pub database: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KeyConfig {
     pub scroll_up: Key,
     pub scroll_down: Key,
@@ -139,12 +139,12 @@ impl Default for KeyConfig {
             extend_selection_by_one_cell_down: Key::Char('J'),
             extend_selection_by_one_cell_up: Key::Char('K'),
             tab_records: Key::Char('1'),
-            tab_columns: Key::Char('2'),
-            tab_constraints: Key::Char('3'),
-            tab_foreign_keys: Key::Char('4'),
-            tab_indexes: Key::Char('5'),
-            tab_sql_editor: Key::Char('6'),
-            tab_properties: Key::Char('7'),
+            tab_properties: Key::Char('2'),
+            tab_sql_editor: Key::Char('3'),
+            tab_columns: Key::Char('4'),
+            tab_constraints: Key::Char('5'),
+            tab_foreign_keys: Key::Char('6'),
+            tab_indexes: Key::Char('7'),
             extend_or_shorten_widget_width_to_right: Key::Char('>'),
             extend_or_shorten_widget_width_to_left: Key::Char('<'),
         }
@@ -306,8 +306,29 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, Path, PathBuf};
+    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use serde_json::Value;
     use std::env;
+
+    #[test]
+    fn test_overlappted_key() {
+        let value: Value =
+            serde_json::from_str(&serde_json::to_string(&KeyConfig::default()).unwrap()).unwrap();
+        if let Value::Object(map) = value {
+            let mut values: Vec<String> = map
+                .values()
+                .map(|v| match v {
+                    Value::Object(map) => Some(format!("{:?}", map)),
+                    _ => None,
+                })
+                .flatten()
+                .collect();
+            values.sort();
+            let before_values = values.clone();
+            values.dedup();
+            pretty_assertions::assert_eq!(before_values, values);
+        }
+    }
 
     #[test]
     #[cfg(unix)]
