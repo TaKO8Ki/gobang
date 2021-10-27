@@ -51,6 +51,7 @@ impl Default for Config {
         Self {
             conn: vec![Connection {
                 r#type: DatabaseType::MySql,
+                name: None,
                 user: Some("root".to_string()),
                 host: Some("localhost".to_string()),
                 port: Some(3306),
@@ -67,6 +68,7 @@ impl Default for Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
     r#type: DatabaseType,
+    name: Option<String>,
     user: Option<String>,
     host: Option<String>,
     port: Option<u64>,
@@ -181,6 +183,7 @@ impl Connection {
     pub fn database_url(&self) -> anyhow::Result<String> {
         match self.r#type {
             DatabaseType::MySql => {
+                let name = self.name.as_ref().map_or(String::new(), |n| n.to_string());
                 let user = self
                     .user
                     .as_ref()
@@ -199,24 +202,48 @@ impl Connection {
                     .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
-                    Some(database) => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                        database = database
-                    )),
-                    None => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                    )),
+                    Some(database) => Ok(if name.is_empty() {
+                        format!(
+                            "mysql://{user}:{password}@{host}:{port}/{database}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database
+                        )
+                    } else {
+                        format!(
+                            "[{name}] mysql://{user}:{password}@{host}:{port}/{database}",
+                            name = name,
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database
+                        )
+                    }),
+                    None => Ok(if name.is_empty() {
+                        format!(
+                            "mysql://{user}:{password}@{host}:{port}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )
+                    } else {
+                        format!(
+                            "[{name}] mysql://{user}:{password}@{host}:{port}",
+                            name = name,
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )
+                    }),
                 }
             }
             DatabaseType::Postgres => {
+                let name = self.name.as_ref().map_or(String::new(), |n| n.to_string());
                 let user = self
                     .user
                     .as_ref()
@@ -235,24 +262,48 @@ impl Connection {
                     .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
-                    Some(database) => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                        database = database
-                    )),
-                    None => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                    )),
+                    Some(database) => Ok(if name.is_empty() {
+                        format!(
+                            "postgres://{user}:{password}@{host}:{port}/{database}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database
+                        )
+                    } else {
+                        format!(
+                            "[{name}] postgres://{user}:{password}@{host}:{port}/{database}",
+                            name = name,
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database
+                        )
+                    }),
+                    None => Ok(if name.is_empty() {
+                        format!(
+                            "postgres://{user}:{password}@{host}:{port}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )
+                    } else {
+                        format!(
+                            "[{name}] postgres://{user}:{password}@{host}:{port}",
+                            name = name,
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )
+                    }),
                 }
             }
             DatabaseType::Sqlite => {
+                let name = self.name.as_ref().map_or(String::new(), |n| n.to_string());
                 let path = self.path.as_ref().map_or(
                     Err(anyhow::anyhow!("type sqlite needs the path field")),
                     |path| {
@@ -260,7 +311,15 @@ impl Connection {
                     },
                 )?;
 
-                Ok(format!("sqlite://{path}", path = path.to_str().unwrap()))
+                Ok(if name.is_empty() {
+                    format!("sqlite://{path}", path = path.to_str().unwrap())
+                } else {
+                    format!(
+                        "[{name}] sqlite://{path}",
+                        name = name,
+                        path = path.to_str().unwrap()
+                    )
+                })
             }
         }
     }
