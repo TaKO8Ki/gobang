@@ -89,7 +89,7 @@ impl StatefulDrawableComponent for ConnectionsComponent {
         let mut connections: Vec<ListItem> = Vec::new();
         for c in conns {
             connections.push(
-                ListItem::new(vec![Spans::from(Span::raw(c.database_url_with_name()))])
+                ListItem::new(vec![Spans::from(Span::raw(c.database_url_with_name()?))])
                     .style(Style::default()),
             )
         }

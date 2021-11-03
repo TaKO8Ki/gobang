@@ -267,17 +267,17 @@ impl Connection {
         }
     }
 
-    pub fn database_url_with_name(&self) -> std::string::String {
+    pub fn database_url_with_name(&self) -> anyhow::Result<String> {
         let database_url = self.database_url()?;
 
-        match &self.name {
+        Ok(match &self.name {
             Some(name) => format!(
                 "[{name}] {database_url}",
                 name = name,
                 database_url = database_url
             ),
             None => database_url,
-        }
+        })
     }
 
     pub fn is_mysql(&self) -> bool {
