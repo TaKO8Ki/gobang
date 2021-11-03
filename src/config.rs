@@ -268,17 +268,15 @@ impl Connection {
     }
 
     pub fn database_url_with_name(&self) -> std::string::String {
-        let name = self.name.as_ref().map_or(String::new(), |n| n.to_string());
         let database_url = self.database_url().map_or(String::new(), |d| d.to_string());
 
-        if name.is_empty() {
-            database_url
-        } else {
-            format!(
+        match &self.name {
+            Some(name) => format!(
                 "[{name}] {database_url}",
                 name = name,
                 database_url = database_url
-            )
+            ),
+            None => database_url,
         }
     }
 
