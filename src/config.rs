@@ -51,6 +51,7 @@ impl Default for Config {
         Self {
             conn: vec![Connection {
                 r#type: DatabaseType::MySql,
+                name: None,
                 user: Some("root".to_string()),
                 host: Some("localhost".to_string()),
                 port: Some(3306),
@@ -67,6 +68,7 @@ impl Default for Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
     r#type: DatabaseType,
+    name: Option<String>,
     user: Option<String>,
     host: Option<String>,
     port: Option<u64>,
