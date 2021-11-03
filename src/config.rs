@@ -51,6 +51,7 @@ impl Default for Config {
         Self {
             conn: vec![Connection {
                 r#type: DatabaseType::MySql,
+                name: None,
                 user: Some("root".to_string()),
                 host: Some("localhost".to_string()),
                 port: Some(3306),
@@ -67,6 +68,7 @@ impl Default for Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Connection {
     r#type: DatabaseType,
+    name: Option<String>,
     user: Option<String>,
     host: Option<String>,
     port: Option<u64>,
@@ -263,6 +265,19 @@ impl Connection {
                 Ok(format!("sqlite://{path}", path = path.to_str().unwrap()))
             }
         }
+    }
+
+    pub fn database_url_with_name(&self) -> anyhow::Result<String> {
+        let database_url = self.database_url()?;
+
+        Ok(match &self.name {
+            Some(name) => format!(
+                "[{name}] {database_url}",
+                name = name,
+                database_url = database_url
+            ),
+            None => database_url,
+        })
     }
 
     pub fn is_mysql(&self) -> bool {
