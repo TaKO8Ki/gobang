@@ -149,7 +149,7 @@ impl Pool for MySqlPool {
     async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
 
-        if query.starts_with("SELECT") || query.starts_with("select") {
+        if query.to_uppercase().starts_with("SELECT") {
             let mut rows = sqlx::query(query).fetch(&self.pool);
             let mut headers = vec![];
             let mut records = vec![];
