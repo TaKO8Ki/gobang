@@ -27,6 +27,7 @@ pub struct TableComponent {
     selection_area_corner: Option<(usize, usize)>,
     column_page_start: std::cell::Cell<usize>,
     scroll: VerticalScroll,
+    with_title: bool,
     key_config: KeyConfig,
 }
 
@@ -42,6 +43,23 @@ impl TableComponent {
             column_page_start: std::cell::Cell::new(0),
             scroll: VerticalScroll::new(false, false),
             eod: false,
+            with_title: true,
+            key_config,
+        }
+    }
+
+    pub fn new_without_title(key_config: KeyConfig) -> Self {
+        Self {
+            selected_row: TableState::default(),
+            headers: vec![],
+            rows: vec![],
+            table: None,
+            selected_column: 0,
+            selection_area_corner: None,
+            column_page_start: std::cell::Cell::new(0),
+            scroll: VerticalScroll::new(false, false),
+            eod: false,
+            with_title: false,
             key_config,
         }
     }
@@ -417,14 +435,24 @@ impl StatefulDrawableComponent for TableComponent {
             .split(area);
 
         f.render_widget(
-            Block::default()
-                .title(self.title())
-                .borders(Borders::ALL)
-                .style(if focused {
-                    Style::default()
-                } else {
-                    Style::default().fg(Color::DarkGray)
-                }),
+            if self.with_title {
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(if focused {
+                        Style::default()
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    })
+                    .title(self.title())
+            } else {
+                Block::default()
+                    .borders(Borders::ALL)
+                    .style(if focused {
+                        Style::default()
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    })
+            },
             area,
         );
 
