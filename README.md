@@ -46,6 +46,13 @@ If you're a Windows Scoop user, then you can install gobang from the [official b
 ```
 scoop install gobang
 ```
+### On NixOS
+
+If you're a Nix user, you can install [gobang](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/database/gobang/default.nix) from nixpkgs:
+
+```
+$ nix-env --install gobang
+```
 
 ### On NetBSD
 
