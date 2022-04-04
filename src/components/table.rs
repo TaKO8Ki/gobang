@@ -200,6 +200,18 @@ impl TableComponent {
         }
     }
 
+    fn expand_selection_by_horizontal_line(&mut self, _positive: bool) {
+        if self.selection_area_corner.is_none() {
+            self.selected_column = 0;
+            self.selection_area_corner = Some((
+                self.headers.len().saturating_sub(1),
+                self.selected_row.selected().unwrap_or(0),
+            ));
+        } else {
+            self.selection_area_corner = None;
+        }
+    }
+
     pub fn selected_cells(&self) -> Option<String> {
         if let Some((x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
@@ -522,6 +534,9 @@ impl Component for TableComponent {
         out.push(CommandInfo::new(command::extend_selection_by_one_cell(
             &self.key_config,
         )));
+        out.push(CommandInfo::new(command::extend_selection_by_line(
+            &self.key_config,
+        )));
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
@@ -560,6 +575,9 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.extend_selection_by_one_cell_right {
             self.expand_selected_area_x(true);
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.extend_selection_by_horizontal_line {
+            self.expand_selection_by_horizontal_line(true);
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
