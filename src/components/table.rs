@@ -708,6 +708,32 @@ mod test {
     }
 
     #[test]
+    fn test_expand_selected_by_horizontal_line() {
+        let mut component = TableComponent::new(KeyConfig::default());
+        component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+            vec!["g", "h", "i"].iter().map(|h| h.to_string()).collect(),
+        ];
+
+        // select one line
+        component.selected_row.select(Some(0));
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, Some((2, 0)));
+        assert_eq!(component.selected_cells(), Some("d,e,f".to_string()));
+
+        // undo select horizontal line
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, None);
+
+        // select two line
+        component.expand_selected_area_y(true);
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, Some((2, 1)));
+        assert_eq!(component.selected_cells(), Some("d,e,f\ng,h,i".to_string()));
+    }
+
+    #[test]
     fn test_is_number_column() {
         let mut component = TableComponent::new(KeyConfig::default());
         component.headers = vec!["1", "2", "3"].iter().map(|h| h.to_string()).collect();
