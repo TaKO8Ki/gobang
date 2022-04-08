@@ -200,7 +200,7 @@ impl TableComponent {
         }
     }
 
-    fn expand_selection_by_horizontal_line(&mut self, _positive: bool) {
+    fn expand_selected_by_horizontal_line(&mut self) {
         if self.selection_area_corner.is_none() {
             self.selected_column = 0;
             self.selection_area_corner = Some((
@@ -577,7 +577,7 @@ impl Component for TableComponent {
             self.expand_selected_area_x(true);
             return Ok(EventState::Consumed);
         } else if key == self.key_config.extend_selection_by_horizontal_line {
-            self.expand_selection_by_horizontal_line(true);
+            self.expand_selected_by_horizontal_line();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
