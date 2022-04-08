@@ -201,14 +201,17 @@ impl TableComponent {
     }
 
     fn expand_selected_by_horizontal_line(&mut self) {
-        if self.selection_area_corner.is_none() {
-            self.selected_column = 0;
-            self.selection_area_corner = Some((
-                self.headers.len().saturating_sub(1),
-                self.selected_row.selected().unwrap_or(0),
-            ));
+        let horizontal_length = self.headers.len().saturating_sub(1);
+        let vertical_length = self.selected_row.selected().unwrap_or(0);
+
+        if let Some((x, y)) = self.selection_area_corner {
+            if x == horizontal_length {
+                self.selection_area_corner = None;
+            } else {
+                self.selection_area_corner = Some((horizontal_length, y));
+            }
         } else {
-            self.selection_area_corner = None;
+            self.selection_area_corner = Some((horizontal_length, vertical_length));
         }
     }
 
