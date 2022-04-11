@@ -249,6 +249,17 @@ impl App {
                             return Ok(EventState::Consumed);
                         };
 
+                        if key == self.config.key_config.sort_by_column
+                            && !self.record_table.table.headers.is_empty()
+                        {
+                            self.record_table.table.add_order();
+                            let order_query = self.record_table.table.generate_order_query();
+                            let header_icons = self.record_table.table.generate_header_icons();
+                            self.update_record_table(order_query, Some(header_icons), true)
+                                .await?;
+                            return Ok(EventState::Consumed);
+                        };
+
                         if key == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
@@ -258,7 +269,10 @@ impl App {
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.record_table.focus = crate::components::record_table::Focus::Table;
-                            self.update_record_table().await?;
+                            let order_query = self.record_table.table.generate_order_query();
+                            let header_icons = self.record_table.table.generate_header_icons();
+                            self.update_record_table(order_query, Some(header_icons), false)
+                                .await?;
                         }
 
                         if self.record_table.table.eod {
