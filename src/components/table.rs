@@ -17,11 +17,91 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
+#[derive(Debug, PartialEq)]
+struct Order {
+    pub column_number: usize,
+    pub is_asc: bool,
+}
+
+impl Order {
+    pub fn new(column_number: usize, is_asc: bool) -> Self {
+        Self {
+            column_number,
+            is_asc,
+        }
+    }
+
+    fn query(&self) -> String {
+        let order = if self.is_asc { "ASC" } else { "DESC" };
+
+        return format!(
+            "{column} {order}",
+            column = self.column_number,
+            order = order
+        );
+    }
+}
+
+#[derive(PartialEq)]
+struct OrderManager {
+    orders: Vec<Order>,
+}
+
+impl OrderManager {
+    fn new() -> Self {
+        Self { orders: vec![] }
+    }
+
+    fn generate_order_query(&mut self) -> Option<String> {
+        let order_query = self
+            .orders
+            .iter()
+            .map(|order| order.query())
+            .collect::<Vec<String>>();
+
+        if !order_query.is_empty() {
+            return Some("ORDER BY ".to_string() + &order_query.join(", "));
+        } else {
+            return None;
+        }
+    }
+
+    fn generate_header_icons(&mut self, header_length: usize) -> Vec<String> {
+        let mut header_icons = vec![String::new(); header_length];
+
+        for (index, order) in self.orders.iter().enumerate() {
+            let arrow = if order.is_asc { "↑" } else { "↓" };
+            header_icons[order.column_number - 1] =
+                format!("{arrow}{number}", arrow = arrow, number = index + 1);
+        }
+        return header_icons;
+    }
+
+    fn add_order(&mut self, selected_column: usize) {
+        let selected_column_number = selected_column + 1;
+        if let Some(position) = self
+            .orders
+            .iter()
+            .position(|order| order.column_number == selected_column_number)
+        {
+            if self.orders[position].is_asc {
+                self.orders[position].is_asc = false;
+            } else {
+                self.orders.remove(position);
+            }
+        } else {
+            let order = Order::new(selected_column_number, true);
+            self.orders.push(order);
+        }
+    }
+}
+
 pub struct TableComponent {
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
     pub selected_row: TableState,
+    orders: OrderManager,
     table: Option<(Database, DTable)>,
     selected_column: usize,
     selection_area_corner: Option<(usize, usize)>,
@@ -36,6 +116,7 @@ impl TableComponent {
             selected_row: TableState::default(),
             headers: vec![],
             rows: vec![],
+            orders: OrderManager::new(),
             table: None,
             selected_column: 0,
             selection_area_corner: None,
@@ -58,6 +139,7 @@ impl TableComponent {
         headers: Vec<String>,
         database: Database,
         table: DTable,
+        hold_cusor_position: bool,
     ) {
         self.selected_row.select(None);
         if !rows.is_empty() {
@@ -65,7 +147,11 @@ impl TableComponent {
         }
         self.headers = headers;
         self.rows = rows;
-        self.selected_column = 0;
+        self.selected_column = if hold_cusor_position {
+            self.selected_column
+        } else {
+            0
+        };
         self.selection_area_corner = None;
         self.column_page_start = std::cell::Cell::new(0);
         self.scroll = VerticalScroll::new(false, false);
@@ -77,6 +163,7 @@ impl TableComponent {
         self.selected_row.select(None);
         self.headers = Vec::new();
         self.rows = Vec::new();
+        self.orders = OrderManager::new();
         self.selected_column = 0;
         self.selection_area_corner = None;
         self.column_page_start = std::cell::Cell::new(0);
@@ -87,6 +174,18 @@ impl TableComponent {
 
     fn reset_selection(&mut self) {
         self.selection_area_corner = None;
+    }
+
+    pub fn add_order(&mut self) {
+        self.orders.add_order(self.selected_column)
+    }
+
+    pub fn generate_order_query(&mut self) -> Option<String> {
+        return self.orders.generate_order_query();
+    }
+
+    pub fn generate_header_icons(&mut self) -> Vec<String> {
+        return self.orders.generate_header_icons(self.headers.len());
     }
 
     pub fn end(&mut self) {
@@ -522,6 +621,7 @@ impl Component for TableComponent {
         out.push(CommandInfo::new(command::extend_selection_by_one_cell(
             &self.key_config,
         )));
+        out.push(CommandInfo::new(command::sort_by_column(&self.key_config)));
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
@@ -568,7 +668,7 @@ impl Component for TableComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableComponent};
+    use super::{KeyConfig, Order, OrderManager, TableComponent};
     use tui::layout::Constraint;
 
     #[test]
@@ -586,6 +686,78 @@ mod test {
             vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
         ];
         assert_eq!(component.rows(1, 2), vec![vec!["1", "b"], vec!["2", "e"]],)
+    }
+
+    #[test]
+    fn test_query() {
+        let asc_order = Order::new(1, true);
+        let desc_order = Order::new(2, false);
+
+        assert_eq!(asc_order.query(), "1 ASC".to_string());
+        assert_eq!(desc_order.query(), "2 DESC".to_string());
+    }
+
+    #[test]
+    fn test_generate_order_query() {
+        let mut order_manager = OrderManager::new();
+
+        // If orders is empty, it should return None.
+        assert_eq!(order_manager.generate_order_query(), None);
+
+        order_manager.add_order(1);
+        order_manager.add_order(1);
+        order_manager.add_order(2);
+        assert_eq!(
+            order_manager.generate_order_query(),
+            Some("ORDER BY 2 DESC, 3 ASC".to_string())
+        )
+    }
+
+    #[test]
+    fn test_generate_header_icons() {
+        let mut order_manager = OrderManager::new();
+        assert_eq!(order_manager.generate_header_icons(1), vec![String::new()]);
+
+        order_manager.add_order(1);
+        order_manager.add_order(1);
+        order_manager.add_order(2);
+        assert_eq!(
+            order_manager.generate_header_icons(3),
+            vec![String::new(), "↓1".to_string(), "↑2".to_string()]
+        );
+        assert_eq!(
+            order_manager.generate_header_icons(4),
+            vec![
+                String::new(),
+                "↓1".to_string(),
+                "↑2".to_string(),
+                String::new()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_add_order() {
+        let mut order_manager = OrderManager::new();
+
+        // press first time, condition is asc.
+        order_manager.add_order(1);
+        assert_eq!(order_manager.orders, vec![Order::new(2, true)]);
+
+        // press twice times, condition is desc.
+        order_manager.add_order(1);
+        assert_eq!(order_manager.orders, vec![Order::new(2, false)]);
+
+        // press another column, this column is second order.
+        order_manager.add_order(2);
+        assert_eq!(
+            order_manager.orders,
+            vec![Order::new(2, false), Order::new(3, true)]
+        );
+
+        // press three times, removed.
+        order_manager.add_order(1);
+        assert_eq!(order_manager.orders, vec![Order::new(3, true)]);
     }
 
     #[test]
