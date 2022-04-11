@@ -61,9 +61,9 @@ impl OrderManager {
 
         if !order_query.is_empty() {
             return Some("ORDER BY ".to_string() + &order_query.join(", "));
-        } else {
-            return None;
         }
+
+        None
     }
 
     fn generate_header_icons(&mut self, header_length: usize) -> Vec<String> {
@@ -74,7 +74,8 @@ impl OrderManager {
             header_icons[order.column_number - 1] =
                 format!("{arrow}{number}", arrow = arrow, number = index + 1);
         }
-        return header_icons;
+
+        header_icons
     }
 
     fn add_order(&mut self, selected_column: usize) {
@@ -181,11 +182,11 @@ impl TableComponent {
     }
 
     pub fn generate_order_query(&mut self) -> Option<String> {
-        return self.orders.generate_order_query();
+        self.orders.generate_order_query()
     }
 
     pub fn generate_header_icons(&mut self) -> Vec<String> {
-        return self.orders.generate_header_icons(self.headers.len());
+        self.orders.generate_header_icons(self.headers.len())
     }
 
     pub fn end(&mut self) {

@@ -57,9 +57,9 @@ fn concat_headers(headers: Vec<String>, header_icons: Option<Vec<String>>) -> Ve
                 .to_string();
         }
         return new_headers;
-    } else {
-        return headers;
     }
+
+    headers
 }
 
 pub enum ExecuteResult {
