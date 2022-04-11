@@ -1,6 +1,6 @@
 use crate::get_or_null;
 
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{concat_headers, ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
@@ -230,19 +230,38 @@ impl Pool for SqlitePool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
+        header_icons: Option<Vec<String>>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = if let Some(filter) = filter {
+        let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
+            format!(
+                "SELECT * FROM `{table}` WHERE {filter} {orders} LIMIT {page}, {limit}",
+                table = table.name,
+                filter = filter,
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
+                orders = orders
+            )
+        } else if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{table}` WHERE {filter} LIMIT {page}, {limit}",
                 table = table.name,
                 filter = filter,
                 page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
+            )
+        } else if let Some(orders) = orders {
+            format!(
+                "SELECT * FROM `{table}`{orders} LIMIT {page}, {limit}",
+                table = table.name,
+                orders = orders,
+                page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
         } else {
             format!(
-                "SELECT * FROM `{}` LIMIT {page}, {limit}",
-                table.name,
+                "SELECT * FROM `{table}` LIMIT {page}, {limit}",
+                table = table.name,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -262,7 +281,7 @@ impl Pool for SqlitePool {
             }
             records.push(new_row)
         }
-        Ok((headers, records))
+        Ok((concat_headers(headers, header_icons), records))
     }
 
     async fn get_columns(

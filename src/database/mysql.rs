@@ -1,6 +1,6 @@
 use crate::get_or_null;
 
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{concat_headers, ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
@@ -228,21 +228,42 @@ impl Pool for MySqlPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
+        header_icons: Option<Vec<String>>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = if let Some(filter) = filter {
+        let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
+            format!(
+                "SELECT * FROM `{database}`.`{table}` WHERE {filter} {orders} LIMIT {page}, {limit}",
+                database = database.name,
+                table = table.name,
+                filter = filter,
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
+                orders = orders
+            )
+        } else if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
                 database = database.name,
                 table = table.name,
                 filter = filter,
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = RECORDS_LIMIT_PER_PAGE,
+            )
+        } else if let Some(orders) = orders {
+            format!(
+                "SELECT * FROM `{database}`.`{table}` {orders} LIMIT {page}, {limit}",
+                database = database.name,
+                table = table.name,
+                orders = orders,
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
             )
         } else {
             format!(
-                "SELECT * FROM `{}`.`{}` LIMIT {page}, {limit}",
-                database.name,
-                table.name,
+                "SELECT * FROM `{database}`.`{table}` LIMIT {page}, {limit}",
+                database = database.name,
+                table = table.name,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
@@ -262,7 +283,7 @@ impl Pool for MySqlPool {
             }
             records.push(new_row)
         }
-        Ok((headers, records))
+        Ok((concat_headers(headers, header_icons), records))
     }
 
     async fn get_columns(
