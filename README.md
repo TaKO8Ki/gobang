@@ -110,6 +110,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>/</kbd> | Filter |
 | <kbd>?</kbd> | Help |
 | <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>, <kbd>5</kbd> | Switch to records/columns/constraints/foreign keys/indexes tab |
+| <kbd>Esc</kbd> | Hide pop up |
 
 ## Configuration
 
