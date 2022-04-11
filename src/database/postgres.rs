@@ -1,6 +1,6 @@
 use crate::get_or_null;
 
-use super::{concat_headers, ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
@@ -246,7 +246,6 @@ impl Pool for PostgresPool {
         page: u16,
         filter: Option<String>,
         orders: Option<String>,
-        header_icons: Option<Vec<String>>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
             format!(
@@ -344,7 +343,7 @@ impl Pool for PostgresPool {
             }
             records.push(new_row)
         }
-        Ok((concat_headers(headers, header_icons), records))
+        Ok((headers, records))
     }
 
     async fn get_columns(

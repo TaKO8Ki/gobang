@@ -183,12 +183,11 @@ impl App {
                         Some(self.record_table.filter.input_str())
                     },
                     orders,
-                    header_icons,
                 )
                 .await?;
             self.record_table.update(
                 records,
-                headers,
+                self.concat_headers(headers, header_icons),
                 database.clone(),
                 table.clone(),
                 hold_cursor_position,
@@ -242,7 +241,7 @@ impl App {
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table, 0, None, None, None)
+                            .get_records(&database, &table, 0, None, None)
                             .await?;
                         self.record_table.update(
                             records,
@@ -314,7 +313,6 @@ impl App {
                                             } else {
                                                 Some(self.record_table.filter.input_str())
                                             },
-                                            None,
                                             None,
                                         )
                                         .await?;
@@ -406,6 +404,24 @@ impl App {
         }
         Ok(EventState::NotConsumed)
     }
+
+    fn concat_headers(
+        &self,
+        headers: Vec<String>,
+        header_icons: Option<Vec<String>>,
+    ) -> Vec<String> {
+        if let Some(header_icons) = &header_icons {
+            let mut new_headers = vec![String::new(); headers.len()];
+            for (index, header) in headers.iter().enumerate() {
+                new_headers[index] = format!("{} {}", header, header_icons[index])
+                    .trim()
+                    .to_string();
+            }
+            return new_headers;
+        }
+
+        headers
+    }
 }
 
 #[cfg(test)]
@@ -440,5 +456,26 @@ mod test {
             EventState::Consumed
         );
         assert_eq!(app.left_main_chunk_percentage, 15);
+    }
+
+    #[test]
+    fn test_concat_headers() {
+        let app = App::new(Config::default());
+        let headers = vec![
+            "ID".to_string(),
+            "NAME".to_string(),
+            "TIMESTAMP".to_string(),
+        ];
+        let header_icons = vec!["".to_string(), "↑1".to_string(), "↓2".to_string()];
+        let concat_headers: Vec<String> = app.concat_headers(headers, Some(header_icons));
+
+        assert_eq!(
+            concat_headers,
+            vec![
+                "ID".to_string(),
+                "NAME ↑1".to_string(),
+                "TIMESTAMP ↓2".to_string()
+            ]
+        )
     }
 }
