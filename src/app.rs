@@ -162,7 +162,12 @@ impl App {
         Ok(())
     }
 
-    async fn update_record_table(&mut self) -> anyhow::Result<()> {
+    async fn update_record_table(
+        &mut self,
+        orders: Option<String>,
+        header_icons: Option<Vec<String>>,
+        hold_cursor_position: bool,
+    ) -> anyhow::Result<()> {
         if let Some((database, table)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
@@ -177,10 +182,17 @@ impl App {
                     } else {
                         Some(self.record_table.filter.input_str())
                     },
+                    orders,
+                    header_icons,
                 )
                 .await?;
-            self.record_table
-                .update(records, headers, database.clone(), table.clone());
+            self.record_table.update(
+                records,
+                headers,
+                database.clone(),
+                table.clone(),
+                hold_cursor_position,
+            );
         }
         Ok(())
     }
@@ -230,10 +242,15 @@ impl App {
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table, 0, None)
+                            .get_records(&database, &table, 0, None, None, None)
                             .await?;
-                        self.record_table
-                            .update(records, headers, database.clone(), table.clone());
+                        self.record_table.update(
+                            records,
+                            headers,
+                            database.clone(),
+                            table.clone(),
+                            false,
+                        );
                         self.properties
                             .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
                             .await?;
@@ -297,6 +314,8 @@ impl App {
                                             } else {
                                                 Some(self.record_table.filter.input_str())
                                             },
+                                            None,
+                                            None,
                                         )
                                         .await?;
                                     if !records.is_empty() {
