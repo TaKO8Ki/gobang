@@ -19,6 +19,7 @@ const ALL_RESERVED_WORDS: &[&str] = &[
 pub struct CompletionComponent {
     key_config: KeyConfig,
     state: ListState,
+    offset: bool,
     word: String,
     candidates: Vec<String>,
 }
@@ -37,13 +38,14 @@ impl CompletionComponent {
                     .map(|w| w.to_string())
                     .collect()
             },
+            offset: false,
         }
     }
 
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
-        self.state.select(None);
-        self.state.select(Some(0))
+        self.state.select(Some(0));
+        self.offset = false;
     }
 
     fn next(&mut self) {
@@ -110,6 +112,7 @@ impl MovableComponent for CompletionComponent {
                 .map(|c| ListItem::new(c.to_string()))
                 .collect::<Vec<ListItem>>();
             if candidates.clone().is_empty() {
+                self.offset = false;
                 return Ok(());
             }
             let candidate_list = List::new(candidates.clone())
@@ -126,6 +129,8 @@ impl MovableComponent for CompletionComponent {
                 (candidates.len().min(5) as u16 + 2)
                     .min(f.size().bottom().saturating_sub(area.y + y + 2)),
             );
+
+            self.offset = true;
             f.render_widget(Clear, area);
             f.render_stateful_widget(candidate_list, area, &mut self.state);
         }
@@ -137,10 +142,10 @@ impl Component for CompletionComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.move_down {
+        if key == self.key_config.move_down && self.offset {
             self.next();
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.move_up {
+        } else if key == self.key_config.move_up && self.offset {
             self.previous();
             return Ok(EventState::Consumed);
         }
