@@ -65,7 +65,7 @@ pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
 pub fn sort_by_column(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!("Sort by column [{}]", key.sort_by_column),
-        CMD_GROUP_DATABASES,
+        CMD_GROUP_TABLE,
     )
 }
 
