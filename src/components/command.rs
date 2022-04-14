@@ -62,6 +62,16 @@ pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
     )
 }
 
+pub fn move_to_head_tail_of_line(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!(
+            "Move to head/tail of line [{},{}]",
+            key.move_to_head_of_line, key.move_to_tail_of_line,
+        ),
+        CMD_GROUP_TABLE,
+    )
+}
+
 pub fn expand_collapse(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!("Expand/Collapse [{},{}]", key.scroll_right, key.scroll_left,),
