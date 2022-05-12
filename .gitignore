@@ -2,3 +2,6 @@
 gobang
 gobang.yml
 gobang.log
+**/*.rs.bk
+**/.DS_Store
+**/.vscode
