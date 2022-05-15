@@ -190,10 +190,10 @@ impl DatabasesComponent {
                     item.clone(),
                     selected,
                     area.width,
-                    if self.filter.input_str().is_empty() {
+                    if self.filter.input.value_str().is_empty() {
                         None
                     } else {
-                        Some(self.filter.input_str())
+                        Some(self.filter.input.value_str())
                     },
                 )
             });
@@ -229,10 +229,10 @@ impl Component for DatabasesComponent {
         }
 
         if matches!(self.focus, Focus::Filter) {
-            self.filterd_tree = if self.filter.input_str().is_empty() {
+            self.filterd_tree = if self.filter.input.value_str().is_empty() {
                 None
             } else {
-                Some(self.tree.filter(self.filter.input_str()))
+                Some(self.tree.filter(self.filter.input.value_str()))
             };
         }
 

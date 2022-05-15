@@ -172,10 +172,10 @@ impl App {
                     &database,
                     &table,
                     0,
-                    if self.record_table.filter.input_str().is_empty() {
+                    if self.record_table.filter.input.value_str().is_empty() {
                         None
                     } else {
-                        Some(self.record_table.filter.input_str())
+                        Some(self.record_table.filter.input.value_str())
                     },
                 )
                 .await?;
@@ -278,10 +278,11 @@ impl App {
                                             &database,
                                             &table,
                                             index as u16,
-                                            if self.record_table.filter.input_str().is_empty() {
+                                            if self.record_table.filter.input.value_str().is_empty()
+                                            {
                                                 None
                                             } else {
-                                                Some(self.record_table.filter.input_str())
+                                                Some(self.record_table.filter.input.value_str())
                                             },
                                         )
                                         .await?;
