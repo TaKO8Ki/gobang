@@ -86,3 +86,99 @@ impl Input {
         }
     }
 }
+
+#[cfg(test)]
+
+mod test {
+    use super::Input;
+    use crate::components::compute_character_width;
+    use crate::event::Key;
+    use unicode_width::UnicodeWidthStr;
+
+    #[test]
+    fn test_adds_new_chars_for_char_key() {
+        let mut input = Input::new();
+        input.handle_key(Key::Char('a'));
+
+        assert_eq!(input.value, vec!['a']);
+        assert_eq!(input.cursor_index, 1);
+        assert_eq!(input.cursor_position, compute_character_width('a'));
+    }
+
+    #[test]
+    fn test_deletes_chars_for_backspace_and_delete_key() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b'];
+        input.cursor_index = 2;
+        input.cursor_position = input.value_str().width() as u16;
+
+        input.handle_key(Key::Delete);
+        input.handle_key(Key::Backspace);
+
+        assert_eq!(input.value, Vec::<char>::new());
+        assert_eq!(input.cursor_index, 0);
+        assert_eq!(input.cursor_position, 0);
+    }
+
+    #[test]
+    fn test_moves_cursor_left_for_left_key() {
+        let mut input = Input::new();
+        input.value = vec!['a'];
+        input.cursor_index = 1;
+        input.cursor_position = compute_character_width('a');
+
+        let (matched_key, input_changed) = input.handle_key(Key::Left);
+
+        assert_eq!(matched_key, Some(Key::Left));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a']);
+        assert_eq!(input.cursor_index, 0);
+        assert_eq!(input.cursor_position, 0);
+    }
+
+    #[test]
+    fn test_moves_cursor_right_for_right_key() {
+        let mut input = Input::new();
+        input.value = vec!['a'];
+
+        let (matched_key, input_changed) = input.handle_key(Key::Right);
+
+        assert_eq!(matched_key, Some(Key::Right));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a']);
+        assert_eq!(input.cursor_index, 1);
+        assert_eq!(input.cursor_position, compute_character_width('a'));
+    }
+
+    #[test]
+    fn test_jumps_to_beginning_for_ctrl_a() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b', 'c'];
+        input.cursor_index = 3;
+        input.cursor_position = input.value_str().width() as u16;
+
+        let (matched_key, input_changed) = input.handle_key(Key::Ctrl('a'));
+
+        assert_eq!(matched_key, Some(Key::Ctrl('a')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', 'b', 'c']);
+        assert_eq!(input.cursor_index, 0);
+        assert_eq!(input.cursor_position, 0);
+    }
+
+    #[test]
+    fn test_jumps_to_end_for_ctrl_e() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b', 'c'];
+        input.cursor_index = 0;
+        input.cursor_position = 0;
+
+        let (matched_key, input_changed) = input.handle_key(Key::Ctrl('e'));
+
+        assert_eq!(matched_key, Some(Key::Ctrl('e')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', 'b', 'c']);
+        assert_eq!(input.cursor_index, 3);
+        assert_eq!(input.cursor_position, input.value_str().width() as u16);
+    }
+}
