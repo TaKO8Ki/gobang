@@ -39,48 +39,53 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Delete | Key::Backspace => {
-                if value_str.width() > 0 && !self.value.is_empty() && self.cursor_index > 0 {
-                    let last_c = self.value.remove(self.cursor_index - 1);
-                    self.cursor_index -= 1;
-                    self.cursor_position -= compute_character_width(last_c);
-                    return (Some(key), true);
+                if value_str.width() == 0 || self.value.is_empty() || self.cursor_index == 0 {
+                    return (Some(key), false);
                 }
-                return (Some(key), false);
+
+                let last_c = self.value.remove(self.cursor_index - 1);
+                self.cursor_index -= 1;
+                self.cursor_position -= compute_character_width(last_c);
+                return (Some(key), true);
             }
             Key::Left => {
-                if !self.value.is_empty() && self.cursor_index > 0 {
-                    self.cursor_index -= 1;
-                    self.cursor_position = self
-                        .cursor_position
-                        .saturating_sub(compute_character_width(self.value[self.cursor_index]));
-                    return (Some(key), true);
+                if self.value.is_empty() || self.cursor_index == 0 {
+                    return (Some(key), false);
                 }
-                return (Some(key), false);
+
+                self.cursor_index -= 1;
+                self.cursor_position = self
+                    .cursor_position
+                    .saturating_sub(compute_character_width(self.value[self.cursor_index]));
+                return (Some(key), true);
             }
             Key::Right => {
-                if self.cursor_index < self.value.len() {
-                    let next_c = self.value[self.cursor_index];
-                    self.cursor_index += 1;
-                    self.cursor_position += compute_character_width(next_c);
-                    return (Some(key), true);
+                if self.cursor_index == self.value.len() {
+                    return (Some(key), false);
                 }
-                return (Some(key), false);
+
+                let next_c = self.value[self.cursor_index];
+                self.cursor_index += 1;
+                self.cursor_position += compute_character_width(next_c);
+                return (Some(key), true);
             }
             Key::Ctrl('a') => {
-                if !self.value.is_empty() && self.cursor_index > 0 {
-                    self.cursor_index = 0;
-                    self.cursor_position = 0;
-                    return (Some(key), true);
+                if self.value.is_empty() || self.cursor_index == 0 {
+                    return (Some(key), false);
                 }
-                return (Some(key), false);
+
+                self.cursor_index = 0;
+                self.cursor_position = 0;
+                return (Some(key), true);
             }
             Key::Ctrl('e') => {
-                if self.cursor_index < self.value.len() {
-                    self.cursor_index = self.value.len();
-                    self.cursor_position = self.value_str().width() as u16;
-                    return (Some(key), true);
+                if self.cursor_index == self.value.len() {
+                    return (Some(key), false);
                 }
-                return (Some(key), false);
+
+                self.cursor_index = self.value.len();
+                self.cursor_position = self.value_str().width() as u16;
+                return (Some(key), true);
             }
             _ => (None, false),
         }
