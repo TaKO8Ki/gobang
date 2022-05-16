@@ -21,10 +21,27 @@ impl Input {
         self.value.iter().collect()
     }
 
+    pub fn value_width(&self) -> u16 {
+        self.value_str().width() as u16
+    }
+
     pub fn reset(&mut self) {
         self.value = Vec::new();
         self.cursor_index = 0;
         self.cursor_position = 0;
+    }
+
+    fn find_whitespace_backwards(&self) -> Option<usize> {
+        let mut result = None;
+
+        for i in (0..self.cursor_index).rev() {
+            if (i < self.cursor_index - 1) && self.value[i].is_whitespace() {
+                result = Some(i);
+                break;
+            }
+        }
+
+        return result;
     }
 
     pub fn handle_key(&mut self, key: Key) -> (Option<Key>, bool) {
@@ -84,7 +101,26 @@ impl Input {
                 }
 
                 self.cursor_index = self.value.len();
-                self.cursor_position = self.value_str().width() as u16;
+                self.cursor_position = self.value_width();
+                return (Some(key), true);
+            }
+            Key::Ctrl('w') => {
+                if self.value.is_empty() || self.cursor_index == 0 {
+                    return (Some(key), false);
+                }
+
+                let new_cursor_index = match self.find_whitespace_backwards() {
+                    Some(i) => i + 1,
+                    None => 0,
+                };
+
+                let mut tail = self.value.to_vec().drain(self.cursor_index..).collect();
+
+                self.cursor_index = new_cursor_index;
+                self.value.truncate(new_cursor_index);
+                self.cursor_position = self.value_width();
+                self.value.append(&mut tail);
+
                 return (Some(key), true);
             }
             _ => (None, false),
@@ -98,7 +134,6 @@ mod test {
     use super::Input;
     use crate::components::compute_character_width;
     use crate::event::Key;
-    use unicode_width::UnicodeWidthStr;
 
     #[test]
     fn test_adds_new_chars_for_char_key() {
@@ -115,7 +150,7 @@ mod test {
         let mut input = Input::new();
         input.value = vec!['a', 'b'];
         input.cursor_index = 2;
-        input.cursor_position = input.value_str().width() as u16;
+        input.cursor_position = input.value_width();
 
         input.handle_key(Key::Delete);
         input.handle_key(Key::Backspace);
@@ -160,7 +195,7 @@ mod test {
         let mut input = Input::new();
         input.value = vec!['a', 'b', 'c'];
         input.cursor_index = 3;
-        input.cursor_position = input.value_str().width() as u16;
+        input.cursor_position = input.value_width();
 
         let (matched_key, input_changed) = input.handle_key(Key::Ctrl('a'));
 
@@ -184,6 +219,21 @@ mod test {
         assert_eq!(input_changed, true);
         assert_eq!(input.value, vec!['a', 'b', 'c']);
         assert_eq!(input.cursor_index, 3);
-        assert_eq!(input.cursor_position, input.value_str().width() as u16);
+        assert_eq!(input.cursor_position, input.value_width());
+    }
+
+    #[test]
+    fn test_deletes_word_for_ctrl_w() {
+        let mut input = Input::new();
+        input.value = vec!['a', ' ', 'c', 'd'];
+        input.cursor_index = 3;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::Ctrl('w'));
+
+        assert_eq!(matched_key, Some(Key::Ctrl('w')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', ' ', 'd']);
+        assert_eq!(input.cursor_index, 2);
     }
 }
