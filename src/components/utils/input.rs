@@ -31,12 +31,13 @@ impl Input {
         self.cursor_position = 0;
     }
 
-    fn find_whitespace_backwards(&self) -> Option<usize> {
-        let mut result = None;
 
-        for i in (0..self.cursor_index).rev() {
-            if (i < self.cursor_index - 1) && self.value[i].is_whitespace() {
-                result = Some(i);
+    fn cursor_index_backwards_to_whitespace(&self) -> usize {
+        let mut result = 0;
+
+        for i in (0..self.cursor_index - 1).rev() {
+            if self.value[i].is_whitespace() {
+                result = i + 1;
                 break;
             }
         }
@@ -109,11 +110,7 @@ impl Input {
                     return (Some(key), false);
                 }
 
-                let new_cursor_index = match self.find_whitespace_backwards() {
-                    Some(i) => i + 1,
-                    None => 0,
-                };
-
+                let new_cursor_index = self.cursor_index_backwards_to_whitespace();
                 let mut tail = self.value.to_vec().drain(self.cursor_index..).collect();
 
                 self.cursor_index = new_cursor_index;
