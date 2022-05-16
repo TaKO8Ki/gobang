@@ -31,6 +31,13 @@ impl Input {
         self.cursor_position = 0;
     }
 
+    fn cannot_go_left(&self) -> bool {
+        self.value.is_empty() || self.cursor_index == 0 || self.value_width() == 0
+    }
+
+    fn cannot_go_right(&self) -> bool {
+        self.cursor_index == self.value.len()
+    }
 
     fn cursor_index_backwards_to_whitespace(&self) -> usize {
         let mut result = 0;
@@ -46,8 +53,6 @@ impl Input {
     }
 
     pub fn handle_key(&mut self, key: Key) -> (Option<Key>, bool) {
-        let value_str: String = self.value.iter().collect();
-
         match key {
             Key::Char(c) => {
                 self.value.insert(self.cursor_index, c);
@@ -57,7 +62,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Delete | Key::Backspace => {
-                if value_str.width() == 0 || self.value.is_empty() || self.cursor_index == 0 {
+                if self.cannot_go_left() {
                     return (Some(key), false);
                 }
 
@@ -66,8 +71,27 @@ impl Input {
                 self.cursor_position -= compute_character_width(last_c);
                 return (Some(key), true);
             }
+            Key::Right => {
+                if self.cannot_go_right() {
+                    return (Some(key), false);
+                }
+
+                let next_c = self.value[self.cursor_index];
+                self.cursor_index += 1;
+                self.cursor_position += compute_character_width(next_c);
+                return (Some(key), true);
+            }
+            Key::Ctrl('e') => {
+                if self.cannot_go_right() {
+                    return (Some(key), false);
+                }
+
+                self.cursor_index = self.value.len();
+                self.cursor_position = self.value_width();
+                return (Some(key), true);
+            }
             Key::Left => {
-                if self.value.is_empty() || self.cursor_index == 0 {
+                if self.cannot_go_left() {
                     return (Some(key), false);
                 }
 
@@ -77,18 +101,8 @@ impl Input {
                     .saturating_sub(compute_character_width(self.value[self.cursor_index]));
                 return (Some(key), true);
             }
-            Key::Right => {
-                if self.cursor_index == self.value.len() {
-                    return (Some(key), false);
-                }
-
-                let next_c = self.value[self.cursor_index];
-                self.cursor_index += 1;
-                self.cursor_position += compute_character_width(next_c);
-                return (Some(key), true);
-            }
             Key::Ctrl('a') => {
-                if self.value.is_empty() || self.cursor_index == 0 {
+                if self.cannot_go_left() {
                     return (Some(key), false);
                 }
 
@@ -96,17 +110,8 @@ impl Input {
                 self.cursor_position = 0;
                 return (Some(key), true);
             }
-            Key::Ctrl('e') => {
-                if self.cursor_index == self.value.len() {
-                    return (Some(key), false);
-                }
-
-                self.cursor_index = self.value.len();
-                self.cursor_position = self.value_width();
-                return (Some(key), true);
-            }
             Key::Ctrl('w') => {
-                if self.value.is_empty() || self.cursor_index == 0 {
+                if self.cannot_go_left() {
                     return (Some(key), false);
                 }
 
