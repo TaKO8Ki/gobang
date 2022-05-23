@@ -37,11 +37,11 @@ impl Input {
         self.cursor_position = 0;
     }
 
-    fn cannot_go_left(&self) -> bool {
+    fn cannot_move_left(&self) -> bool {
         self.value.is_empty() || self.cursor_index == 0 || self.value_width() == 0
     }
 
-    fn cannot_go_right(&self) -> bool {
+    fn cannot_move_right(&self) -> bool {
         self.cursor_index == self.value.len()
     }
 
@@ -106,7 +106,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Delete | Key::Backspace => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
@@ -116,7 +116,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Right | Key::Ctrl('f') => {
-                if self.cannot_go_right() {
+                if self.cannot_move_right() {
                     return (Some(key), false);
                 }
 
@@ -126,7 +126,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Ctrl('e') => {
-                if self.cannot_go_right() {
+                if self.cannot_move_right() {
                     return (Some(key), false);
                 }
 
@@ -135,7 +135,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Alt('f') => {
-                if self.cannot_go_right() {
+                if self.cannot_move_right() {
                     return (Some(key), false);
                 }
 
@@ -145,7 +145,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Alt('d') => {
-                if self.cannot_go_right() {
+                if self.cannot_move_right() {
                     return (Some(key), false);
                 }
 
@@ -154,7 +154,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Ctrl('d') => {
-                if self.cannot_go_right() {
+                if self.cannot_move_right() {
                     return (Some(key), false);
                 }
 
@@ -162,7 +162,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Left | Key::Ctrl('b') => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
@@ -173,7 +173,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Ctrl('a') => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
@@ -182,7 +182,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Alt('b') => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
@@ -192,7 +192,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::Ctrl('w') => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
@@ -202,7 +202,7 @@ impl Input {
                 return (Some(key), true);
             }
             Key::AltBackspace => {
-                if self.cannot_go_left() {
+                if self.cannot_move_left() {
                     return (Some(key), false);
                 }
 
