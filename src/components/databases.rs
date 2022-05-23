@@ -9,7 +9,7 @@ use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use database_tree::{Database, DatabaseTree, DatabaseTreeItem, MoveSelection};
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -74,6 +74,21 @@ impl DatabasesComponent {
 
     pub fn tree(&self) -> &DatabaseTree {
         self.filtered_tree.as_ref().unwrap_or(&self.tree)
+    }
+
+    fn navigate_tree(&mut self, nav: MoveSelection) -> bool {
+        let tree = match self.filtered_tree.as_mut() {
+            Some(t) => t,
+            None => &mut self.tree,
+        };
+        tree.move_selection(nav)
+    }
+
+    fn maybe_navigate_tree(&mut self, key: Key) -> bool {
+        match common_nav(key, &self.key_config) {
+            Some(nav) => self.navigate_tree(nav),
+            None => false,
+        }
     }
 
     fn tree_item_to_span(
@@ -224,8 +239,16 @@ impl Component for DatabasesComponent {
     fn event(&mut self, key: Key) -> Result<EventState> {
         if matches!(self.focus, Focus::Filter) {
             match key {
-                Key::Enter => {
+                Key::Esc => {
                     self.focus = Focus::Tree;
+                    return Ok(EventState::Consumed);
+                }
+                Key::Ctrl('j') | Key::Ctrl('n') => {
+                    self.navigate_tree(MoveSelection::Down);
+                    return Ok(EventState::Consumed);
+                }
+                Key::Ctrl('k') | Key::Ctrl('p') => {
+                    self.navigate_tree(MoveSelection::Up);
                     return Ok(EventState::Consumed);
                 }
                 key => {
@@ -248,26 +271,14 @@ impl Component for DatabasesComponent {
                         self.focus = Focus::Filter;
                         return Ok(EventState::Consumed);
                     }
-                    let tree_for_nav = match self.filtered_tree.as_mut() {
-                        Some(tree) => tree,
-                        None => &mut self.tree,
-                    };
 
-                    if tree_nav(tree_for_nav, key, &self.key_config) {
+                    if self.maybe_navigate_tree(key) {
                         return Ok(EventState::Consumed);
                     }
                 }
             }
         }
         Ok(EventState::NotConsumed)
-    }
-}
-
-fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
-    if let Some(common_nav) = common_nav(key, key_config) {
-        tree.move_selection(common_nav)
-    } else {
-        false
     }
 }
 

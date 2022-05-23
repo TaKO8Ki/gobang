@@ -223,7 +223,7 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter && self.databases.tree_focused() {
+                if key == self.config.key_config.enter {
                     if let Some((database, table)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
                         let (headers, records) = self
