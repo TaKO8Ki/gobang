@@ -81,7 +81,7 @@ impl Input {
                 self.cursor_position -= compute_character_width(last_c);
                 return (Some(key), true);
             }
-            Key::Right => {
+            Key::Right | Key::Ctrl('f') => {
                 if self.cannot_go_right() {
                     return (Some(key), false);
                 }
@@ -100,7 +100,7 @@ impl Input {
                 self.cursor_position = self.value_width();
                 return (Some(key), true);
             }
-            Key::Left => {
+            Key::Left | Key::Ctrl('b') => {
                 if self.cannot_go_left() {
                     return (Some(key), false);
                 }
