@@ -1,3 +1,4 @@
+use super::{is_nonalphanumeric, is_whitespace};
 use crate::components::compute_character_width;
 use crate::event::Key;
 use unicode_width::UnicodeWidthStr;
@@ -39,17 +40,26 @@ impl Input {
         self.cursor_index == self.value.len()
     }
 
-    fn cursor_index_backwards_to_whitespace(&self) -> usize {
+    fn cursor_index_backwards_until(&self, char_fun: &dyn Fn(char) -> bool) -> usize {
         let mut result = 0;
 
         for i in (0..self.cursor_index - 1).rev() {
-            if self.value[i].is_whitespace() {
+            if char_fun(self.value[i]) {
                 result = i + 1;
                 break;
             }
         }
 
         return result;
+    }
+
+    fn delete_left_until(&mut self, new_cursor_index: usize) {
+        let mut tail = self.value.to_vec().drain(self.cursor_index..).collect();
+
+        self.cursor_index = new_cursor_index;
+        self.value.truncate(new_cursor_index);
+        self.cursor_position = self.value_width();
+        self.value.append(&mut tail);
     }
 
     pub fn handle_key(&mut self, key: Key) -> (Option<Key>, bool) {
@@ -115,13 +125,18 @@ impl Input {
                     return (Some(key), false);
                 }
 
-                let new_cursor_index = self.cursor_index_backwards_to_whitespace();
-                let mut tail = self.value.to_vec().drain(self.cursor_index..).collect();
+                let new_cursor_index = self.cursor_index_backwards_until(&is_whitespace);
+                self.delete_left_until(new_cursor_index);
 
-                self.cursor_index = new_cursor_index;
-                self.value.truncate(new_cursor_index);
-                self.cursor_position = self.value_width();
-                self.value.append(&mut tail);
+                return (Some(key), true);
+            }
+            Key::AltBackspace => {
+                if self.cannot_go_left() {
+                    return (Some(key), false);
+                }
+
+                let new_cursor_index = self.cursor_index_backwards_until(&is_nonalphanumeric);
+                self.delete_left_until(new_cursor_index);
 
                 return (Some(key), true);
             }
@@ -236,6 +251,21 @@ mod test {
         assert_eq!(matched_key, Some(Key::Ctrl('w')));
         assert_eq!(input_changed, true);
         assert_eq!(input.value, vec!['a', ' ', 'd']);
+        assert_eq!(input.cursor_index, 2);
+    }
+
+    #[test]
+    fn test_deletes_til_nonalphanumeric_for_alt_backspace() {
+        let mut input = Input::new();
+        input.value = vec!['a', '-', 'c', 'd'];
+        input.cursor_index = 3;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::AltBackspace);
+
+        assert_eq!(matched_key, Some(Key::AltBackspace));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', '-', 'd']);
         assert_eq!(input.cursor_index, 2);
     }
 }
