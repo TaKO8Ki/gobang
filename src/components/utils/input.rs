@@ -89,6 +89,13 @@ impl Input {
         self.value.append(&mut tail);
     }
 
+    fn delete_right_until(&mut self, index: usize) {
+        let mut tail = self.value.to_vec().drain(index..).collect();
+
+        self.value.truncate(self.cursor_index);
+        self.value.append(&mut tail);
+    }
+
     pub fn handle_key(&mut self, key: Key) -> (Option<Key>, bool) {
         match key {
             Key::Char(c) => {
@@ -135,6 +142,15 @@ impl Input {
                 let new_cursor_index = self.cursor_index_forwards_until(&is_nonalphanumeric);
                 self.cursor_index = new_cursor_index;
                 self.cursor_position = self.width_for(&self.value[0..new_cursor_index]);
+                return (Some(key), true);
+            }
+            Key::Alt('d') => {
+                if self.cannot_go_right() {
+                    return (Some(key), false);
+                }
+
+                let index = self.cursor_index_forwards_until(&is_nonalphanumeric);
+                self.delete_right_until(index);
                 return (Some(key), true);
             }
             Key::Left | Key::Ctrl('b') => {
@@ -302,7 +318,7 @@ mod test {
     }
 
     #[test]
-    fn test_deletes_til_nonalphanumeric_for_alt_backspace() {
+    fn test_deletes_backwards_til_nonalphanumeric_for_alt_backspace() {
         let mut input = Input::new();
         input.value = vec!['a', '-', 'c', 'd'];
         input.cursor_index = 3;
@@ -314,6 +330,21 @@ mod test {
         assert_eq!(input_changed, true);
         assert_eq!(input.value, vec!['a', '-', 'd']);
         assert_eq!(input.cursor_index, 2);
+    }
+
+    #[test]
+    fn test_deletes_forwards_til_nonalphanumeric_for_alt_d() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b', '-', 'd'];
+        input.cursor_index = 1;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::Alt('d'));
+
+        assert_eq!(matched_key, Some(Key::Alt('d')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', '-', 'd']);
+        assert_eq!(input.cursor_index, 1);
     }
 
     #[test]
