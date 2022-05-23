@@ -69,6 +69,7 @@ pub enum Key {
     Char(char),
     Ctrl(char),
     Alt(char),
+    AltBackspace,
     Unknown,
 }
 
@@ -135,6 +136,10 @@ impl From<event::KeyEvent> for Key {
                 code: event::KeyCode::Esc,
                 ..
             } => Key::Esc,
+            event::KeyEvent {
+                code: event::KeyCode::Backspace,
+                modifiers: event::KeyModifiers::ALT,
+            } => Key::AltBackspace,
             event::KeyEvent {
                 code: event::KeyCode::Backspace,
                 ..

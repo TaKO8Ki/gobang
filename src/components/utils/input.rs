@@ -120,6 +120,19 @@ impl Input {
                 self.cursor_position = 0;
                 return (Some(key), true);
             }
+            Key::Alt('b') => {
+                if self.cannot_go_left() {
+                    return (Some(key), false);
+                }
+
+                let new_cursor_index = self.cursor_index_backwards_until(&is_nonalphanumeric);
+                self.cursor_index = new_cursor_index;
+                self.cursor_position = self.value[0..self.cursor_index]
+                    .iter()
+                    .collect::<String>()
+                    .width() as u16;
+                return (Some(key), true);
+            }
             Key::Ctrl('w') => {
                 if self.cannot_go_left() {
                     return (Some(key), false);
@@ -266,6 +279,21 @@ mod test {
         assert_eq!(matched_key, Some(Key::AltBackspace));
         assert_eq!(input_changed, true);
         assert_eq!(input.value, vec!['a', '-', 'd']);
+        assert_eq!(input.cursor_index, 2);
+    }
+
+    #[test]
+    fn test_goes_til_nonalphanumeric_for_alt_b() {
+        let mut input = Input::new();
+        input.value = vec!['a', '-', 'c', 'd'];
+        input.cursor_index = 3;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::Alt('b'));
+
+        assert_eq!(matched_key, Some(Key::Alt('b')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', '-', 'c', 'd']);
         assert_eq!(input.cursor_index, 2);
     }
 }
