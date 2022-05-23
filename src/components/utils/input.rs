@@ -153,6 +153,14 @@ impl Input {
                 self.delete_right_until(index);
                 return (Some(key), true);
             }
+            Key::Ctrl('d') => {
+                if self.cannot_go_right() {
+                    return (Some(key), false);
+                }
+
+                self.delete_right_until(self.cursor_index + 1);
+                return (Some(key), true);
+            }
             Key::Left | Key::Ctrl('b') => {
                 if self.cannot_go_left() {
                     return (Some(key), false);
@@ -347,6 +355,20 @@ mod test {
         assert_eq!(input.cursor_index, 1);
     }
 
+    #[test]
+    fn test_deletes_char_under_current_cursor_for_ctrl_d() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b', 'c', 'd'];
+        input.cursor_index = 1;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::Ctrl('d'));
+
+        assert_eq!(matched_key, Some(Key::Ctrl('d')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', 'c', 'd']);
+        assert_eq!(input.cursor_index, 1);
+    }
     #[test]
     fn test_moves_backwards_til_nonalphanumeric_for_alt_b() {
         let mut input = Input::new();
