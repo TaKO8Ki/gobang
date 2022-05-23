@@ -1,6 +1,7 @@
 use super::{is_nonalphanumeric, is_whitespace};
 use crate::components::compute_character_width;
 use crate::event::Key;
+use std::ops::Range;
 use unicode_width::UnicodeWidthStr;
 
 pub struct Input {
@@ -26,6 +27,10 @@ impl Input {
         self.value_str().width() as u16
     }
 
+    fn width_for(&self, chars: &[char]) -> u16 {
+        chars.iter().collect::<String>().width() as u16
+    }
+
     pub fn reset(&mut self) {
         self.value = Vec::new();
         self.cursor_index = 0;
@@ -40,17 +45,39 @@ impl Input {
         self.cursor_index == self.value.len()
     }
 
-    fn cursor_index_backwards_until(&self, char_fun: &dyn Fn(char) -> bool) -> usize {
-        let mut result = 0;
+    fn find_index_for_char_of_kind(
+        &self,
+        range: Range<usize>,
+        is_char_of_kind: &dyn Fn(char) -> bool,
+    ) -> Option<usize> {
+        let mut result = None;
 
-        for i in (0..self.cursor_index - 1).rev() {
-            if char_fun(self.value[i]) {
-                result = i + 1;
+        for i in range {
+            if is_char_of_kind(self.value[i]) {
+                result = Some(i);
                 break;
             }
         }
 
         return result;
+    }
+
+    fn cursor_index_backwards_until(&self, is_char_of_kind: &dyn Fn(char) -> bool) -> usize {
+        let range = 0..self.cursor_index - 1;
+
+        match self.find_index_for_char_of_kind(range, is_char_of_kind) {
+            Some(index) => index + 1,
+            None => 0,
+        }
+    }
+
+    fn cursor_index_forwards_until(&self, is_char_of_kind: &dyn Fn(char) -> bool) -> usize {
+        let range = self.cursor_index + 1..self.value.len();
+
+        match self.find_index_for_char_of_kind(range, is_char_of_kind) {
+            Some(index) => index,
+            None => self.value.len(),
+        }
     }
 
     fn delete_left_until(&mut self, new_cursor_index: usize) {
@@ -100,6 +127,16 @@ impl Input {
                 self.cursor_position = self.value_width();
                 return (Some(key), true);
             }
+            Key::Alt('f') => {
+                if self.cannot_go_right() {
+                    return (Some(key), false);
+                }
+
+                let new_cursor_index = self.cursor_index_forwards_until(&is_nonalphanumeric);
+                self.cursor_index = new_cursor_index;
+                self.cursor_position = self.width_for(&self.value[0..new_cursor_index]);
+                return (Some(key), true);
+            }
             Key::Left | Key::Ctrl('b') => {
                 if self.cannot_go_left() {
                     return (Some(key), false);
@@ -127,10 +164,7 @@ impl Input {
 
                 let new_cursor_index = self.cursor_index_backwards_until(&is_nonalphanumeric);
                 self.cursor_index = new_cursor_index;
-                self.cursor_position = self.value[0..self.cursor_index]
-                    .iter()
-                    .collect::<String>()
-                    .width() as u16;
+                self.cursor_position = self.width_for(&self.value[0..new_cursor_index]);
                 return (Some(key), true);
             }
             Key::Ctrl('w') => {
@@ -283,7 +317,7 @@ mod test {
     }
 
     #[test]
-    fn test_goes_til_nonalphanumeric_for_alt_b() {
+    fn test_moves_backwards_til_nonalphanumeric_for_alt_b() {
         let mut input = Input::new();
         input.value = vec!['a', '-', 'c', 'd'];
         input.cursor_index = 3;
@@ -294,6 +328,21 @@ mod test {
         assert_eq!(matched_key, Some(Key::Alt('b')));
         assert_eq!(input_changed, true);
         assert_eq!(input.value, vec!['a', '-', 'c', 'd']);
+        assert_eq!(input.cursor_index, 2);
+    }
+
+    #[test]
+    fn test_moves_forwards_til_nonalphanumeric_for_alt_f() {
+        let mut input = Input::new();
+        input.value = vec!['a', 'b', '-', 'c'];
+        input.cursor_index = 1;
+        input.cursor_position = input.value_width();
+
+        let (matched_key, input_changed) = input.handle_key(Key::Alt('f'));
+
+        assert_eq!(matched_key, Some(Key::Alt('f')));
+        assert_eq!(input_changed, true);
+        assert_eq!(input.value, vec!['a', 'b', '-', 'c']);
         assert_eq!(input.cursor_index, 2);
     }
 }
