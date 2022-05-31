@@ -340,6 +340,7 @@ mod test {
     use std::env;
 
     #[test]
+    #[cfg(unix)]
     fn test_database_url() {
         let mysql_conn = Connection {
             r#type: DatabaseType::MySql,
