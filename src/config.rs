@@ -58,6 +58,7 @@ impl Default for Config {
                 path: None,
                 password: None,
                 database: None,
+                unix_domain_socket: None,
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
@@ -74,6 +75,7 @@ pub struct Connection {
     port: Option<u64>,
     path: Option<std::path::PathBuf>,
     password: Option<String>,
+    unix_domain_socket: Option<std::path::PathBuf>,
     pub database: Option<String>,
 }
 
@@ -199,22 +201,27 @@ impl Connection {
                     .password
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
+                let unix_domain_socket = self
+                    .valid_unix_domain_socket()
+                    .map_or(String::new(), |uds| format!("?socket={}", uds));
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}/{database}",
+                        "mysql://{user}:{password}@{host}:{port}/{database}{unix_domain_socket}",
                         user = user,
                         password = password,
                         host = host,
+                        database = database,
                         port = port,
-                        database = database
+                        unix_domain_socket = unix_domain_socket,
                     )),
                     None => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}",
+                        "mysql://{user}:{password}@{host}:{port}{unix_domain_socket}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
+                        unix_domain_socket = unix_domain_socket,
                     )),
                 }
             }
@@ -236,22 +243,40 @@ impl Connection {
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
 
-                match self.database.as_ref() {
-                    Some(database) => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                        database = database
-                    )),
-                    None => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                    )),
+                if let Some(unix_domain_socket) = self.valid_unix_domain_socket() {
+                    match self.database.as_ref() {
+                        Some(database) => Ok(format!(
+                            "postgres://?dbname={database}&host={unix_domain_socket}&user={user}&password={password}",
+                            database = database,
+                            unix_domain_socket = unix_domain_socket,
+                            user = user,
+                            password = password,
+                        )),
+                        None => Ok(format!(
+                            "postgres://?host={unix_domain_socket}&user={user}&password={password}",
+                            unix_domain_socket = unix_domain_socket,
+                            user = user,
+                            password = password,
+                        )),
+                    }
+                } else {
+                    match self.database.as_ref() {
+                        Some(database) => Ok(format!(
+                            "postgres://{user}:{password}@{host}:{port}/{database}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database,
+                        )),
+                        None => Ok(format!(
+                            "postgres://{user}:{password}@{host}:{port}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )),
+                    }
                 }
             }
             DatabaseType::Sqlite => {
@@ -286,6 +311,23 @@ impl Connection {
 
     pub fn is_postgres(&self) -> bool {
         matches!(self.r#type, DatabaseType::Postgres)
+    }
+
+    fn valid_unix_domain_socket(&self) -> Option<String> {
+        if cfg!(windows) {
+            // NOTE:
+            // windows also supports UDS, but `rust` does not support UDS in windows now.
+            // https://github.com/rust-lang/rust/issues/56533
+            return None;
+        }
+        return self.unix_domain_socket.as_ref().and_then(|uds| {
+            let path = expand_path(uds)?;
+            let path_str = path.to_str()?;
+            if path_str.is_empty() {
+                return None;
+            }
+            Some(path_str.to_owned())
+        });
     }
 }
 
