@@ -367,7 +367,7 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use super::{expand_path, Connection, DatabaseType, KeyConfig, Path, PathBuf};
     use serde_json::Value;
     use std::env;
 
@@ -389,6 +389,134 @@ mod test {
             values.dedup();
             pretty_assertions::assert_eq!(before_values, values);
         }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_dataset_url_in_unix() {
+        let mut mysql_conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        mysql_conn.unix_domain_socket = Some(Path::new("/tmp/mysql.sock").to_path_buf());
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city?socket=/tmp/mysql.sock".to_owned()
+        );
+
+        let mut postgres_conn = Connection {
+            r#type: DatabaseType::Postgres,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+        postgres_conn.unix_domain_socket = Some(Path::new("/tmp").to_path_buf());
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://?dbname=city&host=/tmp&user=root&password=password".to_owned()
+        );
+
+        let sqlite_conn = Connection {
+            r#type: DatabaseType::Sqlite,
+            name: None,
+            user: None,
+            host: None,
+            port: None,
+            path: Some(PathBuf::from("/home/user/sqlite3.db")),
+            password: None,
+            database: None,
+            unix_domain_socket: None,
+        };
+
+        let sqlite_result = sqlite_conn.database_url().unwrap();
+        assert_eq!(sqlite_result, "sqlite:///home/user/sqlite3.db".to_owned());
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_database_url_in_windows() {
+        let mut mysql_conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        mysql_conn.unix_domain_socket = Some(Path::new("/tmp/mysql.sock").to_path_buf());
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        let mut postgres_conn = Connection {
+            r#type: DatabaseType::Postgres,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+        postgres_conn.unix_domain_socket = Some(Path::new("/tmp").to_path_buf());
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+
+        let sqlite_conn = Connection {
+            r#type: DatabaseType::Sqlite,
+            name: None,
+            user: None,
+            host: None,
+            port: None,
+            path: Some(PathBuf::from("/home/user/sqlite3.db")),
+            password: None,
+            database: None,
+            unix_domain_socket: None,
+        };
+
+        let sqlite_result = sqlite_conn.database_url().unwrap();
+        assert_eq!(sqlite_result, "sqlite:///home/user/sqlite3.db".to_owned());
     }
 
     #[test]
