@@ -516,7 +516,7 @@ mod test {
         };
 
         let sqlite_result = sqlite_conn.database_url().unwrap();
-        assert_eq!(sqlite_result, "sqlite:///home/user/sqlite3.db".to_owned());
+        assert_eq!(sqlite_result, "sqlite://\\home\\user\\sqlite3.db".to_owned());
     }
 
     #[test]
