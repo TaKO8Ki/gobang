@@ -113,6 +113,7 @@ impl App {
 
     fn commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
+            CommandInfo::new(command::exit_pop_up(&self.config.key_config)),
             CommandInfo::new(command::filter(&self.config.key_config)),
             CommandInfo::new(command::help(&self.config.key_config)),
             CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
