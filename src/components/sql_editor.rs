@@ -3,6 +3,7 @@ use super::{
     StatefulDrawableComponent, TableComponent,
 };
 use crate::components::command::CommandInfo;
+use crate::components::utils::input::Input;
 use crate::config::KeyConfig;
 use crate::database::{ExecuteResult, Pool};
 use crate::event::Key;
@@ -34,9 +35,7 @@ pub enum Focus {
 }
 
 pub struct SqlEditorComponent {
-    input: Vec<char>,
-    input_cursor_position_x: u16,
-    input_idx: usize,
+    input: Input,
     table: TableComponent,
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
@@ -48,9 +47,7 @@ pub struct SqlEditorComponent {
 impl SqlEditorComponent {
     pub fn new(key_config: KeyConfig) -> Self {
         Self {
-            input: Vec::new(),
-            input_idx: 0,
-            input_cursor_position_x: 0,
+            input: Input::new(),
             table: TableComponent::new(key_config.clone()),
             completion: CompletionComponent::new(key_config.clone(), "", true),
             focus: Focus::Editor,
@@ -63,9 +60,10 @@ impl SqlEditorComponent {
     fn update_completion(&mut self) {
         let input = &self
             .input
+            .value
             .iter()
             .enumerate()
-            .filter(|(i, _)| i < &self.input_idx)
+            .filter(|(i, _)| i < &self.input.cursor_index)
             .map(|(_, i)| i)
             .collect::<String>()
             .split(' ')
@@ -80,16 +78,23 @@ impl SqlEditorComponent {
             let mut input = Vec::new();
             let first = self
                 .input
+                .value
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| i < &self.input_idx.saturating_sub(self.completion.word().len()))
+                .filter(|(i, _)| {
+                    i < &self
+                        .input
+                        .cursor_index
+                        .saturating_sub(self.completion.word().len())
+                })
                 .map(|(_, c)| c.to_string())
                 .collect::<Vec<String>>();
             let last = self
                 .input
+                .value
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| i >= &self.input_idx)
+                .filter(|(i, _)| i >= &self.input.cursor_index)
                 .map(|(_, c)| c.to_string())
                 .collect::<Vec<String>>();
 
@@ -113,21 +118,21 @@ impl SqlEditorComponent {
             input.extend(middle.clone());
             input.extend(last);
 
-            self.input = input.join("").chars().collect();
-            self.input_idx += &middle.len();
+            self.input.value = input.join("").chars().collect();
+            self.input.cursor_index += &middle.len();
             if is_last_word {
-                self.input_idx += 1;
+                self.input.cursor_index += 1;
             }
-            self.input_idx -= self.completion.word().len();
-            self.input_cursor_position_x += middle
+            self.input.cursor_index -= self.completion.word().len();
+            self.input.cursor_position += middle
                 .join("")
                 .chars()
                 .map(compute_character_width)
                 .sum::<u16>();
             if is_last_word {
-                self.input_cursor_position_x += " ".to_string().width() as u16
+                self.input.cursor_position += " ".to_string().width() as u16
             }
-            self.input_cursor_position_x -= self
+            self.input.cursor_position -= self
                 .completion
                 .word()
                 .chars()
@@ -151,7 +156,7 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             })
             .split(area);
 
-        let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
+        let editor = StatefulParagraph::new(self.input.value.iter().collect::<String>())
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
@@ -176,14 +181,10 @@ impl StatefulDrawableComponent for SqlEditorComponent {
         if focused && matches!(self.focus, Focus::Editor) {
             f.set_cursor(
                 (layout[0].x + 1)
-                    .saturating_add(
-                        self.input_cursor_position_x % layout[0].width.saturating_sub(2),
-                    )
+                    .saturating_add(self.input.cursor_position % layout[0].width.saturating_sub(2))
                     .min(area.right().saturating_sub(2)),
-                (layout[0].y
-                    + 1
-                    + self.input_cursor_position_x / layout[0].width.saturating_sub(2))
-                .min(layout[0].bottom()),
+                (layout[0].y + 1 + self.input.cursor_position / layout[0].width.saturating_sub(2))
+                    .min(layout[0].bottom()),
             )
         }
 
@@ -192,8 +193,8 @@ impl StatefulDrawableComponent for SqlEditorComponent {
                 f,
                 area,
                 false,
-                self.input_cursor_position_x % layout[0].width.saturating_sub(2) + 1,
-                self.input_cursor_position_x / layout[0].width.saturating_sub(2),
+                self.input.cursor_position % layout[0].width.saturating_sub(2) + 1,
+                self.input.cursor_position / layout[0].width.saturating_sub(2),
             )?;
         };
         Ok(())
@@ -205,62 +206,48 @@ impl Component for SqlEditorComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        let input_str: String = self.input.iter().collect();
-
         if key == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
             self.focus = Focus::Editor
         } else if key == self.key_config.enter {
             return self.complete();
         }
 
-        match key {
-            Key::Char(c) if matches!(self.focus, Focus::Editor) => {
-                self.input.insert(self.input_idx, c);
-                self.input_idx += 1;
-                self.input_cursor_position_x += compute_character_width(c);
-                self.update_completion();
-
-                return Ok(EventState::Consumed);
-            }
-            Key::Esc if matches!(self.focus, Focus::Editor) => self.focus = Focus::Table,
-            Key::Delete | Key::Backspace if matches!(self.focus, Focus::Editor) => {
-                if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
-                    let last_c = self.input.remove(self.input_idx - 1);
-                    self.input_idx -= 1;
-                    self.input_cursor_position_x -= compute_character_width(last_c);
-                    self.completion.update("");
-                }
-
-                return Ok(EventState::Consumed);
-            }
-            Key::Left if matches!(self.focus, Focus::Editor) => {
-                if !self.input.is_empty() && self.input_idx > 0 {
-                    self.input_idx -= 1;
-                    self.input_cursor_position_x = self
-                        .input_cursor_position_x
-                        .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                    self.completion.update("");
-                }
-                return Ok(EventState::Consumed);
-            }
-            Key::Right if matches!(self.focus, Focus::Editor) => {
-                if self.input_idx < self.input.len() {
-                    let next_c = self.input[self.input_idx];
-                    self.input_idx += 1;
-                    self.input_cursor_position_x += compute_character_width(next_c);
-                    self.completion.update("");
-                }
-                return Ok(EventState::Consumed);
-            }
-            key if matches!(self.focus, Focus::Table) => return self.table.event(key),
-            _ => (),
+        if matches!(self.focus, Focus::Table) {
+            return self.table.event(key);
         }
-        return Ok(EventState::NotConsumed);
+
+        if !matches!(self.focus, Focus::Editor) {
+            return Ok(EventState::NotConsumed);
+        }
+
+        if key == Key::Esc {
+            self.focus = Focus::Table;
+            return Ok(EventState::Consumed);
+        } else {
+            match self.input.handle_key(key) {
+                (Some(matched_key), input_updated) => match matched_key {
+                    Key::Char(_) => {
+                        self.update_completion();
+                        return Ok(EventState::Consumed);
+                    }
+                    Key::Ctrl(_) => {
+                        return Ok(EventState::Consumed);
+                    }
+                    _ => {
+                        if input_updated {
+                            self.completion.update("");
+                        }
+                        return Ok(EventState::Consumed);
+                    }
+                },
+                _ => return Ok(EventState::NotConsumed),
+            }
+        }
     }
 
     async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
         if key == self.key_config.enter && matches!(self.focus, Focus::Editor) {
-            let query = self.input.iter().collect();
+            let query = self.input.value.iter().collect();
             let result = pool.execute(&query).await?;
             match result {
                 ExecuteResult::Read {
