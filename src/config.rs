@@ -181,6 +181,24 @@ impl Config {
 
 impl Connection {
     pub fn database_url(&self) -> anyhow::Result<String> {
+        let password = self
+            .password
+            .as_ref()
+            .map_or(String::new(), |p| p.to_string());
+        return self.build_database_url(password);
+    }
+
+    fn masked_database_url(&self) -> anyhow::Result<String> {
+        let password = self
+            .password
+            .as_ref()
+            .map_or(String::new(), |p| p.to_string());
+
+        let masked_password = "*".repeat(password.len());
+        return self.build_database_url(masked_password);
+    }
+
+    fn build_database_url(&self, password: String) -> anyhow::Result<String> {
         match self.r#type {
             DatabaseType::MySql => {
                 let user = self
@@ -195,10 +213,6 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type mysql needs the port field"))?;
-                let password = self
-                    .password
-                    .as_ref()
-                    .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
@@ -231,10 +245,6 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type postgres needs the port field"))?;
-                let password = self
-                    .password
-                    .as_ref()
-                    .map_or(String::new(), |p| p.to_string());
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
@@ -268,7 +278,7 @@ impl Connection {
     }
 
     pub fn database_url_with_name(&self) -> anyhow::Result<String> {
-        let database_url = self.database_url()?;
+        let database_url = self.masked_database_url()?;
 
         Ok(match &self.name {
             Some(name) => format!(
@@ -325,9 +335,61 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use super::{expand_path, Connection, DatabaseType, KeyConfig, Path, PathBuf};
     use serde_json::Value;
     use std::env;
+
+    #[test]
+    #[cfg(unix)]
+    fn test_database_url() {
+        let mysql_conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+        };
+
+        let mysql_result = mysql_conn.database_url().unwrap();
+        assert_eq!(
+            mysql_result,
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        let postgres_conn = Connection {
+            r#type: DatabaseType::Postgres,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+        };
+
+        let postgres_result = postgres_conn.database_url().unwrap();
+        assert_eq!(
+            postgres_result,
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+
+        let sqlite_conn = Connection {
+            r#type: DatabaseType::Sqlite,
+            name: None,
+            user: None,
+            host: None,
+            port: None,
+            path: Some(PathBuf::from("/home/user/sqlite3.db")),
+            password: None,
+            database: None,
+        };
+
+        let sqlite_result = sqlite_conn.database_url().unwrap();
+        assert_eq!(sqlite_result, "sqlite:///home/user/sqlite3.db".to_owned());
+    }
 
     #[test]
     fn test_overlappted_key() {
