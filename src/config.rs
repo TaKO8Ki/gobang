@@ -1,3 +1,4 @@
+use crate::key_bind::KeyBind;
 use crate::log::LogLevel;
 use crate::Key;
 use serde::Deserialize;
@@ -15,6 +16,10 @@ pub struct CliConfig {
     /// Set the config file
     #[structopt(long, short, global = true)]
     config_path: Option<std::path::PathBuf>,
+
+    /// Set the key bind file
+    #[structopt(long, short, global = true)]
+    key_bind_path: Option<std::path::PathBuf>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -22,6 +27,13 @@ pub struct Config {
     pub conn: Vec<Connection>,
     #[serde(default)]
     pub key_config: KeyConfig,
+    #[serde(default)]
+    pub log_level: LogLevel,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ReadConfig {
+    pub conn: Vec<Connection>,
     #[serde(default)]
     pub log_level: LogLevel,
 }
@@ -78,7 +90,7 @@ pub struct Connection {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-#[cfg_attr(test, derive(Serialize))]
+#[cfg_attr(test, derive(Serialize, PartialEq))]
 pub struct KeyConfig {
     pub scroll_up: Key,
     pub scroll_down: Key,
@@ -164,18 +176,34 @@ impl Config {
         } else {
             get_app_config_path()?.join("config.toml")
         };
+
+        let key_bind_path = if let Some(key_bind_path) = &config.key_bind_path {
+            key_bind_path.clone()
+        } else {
+            get_app_config_path()?.join("key_bind.ron")
+        };
+
         if let Ok(file) = File::open(config_path) {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             buf_reader.read_to_string(&mut contents)?;
-
-            let config: Result<Config, toml::de::Error> = toml::from_str(&contents);
+            let config: Result<ReadConfig, toml::de::Error> = toml::from_str(&contents);
             match config {
-                Ok(config) => return Ok(config),
+                Ok(config) => return Ok(Config::build(config, key_bind_path)),
                 Err(e) => panic!("fail to parse config file: {}", e),
             }
         }
+
         Ok(Config::default())
+    }
+
+    fn build(read_config: ReadConfig, key_bind_path: PathBuf) -> Self {
+        let key_bind = KeyBind::load(key_bind_path).unwrap();
+        Config {
+            conn: read_config.conn,
+            log_level: read_config.log_level,
+            key_config: KeyConfig::from(key_bind),
+        }
     }
 }
 
@@ -325,9 +353,19 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use super::{expand_path, CliConfig, Config, KeyConfig, Path, PathBuf};
     use serde_json::Value;
     use std::env;
+
+    #[test]
+    fn test_load_config() {
+        let cli_config = CliConfig {
+            config_path: Some(Path::new("examples/config.toml").to_path_buf()),
+            key_bind_path: Some(Path::new("examples/key_bind.ron").to_path_buf()),
+        };
+
+        assert_eq!(Config::new(&cli_config).is_ok(), true);
+    }
 
     #[test]
     fn test_overlappted_key() {

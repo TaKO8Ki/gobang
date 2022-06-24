@@ -5,6 +5,7 @@ mod components;
 mod config;
 mod database;
 mod event;
+mod key_bind;
 mod ui;
 mod version;
 

@@ -1,0 +1,46 @@
+/*
+ * This file is a custom key configuration file.
+ * Place this file in `$HOME/.config/gobang/key_bind.ron`.
+ *
+ * You can find the available keys here
+ * https://github.com/TaKO8Ki/gobang/blob/b13e4bb255ea533db16240e1cb5138fca4241264/src/event/key.rs
+ *
+ * You can get the latest custom key configuration file here
+ * https://github.com/TaKO8Ki/gobang/blob/b13e4bb255ea533db16240e1cb5138fca4241264/examples/key_bind.ron
+*/
+(
+    scroll_up:                               Some(Char('k')),
+    scroll_down:                             Some(Char('j')),
+    scroll_right:                            Some(Char('l')),
+    scroll_left:                             Some(Char('h')),
+    move_up:                                 Some(Up),
+    move_down:                               Some(Down),
+    copy:                                    Some(Char('y')),
+    enter:                                   Some(Enter),
+    exit:                                    Some(Ctrl('c')),
+    quit:                                    Some(Char('q')),
+    exit_popup:                              Some(Esc),
+    focus_right:                             Some(Right),
+    focus_left:                              Some(Left),
+    focus_above:                             Some(Up),
+    focus_connections:                       Some(Char('c')),
+    open_help:                               Some(Char('?')),
+    filter:                                  Some(Char('/')),
+    scroll_down_multiple_lines:              Some(Ctrl('d')),
+    scroll_up_multiple_lines:                Some(Ctrl('u')),
+    scroll_to_top:                           Some(Char('g')),
+    scroll_to_bottom:                        Some(Char('G')),
+    extend_selection_by_one_cell_left:       Some(Char('H')),
+    extend_selection_by_one_cell_right:      Some(Char('L')),
+    extend_selection_by_one_cell_down:       Some(Char('J')),
+    extend_selection_by_one_cell_up:         Some(Char('K')),
+    tab_records:                             Some(Char('1')),
+    tab_properties:                          Some(Char('2')),
+    tab_sql_editor:                          Some(Char('3')),
+    tab_columns:                             Some(Char('4')),
+    tab_constraints:                         Some(Char('5')),
+    tab_foreign_keys:                        Some(Char('6')),
+    tab_indexes:                             Some(Char('7')),
+    extend_or_shorten_widget_width_to_right: Some(Char('>')),
+    extend_or_shorten_widget_width_to_left:  Some(Char('<')),
+)
