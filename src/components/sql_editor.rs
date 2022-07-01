@@ -269,7 +269,7 @@ impl Component for SqlEditorComponent {
                     database,
                     table,
                 } => {
-                    self.table.update(rows, headers, database, table);
+                    self.table.update(rows, headers, database, table, false);
                     self.focus = Focus::Table;
                     self.query_result = None;
                 }
