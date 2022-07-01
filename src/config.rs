@@ -58,6 +58,7 @@ impl Default for Config {
                 path: None,
                 password: None,
                 database: None,
+                unix_domain_socket: None,
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
@@ -74,6 +75,7 @@ pub struct Connection {
     port: Option<u64>,
     path: Option<std::path::PathBuf>,
     password: Option<String>,
+    unix_domain_socket: Option<std::path::PathBuf>,
     pub database: Option<String>,
 }
 
@@ -199,22 +201,27 @@ impl Connection {
                     .password
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
+                let unix_domain_socket = self
+                    .valid_unix_domain_socket()
+                    .map_or(String::new(), |uds| format!("?socket={}", uds));
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}/{database}",
+                        "mysql://{user}:{password}@{host}:{port}/{database}{unix_domain_socket}",
                         user = user,
                         password = password,
                         host = host,
+                        database = database,
                         port = port,
-                        database = database
+                        unix_domain_socket = unix_domain_socket,
                     )),
                     None => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}",
+                        "mysql://{user}:{password}@{host}:{port}{unix_domain_socket}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
+                        unix_domain_socket = unix_domain_socket,
                     )),
                 }
             }
@@ -236,22 +243,40 @@ impl Connection {
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
 
-                match self.database.as_ref() {
-                    Some(database) => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                        database = database
-                    )),
-                    None => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
-                        host = host,
-                        port = port,
-                    )),
+                if let Some(unix_domain_socket) = self.valid_unix_domain_socket() {
+                    match self.database.as_ref() {
+                        Some(database) => Ok(format!(
+                            "postgres://?dbname={database}&host={unix_domain_socket}&user={user}&password={password}",
+                            database = database,
+                            unix_domain_socket = unix_domain_socket,
+                            user = user,
+                            password = password,
+                        )),
+                        None => Ok(format!(
+                            "postgres://?host={unix_domain_socket}&user={user}&password={password}",
+                            unix_domain_socket = unix_domain_socket,
+                            user = user,
+                            password = password,
+                        )),
+                    }
+                } else {
+                    match self.database.as_ref() {
+                        Some(database) => Ok(format!(
+                            "postgres://{user}:{password}@{host}:{port}/{database}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                            database = database,
+                        )),
+                        None => Ok(format!(
+                            "postgres://{user}:{password}@{host}:{port}",
+                            user = user,
+                            password = password,
+                            host = host,
+                            port = port,
+                        )),
+                    }
                 }
             }
             DatabaseType::Sqlite => {
@@ -286,6 +311,23 @@ impl Connection {
 
     pub fn is_postgres(&self) -> bool {
         matches!(self.r#type, DatabaseType::Postgres)
+    }
+
+    fn valid_unix_domain_socket(&self) -> Option<String> {
+        if cfg!(windows) {
+            // NOTE:
+            // windows also supports UDS, but `rust` does not support UDS in windows now.
+            // https://github.com/rust-lang/rust/issues/56533
+            return None;
+        }
+        return self.unix_domain_socket.as_ref().and_then(|uds| {
+            let path = expand_path(uds)?;
+            let path_str = path.to_str()?;
+            if path_str.is_empty() {
+                return None;
+            }
+            Some(path_str.to_owned())
+        });
     }
 }
 
@@ -325,7 +367,7 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use super::{expand_path, Connection, DatabaseType, KeyConfig, Path, PathBuf};
     use serde_json::Value;
     use std::env;
 
@@ -347,6 +389,134 @@ mod test {
             values.dedup();
             pretty_assertions::assert_eq!(before_values, values);
         }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_dataset_url_in_unix() {
+        let mut mysql_conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        mysql_conn.unix_domain_socket = Some(Path::new("/tmp/mysql.sock").to_path_buf());
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city?socket=/tmp/mysql.sock".to_owned()
+        );
+
+        let mut postgres_conn = Connection {
+            r#type: DatabaseType::Postgres,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+        postgres_conn.unix_domain_socket = Some(Path::new("/tmp").to_path_buf());
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://?dbname=city&host=/tmp&user=root&password=password".to_owned()
+        );
+
+        let sqlite_conn = Connection {
+            r#type: DatabaseType::Sqlite,
+            name: None,
+            user: None,
+            host: None,
+            port: None,
+            path: Some(PathBuf::from("/home/user/sqlite3.db")),
+            password: None,
+            database: None,
+            unix_domain_socket: None,
+        };
+
+        let sqlite_result = sqlite_conn.database_url().unwrap();
+        assert_eq!(sqlite_result, "sqlite:///home/user/sqlite3.db".to_owned());
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_database_url_in_windows() {
+        let mut mysql_conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        mysql_conn.unix_domain_socket = Some(Path::new("/tmp/mysql.sock").to_path_buf());
+        assert_eq!(
+            mysql_conn.database_url().unwrap(),
+            "mysql://root:password@localhost:3306/city".to_owned()
+        );
+
+        let mut postgres_conn = Connection {
+            r#type: DatabaseType::Postgres,
+            name: None,
+            user: Some("root".to_owned()),
+            host: Some("localhost".to_owned()),
+            port: Some(3306),
+            path: None,
+            password: Some("password".to_owned()),
+            database: Some("city".to_owned()),
+            unix_domain_socket: None,
+        };
+
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+        postgres_conn.unix_domain_socket = Some(Path::new("/tmp").to_path_buf());
+        assert_eq!(
+            postgres_conn.database_url().unwrap(),
+            "postgres://root:password@localhost:3306/city".to_owned()
+        );
+
+        let sqlite_conn = Connection {
+            r#type: DatabaseType::Sqlite,
+            name: None,
+            user: None,
+            host: None,
+            port: None,
+            path: Some(PathBuf::from("/home/user/sqlite3.db")),
+            password: None,
+            database: None,
+            unix_domain_socket: None,
+        };
+
+        let sqlite_result = sqlite_conn.database_url().unwrap();
+        assert_eq!(sqlite_result, "sqlite://\\home\\user\\sqlite3.db".to_owned());
     }
 
     #[test]
