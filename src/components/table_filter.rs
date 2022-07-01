@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent,
 };
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{DatabaseType, KeyConfig};
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -34,7 +34,7 @@ impl TableFilterComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, "", false),
+            completion: CompletionComponent::new(key_config, "", DatabaseType::MySql),
         }
     }
 

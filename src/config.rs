@@ -27,7 +27,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-enum DatabaseType {
+pub enum DatabaseType {
     #[serde(rename = "mysql")]
     MySql,
     #[serde(rename = "postgres")]
