@@ -96,6 +96,16 @@ pub fn extend_selection_by_one_cell(key: &KeyConfig) -> CommandText {
     )
 }
 
+pub fn extend_selection_by_line(key: &KeyConfig) -> CommandText {
+    CommandText::new(
+        format!(
+            "Extend selection by horizontal line [{}]",
+            key.extend_selection_by_horizontal_line,
+        ),
+        CMD_GROUP_TABLE,
+    )
+}
+
 pub fn extend_or_shorten_widget_width(key: &KeyConfig) -> CommandText {
     CommandText::new(
         format!(
