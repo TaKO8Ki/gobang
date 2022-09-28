@@ -54,6 +54,14 @@ If you're a Nix user, you can install [gobang](https://github.com/NixOS/nixpkgs/
 $ nix-env --install gobang
 ```
 
+### On Archlinux
+
+If you're an Archlinux user, you can install [gobang](https://aur.archlinux.org/packages/gobang-bin) from AUR:
+
+```
+paru -S gobang-bin
+```
+
 ### On NetBSD
 
 If you're a NetBSD user, then you can install gobang from [pkgsrc](https://pkgsrc.se/databases/gobang):
