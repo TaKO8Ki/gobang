@@ -106,6 +106,8 @@ If you want to add connections, you need to edit your config file. For more info
 
 ## Keymap
 
+### Default keymap
+
 | Key | Description |
 | ---- | ---- |
 | <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd> | Scroll left/down/up/right |
@@ -120,6 +122,16 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>, <kbd>5</kbd> | Switch to records/columns/constraints/foreign keys/indexes tab |
 | <kbd>Esc</kbd> | Hide pop up |
 
+### Custom keymap
+The location of the file depends on your OS:
+
+- macOS: `$HOME/.config/gobang/key_bind.ron`
+- Linux: `$HOME/.config/gobang/key_bind.ron`
+- Windows: `%APPDATA%/gobang/key_bind.ron`
+
+A sample `key_bind.ron` is [here](https://github.com/TaKO8Ki/gobang/tree/main/examples/key_bind.ron).
+
+
 ## Configuration
 
 The location of the file depends on your OS:
@@ -128,34 +140,7 @@ The location of the file depends on your OS:
 - Linux: `$HOME/.config/gobang/config.toml`
 - Windows: `%APPDATA%/gobang/config.toml`
 
-The following is a sample config.toml file:
-
-```toml
-[[conn]]
-type = "mysql"
-user = "root"
-host = "localhost"
-port = 3306
-
-[[conn]]
-type = "mysql"
-user = "root"
-host = "localhost"
-port = 3306
-password = "password"
-database = "foo"
-
-[[conn]]
-type = "postgres"
-user = "root"
-host = "localhost"
-port = 5432
-database = "bar"
-
-[[conn]]
-type = "sqlite"
-path = "/path/to/baz.db"
-```
+A sample `config.toml` file is [here](https://github.com/TaKO8Ki/gobang/tree/main/examples/config.toml)
 
 ## Contribution
 
