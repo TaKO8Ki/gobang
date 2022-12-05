@@ -144,6 +144,7 @@ host = "localhost"
 port = 3306
 password = "password"
 database = "foo"
+name = "mysql Foo DB"
 
 [[conn]]
 type = "postgres"
@@ -151,6 +152,7 @@ user = "root"
 host = "localhost"
 port = 5432
 database = "bar"
+name = "postgres Bar DB"
 
 [[conn]]
 type = "sqlite"
