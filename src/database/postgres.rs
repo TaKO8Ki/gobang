@@ -4,7 +4,7 @@ use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use sqlx::postgres::{PgColumn, PgPool, PgPoolOptions, PgRow};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
@@ -206,20 +206,30 @@ impl Pool for PostgresPool {
     }
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
-        let mut rows =
+        let tables =
             sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1")
                 .bind(database)
+                .map(|row: PgRow| Table {
+                    name: row.get("table_name"),
+                    create_time: None,
+                    update_time: None,
+                    engine: None,
+                    schema: row.get("table_schema"),
+                })
                 .fetch(&self.pool);
-        let mut tables = Vec::new();
-        while let Some(row) = rows.try_next().await? {
-            tables.push(Table {
-                name: row.try_get("table_name")?,
+
+        let mat_views = sqlx::query("SELECT * FROM pg_matviews")
+            .map(|row: PgRow| Table {
+                name: row.get("matviewname"),
                 create_time: None,
                 update_time: None,
                 engine: None,
-                schema: row.try_get("table_schema")?,
+                schema: row.get("schemaname"),
             })
-        }
+            .fetch(&self.pool);
+
+        let tables: Vec<Table> = tables.chain(mat_views).try_collect().await?;
+
         let mut schemas = vec![];
         for (key, group) in &tables
             .iter()
