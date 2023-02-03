@@ -245,13 +245,35 @@ impl Pool for PostgresPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = if let Some(filter) = filter.as_ref() {
+        let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
+            format!(
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} {orders} LIMIT {limit} OFFSET {page}"#,
+                database = database.name,
+                table = table.name,
+                filter = filter,
+                orders = orders,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        } else if let Some(filter) = &filter {
             format!(
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        } else if let Some(orders) = &orders {
+            format!(
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" {orders} LIMIT {limit} OFFSET {page}"#,
+                database = database.name,
+                table = table.name,
+                orders = orders,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
@@ -283,8 +305,14 @@ impl Pool for PostgresPool {
                     Err(_) => {
                         if json_records.is_none() {
                             json_records = Some(
-                                self.get_json_records(database, table, page, filter.clone())
-                                    .await?,
+                                self.get_json_records(
+                                    database,
+                                    table,
+                                    page,
+                                    filter.clone(),
+                                    orders.clone(),
+                                )
+                                .await?,
                             );
                         }
                         if let Some(json_records) = &json_records {
@@ -479,13 +507,35 @@ impl PostgresPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
     ) -> anyhow::Result<Vec<serde_json::Value>> {
-        let query = if let Some(filter) = filter {
+        let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
+            format!(
+                r#"SELECT to_json("{table}".*) FROM "{database}"."{table_schema}"."{table}" WHERE {filter} {orders} LIMIT {limit} OFFSET {page}"#,
+                database = database.name,
+                table = table.name,
+                filter = filter,
+                orders = orders,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        } else if let Some(filter) = filter {
             format!(
                 r#"SELECT to_json("{table}".*) FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE
+            )
+        } else if let Some(orders) = orders {
+            format!(
+                r#"SELECT to_json("{table}".*) FROM "{database}"."{table_schema}"."{table}" {orders} LIMIT {limit} OFFSET {page}"#,
+                database = database.name,
+                table = table.name,
+                orders = orders,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE

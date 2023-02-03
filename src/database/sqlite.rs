@@ -230,19 +230,37 @@ impl Pool for SqlitePool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let query = if let Some(filter) = filter {
+        let query = if let (Some(filter), Some(orders)) = (&filter, &orders) {
+            format!(
+                "SELECT * FROM `{table}` WHERE {filter} {orders} LIMIT {page}, {limit}",
+                table = table.name,
+                filter = filter,
+                page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
+                orders = orders
+            )
+        } else if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{table}` WHERE {filter} LIMIT {page}, {limit}",
                 table = table.name,
                 filter = filter,
                 page = page,
+                limit = RECORDS_LIMIT_PER_PAGE,
+            )
+        } else if let Some(orders) = orders {
+            format!(
+                "SELECT * FROM `{table}`{orders} LIMIT {page}, {limit}",
+                table = table.name,
+                orders = orders,
+                page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
         } else {
             format!(
-                "SELECT * FROM `{}` LIMIT {page}, {limit}",
-                table.name,
+                "SELECT * FROM `{table}` LIMIT {page}, {limit}",
+                table = table.name,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )

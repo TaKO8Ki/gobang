@@ -39,8 +39,10 @@ impl RecordTableComponent {
         headers: Vec<String>,
         database: Database,
         table: DTable,
+        hold_cusor_position: bool,
     ) {
-        self.table.update(rows, headers, database, table.clone());
+        self.table
+            .update(rows, headers, database, table.clone(), hold_cusor_position);
         self.filter.table = Some(table);
     }
 

@@ -22,6 +22,7 @@ pub trait Pool: Send + Sync {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orders: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
     async fn get_columns(
         &self,
