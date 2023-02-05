@@ -200,6 +200,21 @@ impl TableComponent {
         }
     }
 
+    fn expand_selected_by_horizontal_line(&mut self) {
+        let horizontal_length = self.headers.len().saturating_sub(1);
+        let vertical_length = self.selected_row.selected().unwrap_or(0);
+
+        if let Some((x, y)) = self.selection_area_corner {
+            if x == horizontal_length {
+                self.selection_area_corner = None;
+            } else {
+                self.selection_area_corner = Some((horizontal_length, y));
+            }
+        } else {
+            self.selection_area_corner = Some((horizontal_length, vertical_length));
+        }
+    }
+
     pub fn selected_cells(&self) -> Option<String> {
         if let Some((x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
@@ -522,6 +537,9 @@ impl Component for TableComponent {
         out.push(CommandInfo::new(command::extend_selection_by_one_cell(
             &self.key_config,
         )));
+        out.push(CommandInfo::new(command::extend_selection_by_line(
+            &self.key_config,
+        )));
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
@@ -560,6 +578,9 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.extend_selection_by_one_cell_right {
             self.expand_selected_area_x(true);
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.extend_selection_by_horizontal_line {
+            self.expand_selected_by_horizontal_line();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
@@ -684,6 +705,32 @@ mod test {
         component.expand_selected_area_y(true);
         assert_eq!(component.selection_area_corner, Some((1, 1)));
         assert_eq!(component.selected_cells(), Some("b\ne".to_string()));
+    }
+
+    #[test]
+    fn test_expand_selected_by_horizontal_line() {
+        let mut component = TableComponent::new(KeyConfig::default());
+        component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+            vec!["g", "h", "i"].iter().map(|h| h.to_string()).collect(),
+        ];
+
+        // select one line
+        component.selected_row.select(Some(0));
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, Some((2, 0)));
+        assert_eq!(component.selected_cells(), Some("d,e,f".to_string()));
+
+        // undo select horizontal line
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, None);
+
+        // select two line
+        component.expand_selected_area_y(true);
+        component.expand_selected_by_horizontal_line();
+        assert_eq!(component.selection_area_corner, Some((2, 1)));
+        assert_eq!(component.selected_cells(), Some("d,e,f\ng,h,i".to_string()));
     }
 
     #[test]
