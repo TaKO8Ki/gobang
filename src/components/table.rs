@@ -140,6 +140,15 @@ impl TableComponent {
             .select(Some(self.rows.len().saturating_sub(1)));
     }
 
+    fn move_to_head_of_line(&mut self) {
+        self.selected_column = 0;
+    }
+
+    fn move_to_tail_of_line(&mut self) {
+        let vertical_length = self.headers.len().saturating_sub(1);
+        self.selected_column = vertical_length;
+    }
+
     fn next_column(&mut self) {
         if self.rows.is_empty() {
             return;
@@ -522,6 +531,9 @@ impl Component for TableComponent {
         out.push(CommandInfo::new(command::extend_selection_by_one_cell(
             &self.key_config,
         )));
+        out.push(CommandInfo::new(command::move_to_head_tail_of_line(
+            &self.key_config,
+        )));
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
@@ -546,6 +558,10 @@ impl Component for TableComponent {
         } else if key == self.key_config.scroll_to_bottom {
             self.scroll_to_bottom();
             return Ok(EventState::Consumed);
+        } else if key == self.key_config.move_to_head_of_line {
+            self.move_to_head_of_line();
+        } else if key == self.key_config.move_to_tail_of_line {
+            self.move_to_tail_of_line();
         } else if key == self.key_config.scroll_right {
             self.next_column();
             return Ok(EventState::Consumed);
@@ -777,6 +793,42 @@ mod test {
         assert!(component.is_selected_cell(1, 2, 1));
         // f
         assert!(!component.is_selected_cell(1, 3, 1));
+    }
+
+    #[test]
+    fn test_move_to_head_of_line() {
+        let mut component = TableComponent::new(KeyConfig::default());
+
+        component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+            vec!["g", "h", "i"].iter().map(|h| h.to_string()).collect(),
+        ];
+
+        // cursor returns to the top.
+        component.expand_selected_area_y(true);
+        component.expand_selected_area_y(true);
+        component.move_to_head_of_line();
+        assert_eq!(component.selected_column, 0);
+    }
+
+    #[test]
+    fn test_move_to_tail_of_line() {
+        let mut component = TableComponent::new(KeyConfig::default());
+
+        // if component does not have a header, cursor is not moved.
+        component.move_to_head_of_line();
+        assert_eq!(component.selected_column, 0);
+
+        // if component has a header, cursor is moved to tail of line.
+        component.headers = vec!["a", "b", "c"].iter().map(|h| h.to_string()).collect();
+        component.rows = vec![
+            vec!["d", "e", "f"].iter().map(|h| h.to_string()).collect(),
+            vec!["g", "h", "i"].iter().map(|h| h.to_string()).collect(),
+        ];
+
+        component.move_to_tail_of_line();
+        assert_eq!(component.selected_column, 2);
     }
 
     #[test]
