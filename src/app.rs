@@ -173,10 +173,10 @@ impl App {
                     &database,
                     &table,
                     0,
-                    if self.record_table.filter.input_str().is_empty() {
+                    if self.record_table.filter.input.value_str().is_empty() {
                         None
                     } else {
-                        Some(self.record_table.filter.input_str())
+                        Some(self.record_table.filter.input.value_str())
                     },
                 )
                 .await?;
@@ -224,7 +224,7 @@ impl App {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter && self.databases.tree_focused() {
+                if key == self.config.key_config.enter {
                     if let Some((database, table)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
                         let (headers, records) = self
@@ -279,10 +279,11 @@ impl App {
                                             &database,
                                             &table,
                                             index as u16,
-                                            if self.record_table.filter.input_str().is_empty() {
+                                            if self.record_table.filter.input.value_str().is_empty()
+                                            {
                                                 None
                                             } else {
-                                                Some(self.record_table.filter.input_str())
+                                                Some(self.record_table.filter.input.value_str())
                                             },
                                         )
                                         .await?;

@@ -9,7 +9,7 @@ use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
-use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use database_tree::{Database, DatabaseTree, DatabaseTreeItem, MoveSelection};
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -36,7 +36,7 @@ pub enum Focus {
 pub struct DatabasesComponent {
     tree: DatabaseTree,
     filter: DatabaseFilterComponent,
-    filterd_tree: Option<DatabaseTree>,
+    filtered_tree: Option<DatabaseTree>,
     scroll: VerticalScroll,
     focus: Focus,
     key_config: KeyConfig,
@@ -47,7 +47,7 @@ impl DatabasesComponent {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
-            filterd_tree: None,
+            filtered_tree: None,
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
@@ -63,7 +63,7 @@ impl DatabasesComponent {
             None => pool.get_databases().await?,
         };
         self.tree = DatabaseTree::new(databases.as_slice(), &BTreeSet::new())?;
-        self.filterd_tree = None;
+        self.filtered_tree = None;
         self.filter.reset();
         Ok(())
     }
@@ -73,7 +73,22 @@ impl DatabasesComponent {
     }
 
     pub fn tree(&self) -> &DatabaseTree {
-        self.filterd_tree.as_ref().unwrap_or(&self.tree)
+        self.filtered_tree.as_ref().unwrap_or(&self.tree)
+    }
+
+    fn navigate_tree(&mut self, nav: MoveSelection) -> bool {
+        let tree = match self.filtered_tree.as_mut() {
+            Some(t) => t,
+            None => &mut self.tree,
+        };
+        tree.move_selection(nav)
+    }
+
+    fn maybe_navigate_tree(&mut self, key: Key) -> bool {
+        match common_nav(key, &self.key_config) {
+            Some(nav) => self.navigate_tree(nav),
+            None => false,
+        }
     }
 
     fn tree_item_to_span(
@@ -168,10 +183,9 @@ impl DatabasesComponent {
             .draw(f, chunks[0], matches!(self.focus, Focus::Filter))?;
 
         let tree_height = chunks[1].height as usize;
-        let tree = if let Some(tree) = self.filterd_tree.as_ref() {
-            tree
-        } else {
-            &self.tree
+        let tree = match self.filtered_tree.as_ref() {
+            Some(t) => t,
+            None => &self.tree,
         };
         tree.visual_selection().map_or_else(
             || {
@@ -190,10 +204,10 @@ impl DatabasesComponent {
                     item.clone(),
                     selected,
                     area.width,
-                    if self.filter.input_str().is_empty() {
+                    if self.filter.input.value_str().is_empty() {
                         None
                     } else {
-                        Some(self.filter.input_str())
+                        Some(self.filter.input.value_str())
                     },
                 )
             });
@@ -223,52 +237,48 @@ impl Component for DatabasesComponent {
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.filter && self.focus == Focus::Tree {
-            self.focus = Focus::Filter;
-            return Ok(EventState::Consumed);
-        }
-
         if matches!(self.focus, Focus::Filter) {
-            self.filterd_tree = if self.filter.input_str().is_empty() {
-                None
-            } else {
-                Some(self.tree.filter(self.filter.input_str()))
-            };
-        }
-
-        match key {
-            Key::Enter if matches!(self.focus, Focus::Filter) => {
-                self.focus = Focus::Tree;
-                return Ok(EventState::Consumed);
-            }
-            key if matches!(self.focus, Focus::Filter) => {
-                if self.filter.event(key)?.is_consumed() {
+            match key {
+                Key::Esc => {
+                    self.focus = Focus::Tree;
                     return Ok(EventState::Consumed);
                 }
-            }
-            key => {
-                if tree_nav(
-                    if let Some(tree) = self.filterd_tree.as_mut() {
-                        tree
-                    } else {
-                        &mut self.tree
-                    },
-                    key,
-                    &self.key_config,
-                ) {
+                Key::Ctrl('j') | Key::Ctrl('n') => {
+                    self.navigate_tree(MoveSelection::Down);
                     return Ok(EventState::Consumed);
+                }
+                Key::Ctrl('k') | Key::Ctrl('p') => {
+                    self.navigate_tree(MoveSelection::Up);
+                    return Ok(EventState::Consumed);
+                }
+                key => {
+                    if self.filter.event(key)?.is_consumed() {
+                        let filter_str = self.filter.input.value_str();
+
+                        self.filtered_tree = if filter_str.is_empty() {
+                            None
+                        } else {
+                            Some(self.tree.filter(filter_str))
+                        };
+                        return Ok(EventState::Consumed);
+                    }
+                }
+            }
+        } else if matches!(self.focus, Focus::Tree) {
+            match key {
+                key => {
+                    if key == self.key_config.filter {
+                        self.focus = Focus::Filter;
+                        return Ok(EventState::Consumed);
+                    }
+
+                    if self.maybe_navigate_tree(key) {
+                        return Ok(EventState::Consumed);
+                    }
                 }
             }
         }
         Ok(EventState::NotConsumed)
-    }
-}
-
-fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
-    if let Some(common_nav) = common_nav(key, key_config) {
-        tree.move_selection(common_nav)
-    } else {
-        false
     }
 }
 
@@ -376,7 +386,7 @@ mod test {
     }
 
     #[test]
-    fn test_filterd_tree_item_to_span() {
+    fn test_filtered_tree_item_to_span() {
         const WIDTH: u16 = 10;
         assert_eq!(
             DatabasesComponent::tree_item_to_span(
