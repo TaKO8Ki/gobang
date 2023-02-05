@@ -1,5 +1,6 @@
 use super::{Component, EventState, MovableComponent};
 use crate::components::command::CommandInfo;
+use crate::config::DatabaseType;
 use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
@@ -12,8 +13,142 @@ use tui::{
 };
 
 const RESERVED_WORDS_IN_WHERE_CLAUSE: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
-const ALL_RESERVED_WORDS: &[&str] = &[
-    "IN", "AND", "OR", "NOT", "NULL", "IS", "SELECT", "UPDATE", "DELETE", "FROM", "LIMIT", "WHERE",
+
+pub const MYSQL_KEYWORDS: &[&str] = &[
+    "ACCESS",
+    "ADD",
+    "ALL",
+    "ALTER TABLE",
+    "AND",
+    "ANY",
+    "AS",
+    "ASC",
+    "AUTO_INCREMENT",
+    "BEFORE",
+    "BEGIN",
+    "BETWEEN",
+    "BIGINT",
+    "BINARY",
+    "BY",
+    "CASE",
+    "CHANGE MASTER TO",
+    "CHAR",
+    "CHARACTER SET",
+    "CHECK",
+    "COLLATE",
+    "COLUMN",
+    "COMMENT",
+    "COMMIT",
+    "CONSTRAINT",
+    "CREATE",
+    "CURRENT",
+    "CURRENT_TIMESTAMP",
+    "DATABASE",
+    "DATE",
+    "DECIMAL",
+    "DEFAULT",
+    "DELETE FROM",
+    "DESC",
+    "DESCRIBE",
+    "DROP",
+    "ELSE",
+    "END",
+    "ENGINE",
+    "ESCAPE",
+    "EXISTS",
+    "FILE",
+    "FLOAT",
+    "FOR",
+    "FOREIGN KEY",
+    "FORMAT",
+    "FROM",
+    "FULL",
+    "FUNCTION",
+    "GRANT",
+    "GROUP BY",
+    "HAVING",
+    "HOST",
+    "IDENTIFIED",
+    "IN",
+    "INCREMENT",
+    "INDEX",
+    "INSERT INTO",
+    "INT",
+    "INTEGER",
+    "INTERVAL",
+    "INTO",
+    "IS",
+    "JOIN",
+    "KEY",
+    "LEFT",
+    "LEVEL",
+    "LIKE",
+    "LIMIT",
+    "LOCK",
+    "LOGS",
+    "LONG",
+    "MASTER",
+    "MEDIUMINT",
+    "MODE",
+    "MODIFY",
+    "NOT",
+    "NULL",
+    "NUMBER",
+    "OFFSET",
+    "ON",
+    "OPTION",
+    "OR",
+    "ORDER BY",
+    "OUTER",
+    "OWNER",
+    "PASSWORD",
+    "PORT",
+    "PRIMARY",
+    "PRIVILEGES",
+    "PROCESSLIST",
+    "PURGE",
+    "REFERENCES",
+    "REGEXP",
+    "RENAME",
+    "REPAIR",
+    "RESET",
+    "REVOKE",
+    "RIGHT",
+    "ROLLBACK",
+    "ROW",
+    "ROWS",
+    "ROW_FORMAT",
+    "SAVEPOINT",
+    "SELECT",
+    "SESSION",
+    "SET",
+    "SHARE",
+    "SHOW",
+    "SLAVE",
+    "SMALLINT",
+    "SMALLINT",
+    "START",
+    "STOP",
+    "TABLE",
+    "THEN",
+    "TINYINT",
+    "TO",
+    "TRANSACTION",
+    "TRIGGER",
+    "TRUNCATE",
+    "UNION",
+    "UNIQUE",
+    "UNSIGNED",
+    "UPDATE",
+    "USE",
+    "USER",
+    "USING",
+    "VALUES",
+    "VARCHAR",
+    "VIEW",
+    "WHEN",
+    "WHERE",
+    "WITH",
 ];
 
 pub struct CompletionComponent {
@@ -24,18 +159,18 @@ pub struct CompletionComponent {
 }
 
 impl CompletionComponent {
-    pub fn new(key_config: KeyConfig, word: impl Into<String>, all: bool) -> Self {
+    pub fn new(
+        key_config: KeyConfig,
+        word: impl Into<String>,
+        database_type: DatabaseType,
+    ) -> Self {
         Self {
             key_config,
             state: ListState::default(),
             word: word.into(),
-            candidates: if all {
-                ALL_RESERVED_WORDS.iter().map(|w| w.to_string()).collect()
-            } else {
-                RESERVED_WORDS_IN_WHERE_CLAUSE
-                    .iter()
-                    .map(|w| w.to_string())
-                    .collect()
+            candidates: match database_type {
+                DatabaseType::MySql => MYSQL_KEYWORDS.iter().map(|w| w.to_string()).collect(),
+                _ => MYSQL_KEYWORDS.iter().map(|w| w.to_string()).collect(),
             },
         }
     }
@@ -46,10 +181,14 @@ impl CompletionComponent {
         self.state.select(Some(0))
     }
 
+    pub fn add_candidates(&mut self, candidates: Vec<String>) {
+        self.candidates.extend(candidates)
+    }
+
     fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.filterd_candidates().count() - 1 {
+                if i >= self.filterd_candidates().count().saturating_sub(1) {
                     0
                 } else {
                     i + 1
@@ -64,9 +203,9 @@ impl CompletionComponent {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.filterd_candidates().count() - 1
+                    self.filterd_candidates().count().saturating_sub(1)
                 } else {
-                    i - 1
+                    i.saturating_sub(1)
                 }
             }
             None => 0,
@@ -150,12 +289,12 @@ impl Component for CompletionComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{CompletionComponent, KeyConfig};
+    use super::{CompletionComponent, DatabaseType, KeyConfig};
 
     #[test]
     fn test_filterd_candidates_lowercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "an", false)
+            CompletionComponent::new(KeyConfig::default(), "an", DatabaseType::MySql)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -165,7 +304,7 @@ mod test {
     #[test]
     fn test_filterd_candidates_uppercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "AN", false)
+            CompletionComponent::new(KeyConfig::default(), "AN", DatabaseType::MySql)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -175,14 +314,14 @@ mod test {
     #[test]
     fn test_filterd_candidates_multiple_candidates() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "n", false)
+            CompletionComponent::new(KeyConfig::default(), "n", DatabaseType::MySql)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
 
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "N", false)
+            CompletionComponent::new(KeyConfig::default(), "N", DatabaseType::MySql)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]

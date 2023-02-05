@@ -1,18 +1,22 @@
+use super::completion::MYSQL_KEYWORDS;
 use super::{
     compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
 };
 use crate::components::command::CommandInfo;
+use crate::config::DatabaseType;
 use crate::config::KeyConfig;
 use crate::database::{ExecuteResult, Pool};
 use crate::event::Key;
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
 use async_trait::async_trait;
+use database_tree::{Child, Database};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
+    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
@@ -51,8 +55,8 @@ impl SqlEditorComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
-            table: TableComponent::new(key_config.clone()),
-            completion: CompletionComponent::new(key_config.clone(), "", true),
+            table: TableComponent::new_without_title(key_config.clone()),
+            completion: CompletionComponent::new(key_config.clone(), "", DatabaseType::MySql),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
@@ -138,6 +142,83 @@ impl SqlEditorComponent {
         }
         Ok(EventState::NotConsumed)
     }
+
+    fn input_to_span(&self) -> Spans<'static> {
+        let mut spans = self
+            .input
+            .iter()
+            .collect::<String>()
+            .clone()
+            .split(' ')
+            .map(|i| {
+                if MYSQL_KEYWORDS.contains(&i) {
+                    vec![
+                        Span::styled(i.to_string(), Style::default().fg(Color::Blue)),
+                        Span::from(" "),
+                    ]
+                } else {
+                    vec![Span::from(i.to_string()), Span::from(" ")]
+                }
+            })
+            .flatten()
+            .collect::<Vec<Span>>();
+        spans.pop();
+        Spans::from(spans)
+    }
+
+    pub fn update(&mut self, databases: &Vec<Database>) {
+        self.completion.add_candidates(
+            databases
+                .iter()
+                .map(|db| {
+                    db.children
+                        .iter()
+                        .map(|c| match c {
+                            Child::Table(table) => format!("{}.{}", db.name, table.name),
+                            Child::Schema(schema) => schema
+                                .tables
+                                .iter()
+                                .map(|table| format!("{}.{}.{}", db.name, schema.name, table.name))
+                                .collect(),
+                        })
+                        .collect::<Vec<String>>()
+                })
+                .flatten()
+                .collect::<Vec<String>>(),
+        );
+        self.completion.add_candidates(
+            databases
+                .iter()
+                .map(|db| db.name.to_string())
+                .collect::<Vec<String>>(),
+        );
+        self.completion.add_candidates(
+            databases
+                .iter()
+                .map(|db| {
+                    db.children
+                        .iter()
+                        .map(|c| match c {
+                            Child::Table(table) => table.name.to_string(),
+                            Child::Schema(schema) => schema
+                                .tables
+                                .iter()
+                                .map(|table| table.name.to_string())
+                                .collect(),
+                        })
+                        .collect::<Vec<String>>()
+                })
+                .flatten()
+                .collect::<Vec<String>>(),
+        );
+    }
+
+    pub fn selected_cells(&self) -> Option<String> {
+        if !matches!(self.focus, Focus::Table) {
+            return None;
+        }
+        self.table.selected_cells()
+    }
 }
 
 impl StatefulDrawableComponent for SqlEditorComponent {
@@ -151,7 +232,7 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             })
             .split(area);
 
-        let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
+        let editor = StatefulParagraph::new(self.input_to_span())
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
@@ -208,9 +289,11 @@ impl Component for SqlEditorComponent {
         let input_str: String = self.input.iter().collect();
 
         if key == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
-            self.focus = Focus::Editor
-        } else if key == self.key_config.enter {
-            return self.complete();
+            self.focus = Focus::Editor;
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.enter && self.completion.selected_candidate().is_some() {
+            self.complete()?;
+            return Ok(EventState::Consumed);
         }
 
         match key {
@@ -253,6 +336,7 @@ impl Component for SqlEditorComponent {
                 return Ok(EventState::Consumed);
             }
             key if matches!(self.focus, Focus::Table) => return self.table.event(key),
+            key if matches!(self.focus, Focus::Editor) => return self.completion.event(key),
             _ => (),
         }
         return Ok(EventState::NotConsumed);

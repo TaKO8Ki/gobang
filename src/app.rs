@@ -12,6 +12,7 @@ use crate::{
     },
     config::Config,
 };
+use database_tree::Database;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -153,9 +154,19 @@ impl App {
                     SqlitePool::new(conn.database_url()?.as_str()).await?,
                 ))
             };
-            self.databases
-                .update(conn, self.pool.as_ref().unwrap())
-                .await?;
+            let databases = match &conn.database {
+                Some(database) => vec![Database::new(
+                    database.clone(),
+                    self.pool
+                        .as_ref()
+                        .unwrap()
+                        .get_tables(database.clone())
+                        .await?,
+                )],
+                None => self.pool.as_ref().unwrap().get_databases().await?,
+            };
+            self.sql_editor.update(&databases);
+            self.databases.update(databases).await?;
             self.focus = Focus::DabataseList;
             self.record_table.reset();
             self.tab.reset();
@@ -304,7 +315,13 @@ impl App {
                                 .is_consumed()
                         {
                             return Ok(EventState::Consumed);
-                        };
+                        }
+
+                        if key == self.config.key_config.copy {
+                            if let Some(text) = self.sql_editor.selected_cells() {
+                                copy_to_clipboard(text.as_str())?
+                            }
+                        }
                     }
                     Tab::Properties => {
                         if self.properties.event(key)?.is_consumed() {
