@@ -23,6 +23,15 @@ pub trait Pool: Send + Sync {
         page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
+
+    /// Get the total number of records in a table
+    async fn get_total_records_count(
+        &self,
+        database: &Database,
+        table: &Table,
+        filter: Option<String>,
+    ) -> anyhow::Result<usize>;
+
     async fn get_columns(
         &self,
         database: &Database,
