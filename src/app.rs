@@ -165,10 +165,9 @@ impl App {
 
     async fn update_record_table(&mut self) -> anyhow::Result<()> {
         if let Some((database, table)) = self.databases.tree().selected_table() {
-            let (headers, records) = self
-                .pool
-                .as_ref()
-                .unwrap()
+            let pool = self.pool.as_ref().unwrap();
+
+            let (headers, records) = pool
                 .get_records(
                     &database,
                     &table,
@@ -180,8 +179,26 @@ impl App {
                     },
                 )
                 .await?;
-            self.record_table
-                .update(records, headers, database.clone(), table.clone());
+
+            let total_rows = pool
+                .get_total_records_count(
+                    &database,
+                    &table,
+                    if self.record_table.filter.input_str().is_empty() {
+                        None
+                    } else {
+                        Some(self.record_table.filter.input_str())
+                    },
+                )
+                .await?;
+
+            self.record_table.update(
+                records,
+                total_rows,
+                headers,
+                database.clone(),
+                table.clone(),
+            );
         }
         Ok(())
     }
@@ -227,14 +244,23 @@ impl App {
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
                     if let Some((database, table)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
-                        let (headers, records) = self
-                            .pool
-                            .as_ref()
-                            .unwrap()
-                            .get_records(&database, &table, 0, None)
+
+                        let pool = self.pool.as_ref().unwrap();
+
+                        let (headers, records) =
+                            pool.get_records(&database, &table, 0, None).await?;
+
+                        let total_rows = pool
+                            .get_total_records_count(&database, &table, None)
                             .await?;
-                        self.record_table
-                            .update(records, headers, database.clone(), table.clone());
+
+                        self.record_table.update(
+                            records,
+                            total_rows,
+                            headers,
+                            database.clone(),
+                            table.clone(),
+                        );
                         self.properties
                             .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
                             .await?;

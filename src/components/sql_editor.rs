@@ -269,7 +269,8 @@ impl Component for SqlEditorComponent {
                     database,
                     table,
                 } => {
-                    self.table.update(rows, headers, database, table);
+                    // TODO
+                    self.table.update(rows, None, headers, database, table);
                     self.focus = Focus::Table;
                     self.query_result = None;
                 }

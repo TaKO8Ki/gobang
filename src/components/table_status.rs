@@ -15,6 +15,7 @@ use tui::{
 pub struct TableStatusComponent {
     column_count: Option<usize>,
     row_count: Option<usize>,
+    total_row_count: Option<usize>,
     table: Option<Table>,
 }
 
@@ -22,6 +23,7 @@ impl Default for TableStatusComponent {
     fn default() -> Self {
         Self {
             row_count: None,
+            total_row_count: None,
             column_count: None,
             table: None,
         }
@@ -31,11 +33,13 @@ impl Default for TableStatusComponent {
 impl TableStatusComponent {
     pub fn new(
         row_count: Option<usize>,
+        total_row_count: Option<usize>,
         column_count: Option<usize>,
         table: Option<Table>,
     ) -> Self {
         Self {
             row_count,
+            total_row_count,
             column_count,
             table,
         }
@@ -48,6 +52,11 @@ impl DrawableComponent for TableStatusComponent {
             Span::from(format!(
                 "rows: {}, ",
                 self.row_count.map_or("-".to_string(), |c| c.to_string())
+            )),
+            Span::from(format!(
+                "total rows : {}, ",
+                self.total_row_count
+                    .map_or("-".to_string(), |c| c.to_string())
             )),
             Span::from(format!(
                 "columns: {}, ",

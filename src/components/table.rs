@@ -20,6 +20,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct TableComponent {
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
+    pub total_rows: Option<usize>,
     pub eod: bool,
     pub selected_row: TableState,
     table: Option<(Database, DTable)>,
@@ -36,6 +37,7 @@ impl TableComponent {
             selected_row: TableState::default(),
             headers: vec![],
             rows: vec![],
+            total_rows: None,
             table: None,
             selected_column: 0,
             selection_area_corner: None,
@@ -55,6 +57,7 @@ impl TableComponent {
     pub fn update(
         &mut self,
         rows: Vec<Vec<String>>,
+        total_rows: Option<usize>,
         headers: Vec<String>,
         database: Database,
         table: DTable,
@@ -65,6 +68,7 @@ impl TableComponent {
         }
         self.headers = headers;
         self.rows = rows;
+        self.total_rows = total_rows;
         self.selected_column = 0;
         self.selection_area_corner = None;
         self.column_page_start = std::cell::Cell::new(0);
@@ -503,6 +507,7 @@ impl StatefulDrawableComponent for TableComponent {
             } else {
                 Some(self.rows.len())
             },
+            self.total_rows,
             if self.headers.is_empty() {
                 None
             } else {
