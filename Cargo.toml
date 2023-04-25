@@ -45,3 +45,8 @@ which = "4.1"
 
 [dev-dependencies]
 pretty_assertions = "1.0.0"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = 3
