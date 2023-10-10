@@ -151,7 +151,7 @@ impl HelpComponent {
                 processed += 1;
 
                 txt.push(Spans::from(Span::styled(
-                    format!(" {}{:w$}", command_info.text.name, w = width),
+                    format!(" {}{w:w$}", command_info.text.name, w = width),
                     if is_selected {
                         Style::default().bg(Color::Blue)
                     } else {
