@@ -326,17 +326,17 @@ impl Pool for PostgresPool {
     ) -> anyhow::Result<usize> {
         let query = if let Some(filter) = filter {
             format!(
-                "SELECT count(*) FROM `{table}` WHERE {filter}",
+                r#"SELECT count(*) FROM "{table}" WHERE {filter}"#,
                 table = table.name,
                 filter = filter
             )
         } else {
-            format!("SELECT count(*) FROM `{}`", table.name)
+            format!(r#"SELECT count(*) FROM "{}""#, table.name)
         };
 
         let res = sqlx::query(query.as_str()).fetch_one(&self.pool).await?;
 
-        Ok(res.get::<i32, usize>(0) as usize)
+        Ok(res.get::<i64, usize>(0) as usize)
     }
 
     async fn get_columns(
