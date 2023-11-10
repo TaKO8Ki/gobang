@@ -1,5 +1,6 @@
-use easy_cast::CastFloat;
 use std::convert::TryFrom;
+
+use easy_cast::CastFloat;
 use tui::{
     backend::Backend,
     buffer::Buffer,

@@ -1,7 +1,7 @@
-use crossterm::event;
-use serde::Deserialize;
 use std::fmt;
 
+use crossterm::event;
+use serde::Deserialize;
 #[cfg(test)]
 use serde::Serialize;
 

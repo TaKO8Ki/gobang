@@ -227,8 +227,9 @@ fn trim_offset(src: &str, mut offset: usize) -> &str {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use unicode_segmentation::UnicodeSegmentation;
+
+    use super::*;
 
     enum Composer {
         WordWrapper { trim: bool },
@@ -473,7 +474,8 @@ mod test {
         // to test double-width chars.
         // You are more than welcome to add word boundary detection based of alterations of
         // hiragana and katakana...
-        // This happens to also be a test case for mixed width because regular spaces are single width.
+        // This happens to also be a test case for mixed width because regular spaces are single
+        // width.
         let text = "コンピュ ータ上で文字を扱う場合、 典型的には文 字による 通信を行 う場合にその両端点では、";
         let (word_wrapper, word_wrapper_width) =
             run_composer(Composer::WordWrapper { trim: true }, text, width);

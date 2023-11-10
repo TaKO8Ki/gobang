@@ -1,13 +1,16 @@
-use crate::get_or_null;
+use std::time::Duration;
 
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::sqlite::{SqliteColumn, SqlitePoolOptions, SqliteRow};
-use sqlx::{Column as _, Row as _, TypeInfo as _};
-use std::time::Duration;
+use sqlx::{
+    sqlite::{SqliteColumn, SqlitePoolOptions, SqliteRow},
+    Column as _, Row as _, TypeInfo as _,
+};
+
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use crate::get_or_null;
 
 pub struct SqlitePool {
     pool: sqlx::sqlite::SqlitePool,

@@ -18,11 +18,17 @@ pub mod utils;
 #[cfg(debug_assertions)]
 pub mod debug;
 
+use std::convert::TryInto;
+
+use anyhow::Result;
+use async_trait::async_trait;
 pub use command::{CommandInfo, CommandText};
 pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
 pub use database_filter::DatabaseFilterComponent;
 pub use databases::DatabasesComponent;
+#[cfg(debug_assertions)]
+pub use debug::DebugComponent;
 pub use error::ErrorComponent;
 pub use help::HelpComponent;
 pub use properties::PropertiesComponent;
@@ -33,16 +39,10 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
-
-#[cfg(debug_assertions)]
-pub use debug::DebugComponent;
-
-use crate::database::Pool;
-use anyhow::Result;
-use async_trait::async_trait;
-use std::convert::TryInto;
 use tui::{backend::Backend, layout::Rect, Frame};
 use unicode_width::UnicodeWidthChar;
+
+use crate::database::Pool;
 
 #[derive(PartialEq, Debug)]
 pub enum EventState {

@@ -1,9 +1,9 @@
+use std::{collections::BTreeSet, usize};
+
 use crate::{
     databasetreeitems::DatabaseTreeItems, error::Result, item::DatabaseTreeItemKind,
-    tree_iter::TreeIterator,
+    tree_iter::TreeIterator, Database, Table,
 };
-use crate::{Database, Table};
-use std::{collections::BTreeSet, usize};
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -366,8 +366,9 @@ impl DatabaseTree {
 
 #[cfg(test)]
 mod test {
-    use crate::{Database, DatabaseTree, MoveSelection, Schema, Table};
     use std::collections::BTreeSet;
+
+    use crate::{Database, DatabaseTree, MoveSelection, Schema, Table};
 
     impl Table {
         fn new(name: String) -> Self {

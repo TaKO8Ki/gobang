@@ -11,15 +11,19 @@ mod version;
 #[macro_use]
 mod log;
 
-use crate::app::App;
-use crate::event::{Event, Key};
+use std::io;
+
 use anyhow::Result;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
+
+use crate::{
+    app::App,
+    event::{Event, Key},
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

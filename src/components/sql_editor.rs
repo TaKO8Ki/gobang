@@ -1,12 +1,3 @@
-use super::{
-    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
-    StatefulDrawableComponent, TableComponent,
-};
-use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
-use crate::database::{ExecuteResult, Pool};
-use crate::event::Key;
-use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
 use async_trait::async_trait;
 use tui::{
@@ -17,6 +8,18 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+
+use super::{
+    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    StatefulDrawableComponent, TableComponent,
+};
+use crate::{
+    components::command::CommandInfo,
+    config::KeyConfig,
+    database::{ExecuteResult, Pool},
+    event::Key,
+    ui::stateful_paragraph::{ParagraphState, StatefulParagraph},
+};
 
 struct QueryResult {
     updated_rows: u64,

@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use easy_cast::Cast;
 use std::iter;
+
+use easy_cast::Cast;
 use tui::{
     buffer::Buffer,
     layout::{Alignment, Rect},

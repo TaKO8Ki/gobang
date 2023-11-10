@@ -1,10 +1,3 @@
-use super::{
-    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
-    StatefulDrawableComponent,
-};
-use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
-use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
 use tui::{
@@ -16,6 +9,12 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+
+use super::{
+    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    StatefulDrawableComponent,
+};
+use crate::{components::command::CommandInfo, config::KeyConfig, event::Key};
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,

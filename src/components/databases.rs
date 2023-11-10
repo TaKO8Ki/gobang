@@ -1,17 +1,7 @@
-use super::{
-    utils::scroll_vertical::VerticalScroll, Component, DatabaseFilterComponent, DrawableComponent,
-    EventState,
-};
-use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig};
-use crate::database::Pool;
-use crate::event::Key;
-use crate::ui::common_nav;
-use crate::ui::scrolllist::draw_list_block;
+use std::{collections::BTreeSet, convert::From};
+
 use anyhow::Result;
 use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
-use std::collections::BTreeSet;
-use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -19,6 +9,18 @@ use tui::{
     text::{Span, Spans},
     widgets::{Block, Borders},
     Frame,
+};
+
+use super::{
+    utils::scroll_vertical::VerticalScroll, Component, DatabaseFilterComponent, DrawableComponent,
+    EventState,
+};
+use crate::{
+    components::command::{self, CommandInfo},
+    config::{Connection, KeyConfig},
+    database::Pool,
+    event::Key,
+    ui::{common_nav, scrolllist::draw_list_block},
 };
 
 // ▸
@@ -274,8 +276,9 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
     use database_tree::Table;
+
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
 
     #[test]
     fn test_tree_database_tree_item_to_span() {

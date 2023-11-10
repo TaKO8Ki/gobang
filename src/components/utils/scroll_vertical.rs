@@ -1,6 +1,8 @@
-use crate::ui::scrollbar::draw_scrollbar;
 use std::cell::Cell;
+
 use tui::{backend::Backend, layout::Rect, Frame};
+
+use crate::ui::scrollbar::draw_scrollbar;
 
 pub struct VerticalScroll {
     top: Cell<usize>,

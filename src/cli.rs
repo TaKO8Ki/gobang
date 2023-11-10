@@ -1,5 +1,6 @@
-use crate::config::CliConfig;
 use structopt::StructOpt;
+
+use crate::config::CliConfig;
 
 /// A cross-platform TUI database management tool written in Rust
 #[derive(StructOpt, Debug)]

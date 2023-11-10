@@ -1,14 +1,16 @@
-use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::command::CommandInfo;
-use crate::components::{TableComponent, TableFilterComponent};
-use crate::config::KeyConfig;
-use crate::event::Key;
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
+};
+
+use super::{Component, EventState, StatefulDrawableComponent};
+use crate::{
+    components::{command::CommandInfo, TableComponent, TableFilterComponent},
+    config::KeyConfig,
+    event::Key,
 };
 
 pub enum Focus {

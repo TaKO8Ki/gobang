@@ -1,14 +1,16 @@
-use crate::log::LogLevel;
-use crate::Key;
-use serde::Deserialize;
-use std::fmt;
-use std::fs::File;
-use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
-use structopt::StructOpt;
+use std::{
+    fmt,
+    fs::File,
+    io::{BufReader, Read},
+    path::{Path, PathBuf},
+};
 
+use serde::Deserialize;
 #[cfg(test)]
 use serde::Serialize;
+use structopt::StructOpt;
+
+use crate::{log::LogLevel, Key};
 
 #[derive(StructOpt, Debug)]
 pub struct CliConfig {
@@ -325,9 +327,11 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
-    use serde_json::Value;
     use std::env;
+
+    use serde_json::Value;
+
+    use super::{expand_path, KeyConfig, Path, PathBuf};
 
     #[test]
     fn test_overlappted_key() {

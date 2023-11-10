@@ -1,14 +1,17 @@
-use crate::get_or_null;
+use std::time::Duration;
 
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
 use futures::TryStreamExt;
 use itertools::Itertools;
-use sqlx::postgres::{PgColumn, PgPool, PgPoolOptions, PgRow};
-use sqlx::{Column as _, Row as _, TypeInfo as _};
-use std::time::Duration;
+use sqlx::{
+    postgres::{PgColumn, PgPool, PgPoolOptions, PgRow},
+    Column as _, Row as _, TypeInfo as _,
+};
+
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use crate::get_or_null;
 
 pub struct PostgresPool {
     pool: PgPool,

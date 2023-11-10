@@ -1,11 +1,7 @@
-use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
-use crate::event::Key;
-use crate::version::Version;
+use std::convert::From;
+
 use anyhow::Result;
 use itertools::Itertools;
-use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -14,6 +10,9 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
+
+use super::{Component, DrawableComponent, EventState};
+use crate::{components::command::CommandInfo, config::KeyConfig, event::Key, version::Version};
 
 pub struct HelpComponent {
     cmds: Vec<CommandInfo>,

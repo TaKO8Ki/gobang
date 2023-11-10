@@ -1,7 +1,3 @@
-use super::{Component, EventState, MovableComponent};
-use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
-use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -10,6 +6,9 @@ use tui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
+
+use super::{Component, EventState, MovableComponent};
+use crate::{components::command::CommandInfo, config::KeyConfig, event::Key};
 
 const RESERVED_WORDS_IN_WHERE_CLAUSE: &[&str] = &["IN", "AND", "OR", "NOT", "NULL", "IS"];
 const ALL_RESERVED_WORDS: &[&str] = &[

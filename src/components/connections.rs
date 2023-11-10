@@ -1,7 +1,3 @@
-use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::command::CommandInfo;
-use crate::config::{Connection, KeyConfig};
-use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -10,6 +6,13 @@ use tui::{
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
+};
+
+use super::{Component, EventState, StatefulDrawableComponent};
+use crate::{
+    components::command::CommandInfo,
+    config::{Connection, KeyConfig},
+    event::Key,
 };
 
 pub struct ConnectionsComponent {

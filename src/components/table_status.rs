@@ -1,6 +1,3 @@
-use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
-use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
 use tui::{
@@ -11,6 +8,9 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
+
+use super::{Component, DrawableComponent, EventState};
+use crate::{components::command::CommandInfo, event::Key};
 
 pub struct TableStatusComponent {
     column_count: Option<usize>,

@@ -6,8 +6,7 @@ mod tree_iter;
 mod treeitems_iter;
 
 pub use crate::{
-    databasetree::DatabaseTree,
-    databasetree::MoveSelection,
+    databasetree::{DatabaseTree, MoveSelection},
     item::{DatabaseTreeItem, TreeItemInfo},
 };
 

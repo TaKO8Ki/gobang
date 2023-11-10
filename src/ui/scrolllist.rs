@@ -1,4 +1,5 @@
 use std::iter::Iterator;
+
 use tui::{
     backend::Backend,
     buffer::Buffer,

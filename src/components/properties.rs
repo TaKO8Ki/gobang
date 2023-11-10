@@ -1,10 +1,3 @@
-use super::{Component, EventState, StatefulDrawableComponent};
-use crate::clipboard::copy_to_clipboard;
-use crate::components::command::{self, CommandInfo};
-use crate::components::TableComponent;
-use crate::config::KeyConfig;
-use crate::database::Pool;
-use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
 use database_tree::{Database, Table};
@@ -14,6 +7,18 @@ use tui::{
     style::{Color, Style},
     widgets::{Block, Borders, List, ListItem},
     Frame,
+};
+
+use super::{Component, EventState, StatefulDrawableComponent};
+use crate::{
+    clipboard::copy_to_clipboard,
+    components::{
+        command::{self, CommandInfo},
+        TableComponent,
+    },
+    config::KeyConfig,
+    database::Pool,
+    event::Key,
 };
 
 #[derive(Debug, PartialEq)]

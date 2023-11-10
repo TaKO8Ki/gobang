@@ -1,4 +1,5 @@
 use std::ops::Range;
+
 use syntect::{
     highlighting::{
         FontStyle, HighlightState, Highlighter, RangedHighlightIterator, Style, ThemeSet,

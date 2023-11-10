@@ -1,6 +1,3 @@
-use super::{compute_character_width, Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
-use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
 use tui::{
@@ -12,6 +9,9 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+
+use super::{compute_character_width, Component, DrawableComponent, EventState};
+use crate::{components::command::CommandInfo, event::Key};
 
 pub struct DatabaseFilterComponent {
     pub table: Option<Table>,

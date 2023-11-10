@@ -1,6 +1,3 @@
-use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
-use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -9,6 +6,9 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
+
+use super::{Component, DrawableComponent, EventState};
+use crate::{components::command::CommandInfo, event::Key};
 
 pub struct TableValueComponent {
     value: String,

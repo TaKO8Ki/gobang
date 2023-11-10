@@ -1,6 +1,8 @@
-use crate::event::Key;
-use crossterm::event;
 use std::{sync::mpsc, thread, time::Duration};
+
+use crossterm::event;
+
+use crate::event::Key;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventConfig {

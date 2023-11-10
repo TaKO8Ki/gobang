@@ -1,13 +1,16 @@
-use crate::get_or_null;
+use std::time::Duration;
 
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow};
-use sqlx::{Column as _, Row as _, TypeInfo as _};
-use std::time::Duration;
+use sqlx::{
+    mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow},
+    Column as _, Row as _, TypeInfo as _,
+};
+
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use crate::get_or_null;
 
 pub struct MySqlPool {
     pool: sqlx::mysql::MySqlPool,

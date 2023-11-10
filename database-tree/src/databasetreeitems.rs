@@ -1,9 +1,11 @@
-use crate::{error::Result, treeitems_iter::TreeItemsIterator};
-use crate::{item::DatabaseTreeItemKind, DatabaseTreeItem};
-use crate::{Child, Database};
 use std::{
     collections::{BTreeSet, HashMap},
     usize,
+};
+
+use crate::{
+    error::Result, item::DatabaseTreeItemKind, treeitems_iter::TreeItemsIterator, Child, Database,
+    DatabaseTreeItem,
 };
 
 #[derive(Default)]

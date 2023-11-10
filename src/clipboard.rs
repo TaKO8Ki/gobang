@@ -1,8 +1,11 @@
-use anyhow::{anyhow, Result};
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 use std::ffi::OsStr;
-use std::io::Write;
-use std::process::{Command, Stdio};
+use std::{
+    io::Write,
+    process::{Command, Stdio},
+};
+
+use anyhow::{anyhow, Result};
 
 fn execute_copy_command(command: Command, text: &str) -> Result<()> {
     let mut command = command;
@@ -42,6 +45,7 @@ fn gen_command(path: impl AsRef<OsStr>, xclip_syntax: bool) -> Command {
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub fn copy_to_clipboard(string: &str) -> Result<()> {
     use std::path::PathBuf;
+
     use which::which;
     let (path, xclip_syntax) = which("xclip").ok().map_or_else(
         || {

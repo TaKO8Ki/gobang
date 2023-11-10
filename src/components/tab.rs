@@ -1,7 +1,3 @@
-use super::{Component, DrawableComponent, EventState};
-use crate::components::command::{self, CommandInfo};
-use crate::config::KeyConfig;
-use crate::event::Key;
 use anyhow::Result;
 use strum_macros::EnumIter;
 use tui::{
@@ -11,6 +7,13 @@ use tui::{
     text::Spans,
     widgets::{Block, Borders, Tabs},
     Frame,
+};
+
+use super::{Component, DrawableComponent, EventState};
+use crate::{
+    components::command::{self, CommandInfo},
+    config::KeyConfig,
+    event::Key,
 };
 
 #[derive(Debug, Clone, Copy, EnumIter)]

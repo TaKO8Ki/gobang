@@ -1,7 +1,3 @@
-use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
-use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -10,6 +6,9 @@ use tui::{
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
+
+use super::{Component, DrawableComponent, EventState};
+use crate::{components::command::CommandInfo, config::KeyConfig, event::Key};
 
 pub struct ErrorComponent {
     pub error: String,

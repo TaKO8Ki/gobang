@@ -1,13 +1,7 @@
-use super::{
-    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent, TableValueComponent,
-};
-use crate::components::command::{self, CommandInfo};
-use crate::config::KeyConfig;
-use crate::event::Key;
+use std::convert::From;
+
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
-use std::convert::From;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -16,6 +10,16 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+
+use super::{
+    utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
+    StatefulDrawableComponent, TableStatusComponent, TableValueComponent,
+};
+use crate::{
+    components::command::{self, CommandInfo},
+    config::KeyConfig,
+    event::Key,
+};
 
 pub struct TableComponent {
     pub headers: Vec<String>,
@@ -573,8 +577,9 @@ impl Component for TableComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableComponent};
     use tui::layout::Constraint;
+
+    use super::{KeyConfig, TableComponent};
 
     #[test]
     fn test_headers() {
