@@ -195,24 +195,29 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type mysql needs the port field"))?;
-                let password = self
+                let encoded_user = encode_userinfo(user);
+                let encoded_password = self
                     .password
                     .as_ref()
-                    .map_or(String::new(), |p| p.to_string());
+                    .map(|p| encode_userinfo(p))
+                    .unwrap_or_default();
+                let auth = if encoded_password.is_empty() {
+                    encoded_user
+                } else {
+                    format!("{}:{}", encoded_user, encoded_password)
+                };
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
+                        "mysql://{auth}@{host}:{port}/{database}",
+                        auth = auth,
                         host = host,
                         port = port,
                         database = database
                     )),
                     None => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
+                        "mysql://{auth}@{host}:{port}",
+                        auth = auth,
                         host = host,
                         port = port,
                     )),
@@ -231,24 +236,30 @@ impl Connection {
                     .port
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("type postgres needs the port field"))?;
-                let password = self
+                let encoded_user = encode_userinfo(user);
+                let encoded_password = self
                     .password
                     .as_ref()
-                    .map_or(String::new(), |p| p.to_string());
+                    .map(|p| encode_userinfo(p))
+                    .unwrap_or_default();
+
+                let auth = if encoded_password.is_empty() {
+                    encoded_user
+                } else {
+                    format!("{}:{}", encoded_user, encoded_password)
+                };
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}/{database}",
-                        user = user,
-                        password = password,
+                        "postgres://{auth}@{host}:{port}/{database}",
+                        auth = auth,
                         host = host,
                         port = port,
                         database = database
                     )),
                     None => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}",
-                        user = user,
-                        password = password,
+                        "postgres://{auth}@{host}:{port}",
+                        auth = auth,
                         host = host,
                         port = port,
                     )),
@@ -300,6 +311,26 @@ pub fn get_app_config_path() -> anyhow::Result<std::path::PathBuf> {
     path.push("gobang");
     std::fs::create_dir_all(&path)?;
     Ok(path)
+}
+
+// -----------------------------------------------------------------
+//  As defined in RFC 3986 §2.1:
+//      : / ? # [ ] @   (plus all non-ASCII and control chars)
+//  ':' between user and password kept, everything else is %XX.
+// -----------------------------------------------------------------
+fn encode_userinfo(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() * 3);
+    for b in s.as_bytes() {
+        match *b {
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9'
+            | b'-' | b'_' | b'.' | b'~' => out.push(*b as char),
+            _ => {
+                out.push('%');
+                out.push_str(&format!("{:02X}", b));
+            }
+        }
+    }
+    out
 }
 
 fn expand_path(path: &Path) -> Option<PathBuf> {
@@ -407,6 +438,41 @@ mod test {
                     .join("~")
                     .join("bar")
             )
+        );
+    }
+
+    #[test]
+    fn test_encode_userinfo() {
+        assert_eq!(encode_userinfo("alice"), "alice");
+        assert_eq!(encode_userinfo("p@ss/w:ord?"), "p%40ss%2Fw%3Aord%3F");
+        assert_eq!(encode_userinfo("user:pass"), "user%3Apass");
+        assert_eq!(encode_userinfo("café"), "caf%C3%A9");
+    }
+
+    #[test]
+    fn test_database_url_encoding() {
+        let conn = Connection {
+            r#type: DatabaseType::MySql,
+            name: None,
+            user: Some("bob".into()),
+            host: Some("localhost".into()),
+            port: Some(3306),
+            path: None,
+            password: Some("p@ss/w:ord?".into()),
+            database: Some("testdb".into()),
+        };
+        assert_eq!(
+            conn.database_url().unwrap(),
+            "mysql://bob:p%40ss%2Fw%3Aord%3F@localhost:3306/testdb"
+        );
+
+        let conn_no_db = Connection {
+            database: None,
+            ..conn
+        };
+        assert_eq!(
+            conn_no_db.database_url().unwrap(),
+            "mysql://bob:p%40ss%2Fw%3Aord%3F@localhost:3306"
         );
     }
 }
